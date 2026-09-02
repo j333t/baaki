@@ -1,0 +1,22 @@
+[package]
+name = "baaki"
+version = "1.0.0"
+description = "A deadline countdown that stays in front of you."
+authors = ["Jeet"]
+edition = "2021"
+rust-version = "1.77"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-window-state = "2"
+tauri-plugin-autostart = "2"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

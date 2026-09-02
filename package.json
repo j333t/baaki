@@ -1,0 +1,16 @@
+{
+  "name": "baaki",
+  "version": "1.0.0",
+  "description": "A deadline countdown. The link carries the goal.",
+  "scripts": {
+    "test": "node test.mjs",
+    "build:desktop": "cd desktop && npx tauri build",
+    "dev:desktop": "cd desktop && npx tauri dev"
+  },
+  "type": "commonjs",
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4",
+    "playwright": "^1.62.1"
+  },
+  "private": true
+}

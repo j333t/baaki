@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Baaki</title>
+<meta name="theme-color" content="#080c1c">
+<meta name="description" content="Baaki — what's remaining. The link carries the goal.">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  /* geometric spacing scale, ratio ~1.6 */
+  --s1:6px; --s2:10px; --s3:16px; --s4:26px; --s5:42px; --s6:68px;
+  /* type scale, ratio ~1.25 */
+  --f0:.70rem; --f1:.80rem; --f2:1rem; --f3:1.25rem;
+  --ink:#fff; --dim:rgba(255,255,255,.60); --faint:rgba(255,255,255,.30);
+  --line:rgba(255,255,255,.16); --panel:rgba(255,255,255,.07); --panel2:rgba(255,255,255,.13);
+  --g1:#080c1c; --g2:#141c44; --ang:155deg;
+  --hero-w:300;
+}
+html[data-theme=light]{
+  --ink:#141821; --dim:rgba(20,24,33,.62); --faint:rgba(20,24,33,.34);
+  --line:rgba(20,24,33,.16); --panel:rgba(20,24,33,.05); --panel2:rgba(20,24,33,.10);
+}
+html,body{height:100%}
+body{
+  font:400 var(--f2)/1.45 ui-sans-serif,-apple-system,"Segoe UI",Roboto,Inter,system-ui,sans-serif;
+  color:var(--ink);
+  background:linear-gradient(var(--ang),var(--g1) 0%,var(--g2) 100%);
+  transition:color .4s ease;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  overflow:hidden;text-align:center;
+  padding:var(--s5) var(--s4);
+  -webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;
+}
+
+main{display:flex;flex-direction:column;align-items:center;gap:var(--s2);min-width:0;max-width:100%}
+#name{font-size:var(--f3);font-weight:500;letter-spacing:-.01em;color:var(--ink);
+  max-width:min(88vw,32ch);overflow-wrap:anywhere;opacity:.92;
+  display:flex;align-items:center;gap:var(--s2);justify-content:center}
+#name .star{font-size:.7em;opacity:.5;flex:none}
+#hero{display:flex;align-items:baseline;gap:var(--s3);justify-content:center;flex-wrap:wrap;
+  margin:calc(var(--s2) * -1) 0 var(--s1)}
+#num{font-size:clamp(4.5rem,21vw,15rem);font-weight:var(--hero-w);letter-spacing:-.04em;
+  line-height:.94;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+#unit{font-size:var(--f2);font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+#sub{font-size:var(--f1);color:var(--dim);letter-spacing:.04em;display:flex;gap:var(--s2);
+  flex-wrap:wrap;justify-content:center}
+#sub b{font-weight:500;color:var(--ink);opacity:.8}
+#tag{font-size:var(--f0);letter-spacing:.2em;text-transform:uppercase;color:var(--faint);
+  min-height:1em}
+#hero.pop{animation:pop .9s cubic-bezier(.16,1,.3,1)}
+@keyframes pop{0%{opacity:0;transform:scale(.82)}60%{opacity:1;transform:scale(1.05)}
+  100%{opacity:1;transform:scale(1)}}
+
+#others{display:flex;flex-wrap:wrap;gap:var(--s1);justify-content:center;
+  margin-top:var(--s4);max-width:min(92vw,64ch)}
+.chip{display:flex;align-items:center;gap:var(--s2);padding:7px var(--s3);border-radius:99px;
+  background:var(--panel);border:1px solid transparent;color:var(--dim);
+  font-size:var(--f1);cursor:pointer;transition:background .2s,color .2s,border-color .2s;
+  font-family:inherit;max-width:26ch}
+.chip:hover,.chip:focus-visible{background:var(--panel2);color:var(--ink);outline:none;border-color:var(--line)}
+.chip .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip .v{font-variant-numeric:tabular-nums;font-weight:500;color:var(--ink);opacity:.85;flex:none}
+.chip.more{color:var(--faint)}
+#snark{margin-top:var(--s3);font-size:var(--f0);color:var(--faint);letter-spacing:.03em;
+  max-width:44ch;font-style:italic;min-height:1em}
+
+#bar{position:fixed;left:0;right:0;bottom:0;display:flex;gap:var(--s1);justify-content:center;
+  align-items:center;padding:var(--s3);opacity:.28;transition:opacity .4s ease;flex-wrap:wrap}
+@media (hover:hover){body:hover #bar,#bar:focus-within{opacity:1}}
+@media (hover:none){#bar{opacity:.75}}
+button.b{font:500 var(--f1)/1 inherit;font-family:inherit;color:var(--dim);background:var(--panel);
+  border:1px solid transparent;border-radius:99px;padding:9px 15px;cursor:pointer;
+  transition:background .2s,color .2s,border-color .2s}
+button.b:hover,button.b:focus-visible{background:var(--panel2);color:var(--ink);outline:none;border-color:var(--line)}
+button.b.primary{color:var(--ink);background:var(--panel2);border-color:var(--line)}
+button.b.ghost{background:none}
+
+#toast{position:fixed;bottom:calc(var(--s6) + var(--s3));left:50%;transform:translateX(-50%) translateY(8px);
+  background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:99px;
+  padding:9px var(--s4);font-size:var(--f1);opacity:0;pointer-events:none;
+  transition:opacity .25s,transform .25s;backdrop-filter:blur(12px);white-space:nowrap;z-index:50}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+#fx{position:fixed;inset:0;pointer-events:none;z-index:40}
+
+dialog{border:1px solid var(--line);border-radius:18px;padding:0;
+  max-width:min(94vw,440px);width:100%;margin:auto;
+  background:var(--g1);color:var(--ink);box-shadow:0 30px 80px rgba(0,0,0,.45)}
+dialog::backdrop{background:rgba(0,0,0,.55)}
+.dlg{padding:var(--s4);display:flex;flex-direction:column;gap:var(--s3);text-align:left}
+.dlg h2{font-size:var(--f2);font-weight:600;letter-spacing:-.01em;display:flex;
+  justify-content:space-between;align-items:baseline;gap:var(--s2)}
+.dlg h2 span{font-size:var(--f0);font-weight:400;color:var(--faint);letter-spacing:.1em;text-transform:uppercase}
+.rows{display:flex;flex-direction:column;gap:var(--s1);max-height:34vh;overflow:auto}
+.row{display:flex;gap:var(--s2);align-items:center;background:var(--panel);border-radius:10px;padding:var(--s2)}
+.row.editing{outline:1px solid var(--line)}
+.row .rn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--f1)}
+.row .rd{font-size:var(--f0);color:var(--dim);font-variant-numeric:tabular-nums;flex:none}
+.row button{background:none;border:none;color:var(--faint);cursor:pointer;font-size:var(--f1);
+  padding:2px 5px;line-height:1;font-family:inherit;border-radius:6px}
+.row button:hover,.row button:focus-visible{color:var(--ink);background:var(--panel2);outline:none}
+form.add{display:flex;flex-direction:column;gap:var(--s2)}
+.f2{display:flex;gap:var(--s2)}
+input{font:400 var(--f1) inherit;font-family:inherit;color:var(--ink);background:var(--panel);
+  border:1px solid var(--line);border-radius:10px;padding:11px var(--s3);width:100%}
+input:focus{outline:none;border-color:var(--ink)}
+input::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.5;cursor:pointer}
+html[data-theme=light] input::-webkit-calendar-picker-indicator{filter:none}
+.kind{display:flex;gap:var(--s1)}
+.kind button{flex:1;font:500 var(--f1)/1 inherit;font-family:inherit;color:var(--dim);
+  background:var(--panel);border:1px solid transparent;border-radius:10px;padding:11px;cursor:pointer}
+.kind button[aria-pressed=true]{color:var(--ink);background:var(--panel2);border-color:var(--line)}
+.hint{font-size:var(--f0);color:var(--faint);line-height:1.55}
+.hint a{color:var(--dim)}
+.acts{display:flex;gap:var(--s2);justify-content:flex-end;flex-wrap:wrap}
+kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;background:var(--panel2);
+  border:1px solid var(--line);border-radius:5px;padding:2px 6px;color:var(--ink)}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:var(--s1) var(--s3);font-size:var(--f0);
+  color:var(--dim);align-items:center}
+.dev{font-size:1.6rem;letter-spacing:.04em;opacity:.9;font-weight:400}
+.story{font-size:var(--f1);color:var(--dim);line-height:1.65}
+.story b{color:var(--ink);font-weight:500}
+@media (max-width:520px){#others{margin-top:var(--s3)}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
+</style>
+</head>
+<body>
+
+<main>
+  <div id="name">Baaki</div>
+  <div id="hero"><span id="num">&mdash;</span><span id="unit"></span></div>
+  <div id="sub"></div>
+  <div id="tag"></div>
+  <div id="others"></div>
+  <div id="snark"></div>
+</main>
+
+<div id="bar">
+  <button class="b" id="bAdd" title="Goals (g)">Goals</button>
+  <button class="b" id="bShare" title="Share (s)">Share</button>
+  <button class="b primary" id="bDone" hidden title="Mark done (d)">Done</button>
+  <button class="b" id="bTheme" title="Light / dark (t)">&#9686;</button>
+  <button class="b ghost" id="bAbout" title="About (?)">?</button>
+</div>
+
+<div id="toast"></div>
+<canvas id="fx"></canvas>
+
+<dialog id="dlg"><div class="dlg">
+  <h2>Goals <span id="gCount"></span></h2>
+  <div class="rows" id="rows"></div>
+  <form class="add" id="addForm">
+    <input id="fName" placeholder="What is the goal?" maxlength="80" required>
+    <div class="f2">
+      <input id="fDate" type="date" required>
+      <input id="fTime" type="time">
+    </div>
+    <div class="kind">
+      <button type="button" id="kDeadline" aria-pressed="true">Deadline</button>
+      <button type="button" id="kEvent" aria-pressed="false">Something good &#9733;</button>
+    </div>
+    <div class="hint">
+      No time given means the end of that day.
+      A <b>deadline</b> heats up as it nears and keeps counting after you miss it.
+      Something <b>good</b> glows as it nears, celebrates, and stops.
+    </div>
+    <div class="acts">
+      <button type="button" class="b" id="bCancelEdit" hidden>Cancel</button>
+      <button type="button" class="b" id="bClose">Close</button>
+      <button type="submit" class="b primary" id="bSubmit">Add goal</button>
+    </div>
+  </form>
+</div></dialog>
+
+<dialog id="about"><div class="dlg">
+  <h2>Baaki <span class="dev">&#2348;&#2366;&#2325;&#2368;</span></h2>
+  <p class="story">
+    <b>Baaki</b> is Hindi for <i>what's remaining</i>. It is the only word this tool needs,
+    because it is the only thing on the screen.
+  </p>
+  <p class="story">
+    In the offices of the Delhi Metro, <b>E. Sreedharan</b> — India's Metro Man — hung a board
+    in every room showing the days left to the next deadline. Not a plan. Not a chart.
+    One number, on a wall, that everybody walked past. The Delhi Metro was finished
+    ahead of schedule and under budget, which almost never happens anywhere.
+    <a href="https://en.wikipedia.org/wiki/E._Sreedharan" target="_blank" rel="noopener">Read about him</a> —
+    he is worth the ten minutes.
+  </p>
+  <p class="story">
+    This is that board, small enough to email. The goal lives in the link, so sending
+    the link sends the countdown. No server, no account, nothing to sign up for.
+  </p>
+  <div class="keys" id="keys"></div>
+  <div class="hint">
+    Free and always will be.
+    <!-- Put your own link here when you have one: -->
+    <a href="#" id="donate" hidden>Buy me a coffee</a>
+  </div>
+  <div class="acts"><button type="button" class="b" id="bAboutClose">Close</button></div>
+</div></dialog>
+
+<script>
+(function(){
+'use strict';
+
+/* ============================================================
+   CONFIG - both optional, both off by default.
+   SYNC_URL : endpoint that shares "done" between people, online.
+              GET  <url>?k=KEY     -> {"done":"2026-11-14T10:30"} or {}
+              POST <url>  {k,done} -> {}
+              Empty = fully offline; the link carries the done stamp.
+   GA_ID    : GA4 measurement id, e.g. 'G-ABC1234XYZ'. Online only.
+   ============================================================ */
+var VERSION  = '1.0.0';
+var SYNC_URL = '';
+var GA_ID    = '';
+
+var DAY = 864e5, HOUR = 36e5, MIN = 6e4;
+function $(s){ return document.querySelector(s); }
+var el = {
+  name:$('#name'), num:$('#num'), unit:$('#unit'), sub:$('#sub'), tag:$('#tag'),
+  others:$('#others'), snark:$('#snark'), done:$('#bDone'), toast:$('#toast'),
+  rows:$('#rows'), dlg:$('#dlg'), about:$('#about'), hero:$('#hero')
+};
+
+/* ---------- link format ------------------------------------
+   #Launch~2027-03-31+Diwali~2026-11-08*+Beta~2026-11-15T18:00!2026-11-14T10:30+!edit
+
+   token containing ~   goal:  name ~ target [*] [! doneStamp ]
+                               *  = something good, not a deadline
+   token without ~      flag:  !edit
+
+   First goal is the big one. Move focus and it goes to the front,
+   so the link you copy is always the view you are looking at.
+------------------------------------------------------------ */
+function enc(s){
+  return encodeURIComponent(s).replace(/[~!*'()]/g, function(c){
+    return '%' + c.charCodeAt(0).toString(16).toUpperCase();
+  });
+}
+function dec(s){ try { return decodeURIComponent(s); } catch(e){ return s; } }
+function pad(n){ return String(n).padStart(2,'0'); }
+
+function parseLocal(s){
+  var m = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ](\d{1,2}):(\d{2}))?$/.exec(String(s||'').trim());
+  if(!m) return null;
+  var t = m[4] !== undefined;
+  var d = new Date(+m[1], +m[2]-1, +m[3], t?+m[4]:23, t?+m[5]:59, t?0:59, t?0:999);
+  return isNaN(d.getTime()) ? null : d;
+}
+function fmtLocal(d, withTime){
+  var b = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  return withTime ? b+'T'+pad(d.getHours())+':'+pad(d.getMinutes()) : b;
+}
+function isEod(d){ return d.getHours()===23 && d.getMinutes()===59 && d.getSeconds()===59; }
+
+function parseHash(h){
+  var out = { goals:[], edit:false };
+  String(h||'').replace(/^#/,'').split('+').forEach(function(tok){
+    if(!tok) return;
+    if(tok.indexOf('~') === -1){
+      if(dec(tok).toLowerCase() === '!edit') out.edit = true;
+      return;
+    }
+    var i = tok.indexOf('~');
+    var name = dec(tok.slice(0,i)).trim() || 'Goal';
+    var rest = tok.slice(i+1), doneS = null;
+    var b = rest.indexOf('!');
+    if(b !== -1){ doneS = rest.slice(b+1); rest = rest.slice(0,b); }
+    var event = false;
+    if(rest.slice(-1) === '*'){ event = true; rest = rest.slice(0,-1); }
+    var target = parseLocal(rest);
+    if(!target) return;
+    out.goals.push({
+      name:name, target:target, event:event,
+      done: doneS ? parseLocal(doneS) : null
+    });
+  });
+  return out;
+}
+function goalToken(g){
+  return enc(g.name) + '~' + fmtLocal(g.target, !isEod(g.target)) +
+         (g.event ? '*' : '') + (g.done ? '!' + fmtLocal(g.done, true) : '');
+}
+function buildHash(goals, edit){
+  var p = goals.map(goalToken);
+  if(edit) p.push('!edit');
+  return p.length ? '#' + p.join('+') : '';
+}
+function baseUrl(){ return location.href.split('#')[0]; }
+
+/* ---------- state ---------- */
+var S = { goals:[], edit:false };
+var quiet = false;
+var celebrated = Object.create(null);
+var prev = {};
+var editingIndex = -1;
+var formKindEvent = false;
+
+function goalKey(g){
+  var s = g.name.toLowerCase().trim() + '|' + fmtLocal(g.target, true);
+  var h = 5381;
+  for(var i=0;i<s.length;i++) h = ((h*33) ^ s.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+function load(){
+  var p = parseHash(location.hash);
+  if(!p.goals.length){
+    try {
+      var saved = localStorage.getItem('baaki.hash');
+      if(saved){ var q = parseHash(saved); if(q.goals.length){ q.edit = true; p = q; } }
+    } catch(e){}
+  }
+  S = p;
+}
+function commit(pushState){
+  var h = buildHash(S.goals, S.edit);
+  quiet = true;
+  if(pushState) location.hash = h;
+  else history.replaceState(null, '', h || location.pathname + location.search);
+  setTimeout(function(){ quiet = false; }, 0);
+  try { localStorage.setItem('baaki.hash', h); } catch(e){}
+  render(true);
+}
+
+/* ---------- the ladder -------------------------------------
+   Show a unit only when you would make a decision in that unit.
+
+     more than a day out ... DAYS    changes at local midnight
+     the day itself ........ H:MM    changes each minute
+     the last hour ......... M:SS    changes each second
+
+   Past a deadline it mirrors, in grey, so the ramp stays smooth
+   in both directions:
+
+     first hour over ....... +M:SS
+     first day over ........ +H:MM
+     after that ............ +N days
+
+   Something good does not run over. It arrives, and it stops.
+------------------------------------------------------------ */
+function dayDiff(a,b){
+  var A = new Date(a.getFullYear(),a.getMonth(),a.getDate());
+  var B = new Date(b.getFullYear(),b.getMonth(),b.getDate());
+  return Math.round((B-A)/DAY);
+}
+function tierOf(g){
+  if(!g.done) return null;
+  var d = g.target - g.done;
+  return d > DAY ? 'early' : (d >= 0 ? 'ontime' : 'late');
+}
+function view(g, now){
+  var ms = g.target - now;
+  if(g.done) return { m:'done', tier:tierOf(g) };
+  if(ms <= 0){
+    if(g.event) return { m:'arrived' };
+    var over = -ms;
+    if(over < HOUR) return { m:'overMs', ms:over };
+    if(over < DAY)  return { m:'overHm', ms:over };
+    return { m:'overD', days:Math.max(1, dayDiff(g.target, now)) };
+  }
+  var d = dayDiff(now, g.target);
+  if(d >= 1)    return { m:'days', days:d, ms:ms };
+  if(ms > HOUR) return { m:'hm', ms:ms };
+  return          { m:'ms', ms:ms };
+}
+function hm(ms){ return Math.floor(ms/HOUR) + ':' + pad(Math.floor(ms%HOUR/MIN)); }
+function ms2(ms){ return Math.floor(ms/MIN) + ':' + pad(Math.floor(ms%MIN/1000)); }
+
+function heroOf(v, g){
+  switch(v.m){
+    case 'done':    return { n:'✓', u: v.tier==='early' ? 'early' : (v.tier==='late' ? 'delivered' : 'on time') };
+    case 'arrived': return { n:'★', u:'here' };
+    case 'overD':   return { n:'+'+v.days, u: v.days===1 ? 'day over' : 'days over' };
+    case 'overHm':  return { n:'+'+hm(v.ms), u:'hours over' };
+    case 'overMs':  return { n:'+'+ms2(v.ms), u:'minutes over' };
+    case 'days':    return { n:String(v.days), u: v.days===1 ? 'day' : 'days' };
+    case 'hm':      return { n:hm(v.ms), u: g.event ? 'hours · today' : 'hours · today' };
+    default:        return { n:ms2(v.ms), u:'minutes' };
+  }
+}
+function shortOf(g, now){
+  var v = view(g, now);
+  switch(v.m){
+    case 'done':    return '✓';
+    case 'arrived': return '★';
+    case 'overD':   return '+'+v.days+'d';
+    case 'overHm':  return '+'+hm(v.ms);
+    case 'overMs':  return '+'+ms2(v.ms);
+    case 'days':    return v.days+'d';
+    case 'hm':      return hm(v.ms);
+    default:        return ms2(v.ms);
+  }
+}
+function humanSpan(now, target){
+  var a = new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  var b = new Date(target.getFullYear(),target.getMonth(),target.getDate());
+  var y = b.getFullYear()-a.getFullYear(), mo = b.getMonth()-a.getMonth(), d = b.getDate()-a.getDate();
+  if(d < 0){ mo--; d += new Date(b.getFullYear(), b.getMonth(), 0).getDate(); }
+  if(mo < 0){ y--; mo += 12; }
+  var P = [];
+  if(y)  P.push(y + ' yr');
+  if(mo) P.push(mo + ' mo');
+  if(d && !y && mo) P.push(d + (d===1 ? ' day' : ' days'));
+  /* under a month the hero already says the days, so say nothing */
+  return P.join(' ');
+}
+function dateLabel(d){
+  var s = d.toLocaleDateString(undefined, {day:'numeric', month:'short', year:'numeric'});
+  return isEod(d) ? s : s + ', ' + d.toLocaleTimeString(undefined, {hour:'numeric', minute:'2-digit'});
+}
+
+/* ---------- gradient: colour carries the distance ----------
+   A deadline cools from indigo to hot red, then goes grey when
+   missed. Something good warms from violet to gold and stays
+   radiant once it arrives. Same curve, opposite feeling.
+------------------------------------------------------------ */
+var RAMP = {
+  deadline: {
+    dark: [
+      [3650,'#070a18','#111838'],[730,'#080d20','#161f52'],[365,'#0a1530','#193a72'],
+      [180,'#0a2038','#125a86'],[90,'#0a2a33','#0f6b74'],[30,'#2a2410','#8a6210'],
+      [7,'#331a08','#a15410'],[1,'#3a1206','#b3350c'],[0,'#400f0a','#c42a0c']
+    ],
+    light: [
+      [3650,'#eef0fa','#c8cfef'],[730,'#edf0fb','#c2cbf1'],[365,'#eaf0fb','#b8cff2'],
+      [180,'#e9f2fb','#aed3ef'],[90,'#e8f5f5','#a4dedd'],[30,'#fbf4e2','#f0dc9e'],
+      [7,'#fdefe0','#f7cd9b'],[1,'#fdeae2','#f8bba3'],[0,'#fde8e4','#f7ae9e']
+    ]
+  },
+  event: {
+    dark: [
+      [3650,'#0c0a1a','#20183e'],[730,'#0e0b1e','#281c4e'],[365,'#110c24','#372270'],
+      [180,'#160d28','#4d2680'],[90,'#1d0f26','#6b2f78'],[30,'#28131a','#9a4746'],
+      [7,'#32200d','#bd7a1c'],[1,'#3a2a08','#d9a417'],[0,'#40320c','#f0c419']
+    ],
+    light: [
+      [3650,'#f2eefb','#d6cbef'],[730,'#f1edfb','#d0c4f0'],[365,'#f0ecfc','#c8b8f2'],
+      [180,'#f2ebfb','#c9aeef'],[90,'#f6ebf7','#dcaee2'],[30,'#fbeeea','#f2b6a6'],
+      [7,'#fdf3e0','#f7d79b'],[1,'#fdf8de','#f6e08c'],[0,'#fefadf','#f5e06a']
+    ]
+  }
+};
+var OVER = { dark:['#17171a','#37373e'], light:['#f1f1f3','#d8d8de'] };
+
+function mix(a, b, t){
+  function part(h, i){ return parseInt(h.slice(1+i*2, 3+i*2), 16); }
+  var out = '#';
+  for(var i=0;i<3;i++){
+    var v = Math.round(part(a,i) + (part(b,i) - part(a,i)) * t);
+    out += pad(Math.max(0, Math.min(255, v)).toString(16));
+  }
+  return out;
+}
+function gradFor(days, light, event){
+  if(days < 0) return OVER[light ? 'light' : 'dark'];
+  var T = RAMP[event ? 'event' : 'deadline'][light ? 'light' : 'dark'];
+  function L(v){ return Math.log(v + 1); }
+  if(days >= T[0][0]) return [T[0][1], T[0][2]];
+  for(var i=0;i<T.length-1;i++){
+    var hi = T[i], lo = T[i+1];
+    if(days <= hi[0] && days >= lo[0]){
+      var span = L(hi[0]) - L(lo[0]);
+      var t = span ? (L(hi[0]) - L(days)) / span : 0;
+      return [mix(hi[1], lo[1], t), mix(hi[2], lo[2], t)];
+    }
+  }
+  var last = T[T.length-1];
+  return [last[1], last[2]];
+}
+
+/* ---------- favicon: the number, in the tab ---------- */
+var lastIcon = '';
+function setIcon(text, c2){
+  if(text === lastIcon) return;
+  lastIcon = text;
+  var t = text.length > 4 ? text.slice(0,4) : text;
+  var size = t.length > 3 ? 24 : (t.length > 2 ? 30 : 38);
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+    '<rect width="64" height="64" rx="14" fill="' + c2 + '"/>' +
+    '<text x="32" y="34" fill="#ffffff" font-family="system-ui,sans-serif" font-size="' + size +
+    '" font-weight="600" text-anchor="middle" dominant-baseline="middle">' +
+    t.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</text></svg>';
+  var link = document.querySelector('link[rel="icon"]');
+  if(!link){ link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+  link.href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+}
+
+/* ---------- too many goals ---------------------------------
+   A board with fifteen numbers is not a board, it is a project
+   plan. We do not stop you. We just mention it.
+------------------------------------------------------------ */
+var CHIP_LIMIT = 7;
+var SNARK = [
+  'Sreedharan ran one metro at a time.',
+  'Eleven deadlines is a hobby, not a plan.',
+  'At this point it is a calendar. Consider a calendar.',
+  'Some of these are lies and you know which.',
+  'Pick three. The rest are wishes.',
+  'Every one of these was the priority once.',
+  'Somewhere, a Gantt chart is quietly weeping.',
+  'Counting down to counting down.',
+  'One of these is real. Good luck.',
+  'Ambition, or avoidance? Only you know.',
+  'The board is full. The wall, however, is not.',
+  'Your future self would like a word.',
+  'This many? Bold. Genuinely bold.',
+  'Statistically, four of these will move.',
+  'A wall of numbers is still just a wall.'
+];
+var snarkPick = SNARK[(Math.random() * SNARK.length) | 0];
+
+/* ---------- render ---------- */
+var t0 = Date.now();
+function render(force){
+  var now = new Date();
+  var light = document.documentElement.dataset.theme === 'light';
+  var root = document.documentElement;
+
+  /* a very slow drift, well under the threshold of noticing */
+  root.style.setProperty('--ang', (155 + 10 * Math.sin((Date.now() - t0) / 90000)).toFixed(2) + 'deg');
+
+  if(!S.goals.length){
+    el.name.textContent = 'Baaki';
+    el.num.textContent = '—'; el.unit.textContent = '';
+    el.sub.textContent = ''; el.tag.textContent = 'set a goal';
+    el.others.innerHTML = ''; el.snark.textContent = ''; el.done.hidden = true;
+    document.title = 'Baaki';
+    var g0 = gradFor(3650, light, false);
+    root.style.setProperty('--g1', g0[0]);
+    root.style.setProperty('--g2', g0[1]);
+    prev = {};
+    return;
+  }
+
+  var g = S.goals[0], v = view(g, now), h = heroOf(v, g);
+
+  var nameHtml = (g.event ? '<span class="star">★</span>' : '') + '<span></span>';
+  if(force || prev.nm !== g.name + g.event){
+    el.name.innerHTML = nameHtml;
+    el.name.lastChild.textContent = g.name;
+    prev.nm = g.name + g.event;
+  }
+  if(prev.n !== h.n){ el.num.textContent = h.n; prev.n = h.n; }
+  if(prev.u !== h.u){ el.unit.textContent = h.u; prev.u = h.u; }
+
+  var span = (v.m === 'days') ? humanSpan(now, g.target) : '';
+  var sub = (span ? '<b>' + span + '</b>' : '') + '<span>' + dateLabel(g.target) + '</span>';
+  if(prev.s !== sub){ el.sub.innerHTML = sub; prev.s = sub; }
+
+  var tag = v.m === 'done' ? ('completed ' + dateLabel(g.done))
+          : v.m === 'arrived' ? 'it is here'
+          : (v.m.indexOf('over') === 0 ? 'past due' : '');
+  if(prev.t !== tag){ el.tag.textContent = tag; prev.t = tag; }
+
+  /* continuous day value, so the colour drifts and never jumps */
+  var cd = (g.done || v.m === 'arrived') ? 0
+         : (v.m.indexOf('over') === 0 ? -1 : (g.target - now) / DAY);
+  var c = gradFor(cd, light, g.event);
+  root.style.setProperty('--g1', c[0]);
+  root.style.setProperty('--g2', c[1]);
+  var meta = document.querySelector('meta[name=theme-color]');
+  if(meta) meta.content = c[0];
+
+  var title = (v.m === 'days' ? 'D-' + v.days : h.n) + ' · ' + g.name;
+  if(document.title !== title) document.title = title;
+  setIcon(v.m === 'days' ? String(v.days) : h.n, c[1]);
+
+  /* other goals, capped so the board stays glanceable */
+  var rest = S.goals.slice(1);
+  var sig = rest.map(function(x){ return x.name + shortOf(x, now); }).join('|');
+  if(force || prev.o !== sig){
+    prev.o = sig;
+    el.others.innerHTML = '';
+    rest.slice(0, CHIP_LIMIT).forEach(function(x, i){
+      var b = document.createElement('button');
+      b.className = 'chip';
+      b.innerHTML = '<span class="n"></span><span class="v"></span>';
+      b.querySelector('.n').textContent = (x.event ? '★ ' : '') + x.name;
+      b.querySelector('.v').textContent = shortOf(x, now);
+      b.title = 'Show ' + x.name;
+      b.onclick = function(){ focusGoal(i + 1); };
+      el.others.appendChild(b);
+    });
+    if(rest.length > CHIP_LIMIT){
+      var more = document.createElement('button');
+      more.className = 'chip more';
+      more.textContent = '+' + (rest.length - CHIP_LIMIT) + ' more';
+      more.onclick = openDlg;
+      el.others.appendChild(more);
+    }
+    el.snark.textContent = S.goals.length >= 10 ? snarkPick : '';
+  }
+
+  el.done.hidden = !(S.edit && !g.done && v.m !== 'arrived');
+  maybeCelebrate(g, v);
+}
+/* Focus is a rotation, not a promotion. Pulling one goal to the
+   front would scramble the order, and then "previous" could not
+   undo "next". Rotating keeps the ring intact, so the arrows are
+   exact inverses and the list never reshuffles under you. */
+function rotate(n){
+  var L = S.goals.length;
+  if(L < 2) return;
+  n = ((n % L) + L) % L;
+  if(!n) return;
+  S.goals = S.goals.slice(n).concat(S.goals.slice(0, n));
+  prev = {};
+  commit(true);
+}
+function focusGoal(i){ rotate(i); }
+function cycleFocus(dir){ rotate(dir > 0 ? 1 : -1); }
+
+/* ---------- done + celebration ---------- */
+function markDone(){
+  var g = S.goals[0];
+  if(!g || g.done) return;
+  g.done = new Date();
+  prev = {};
+  commit(false);
+  syncPush(g);
+  copy(baseUrl() + '#' + goalToken(g)).then(function(ok){
+    toast(ok ? 'Done. Share link copied.' : 'Done. Copy the address bar to share.');
+  });
+}
+function maybeCelebrate(g, v){
+  var k = goalKey(g);
+  if(celebrated[k]) return;
+  if(v.m === 'done'){ celebrated[k] = 1; fire(v.tier); return; }
+  if(v.m === 'arrived'){ celebrated[k] = 1; fire('arrived'); return; }
+  if(v.m === 'overMs' && v.ms < 3 * MIN){
+    /* crossed zero with the page open. Every clock agrees on the
+       deadline, so this fires at the same moment on every copy. */
+    celebrated[k] = 1; fire('ontime');
+  }
+}
+var PAL = {
+  early:   ['#ffd76e','#ff8fb1','#6ee7ff','#a4f78a','#ffffff','#c9a3ff'],
+  ontime:  ['#ffd76e','#7fd8ff','#ffffff','#9ef0b0'],
+  late:    ['#9aa3b8','#c3cad8','#7f8aa0','#e2e6ee'],
+  arrived: ['#ffd76e','#f5e06a','#fff2b0','#ffb347','#ffffff','#ffe9a8']
+};
+function fire(tier){
+  if(!tier) tier = 'ontime';
+  var spec = tier === 'early'   ? {n:240, v:15, g:.26}
+           : tier === 'arrived' ? {n:300, v:16, g:.22}
+           : tier === 'ontime'  ? {n:150, v:12, g:.24}
+           : {n:60, v:8, g:.2};
+  confetti(spec, PAL[tier]);
+  if(tier === 'early')   setTimeout(function(){ confetti({n:120, v:13, g:.26}, PAL.early); }, 320);
+  if(tier === 'arrived'){
+    setTimeout(function(){ confetti({n:180, v:14, g:.22}, PAL.arrived); }, 300);
+    setTimeout(function(){ confetti({n:180, v:14, g:.22}, PAL.arrived); }, 700);
+  }
+  el.hero.classList.remove('pop');
+  void el.hero.offsetWidth;
+  el.hero.classList.add('pop');
+}
+function confetti(spec, pal){
+  var cv = $('#fx'), ctx = cv.getContext('2d');
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var W = window.innerWidth, H = window.innerHeight;
+  if(cv.width !== W * dpr || cv.height !== H * dpr){
+    cv.width = W * dpr; cv.height = H * dpr;
+    cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  var P = [], cx = W / 2, cy = H * 0.52;
+  for(var i=0;i<spec.n;i++){
+    var a = Math.random() * Math.PI * 2, s = spec.v * (0.35 + Math.random());
+    P.push({ x:cx, y:cy, vx:Math.cos(a)*s*1.5, vy:Math.sin(a)*s - spec.v*0.5,
+             r:2 + Math.random()*4, c:pal[(Math.random()*pal.length)|0],
+             rot:Math.random()*6.3, vr:(Math.random()-.5)*.3, life:1 });
+  }
+  (function step(){
+    ctx.clearRect(0, 0, W, H);
+    var alive = 0;
+    for(var i=0;i<P.length;i++){
+      var p = P[i];
+      if(p.life <= 0) continue;
+      alive++;
+      p.vy += spec.g; p.vx *= .992; p.vy *= .992;
+      p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.life -= .0075;
+      if(p.y > H + 40) p.life = 0;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 1.6));
+      ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+      ctx.fillStyle = p.c;
+      ctx.fillRect(-p.r, -p.r * .55, p.r * 2, p.r * 1.1);
+      ctx.restore();
+    }
+    if(alive) requestAnimationFrame(step);
+    else ctx.clearRect(0, 0, W, H);
+  })();
+}
+
+/* ---------- optional online sync ---------- */
+function syncPush(g){
+  if(!SYNC_URL || !navigator.onLine || !g.done) return;
+  try {
+    fetch(SYNC_URL, {
+      method:'POST', headers:{'content-type':'application/json'},
+      body: JSON.stringify({ k:goalKey(g), done:fmtLocal(g.done, true) })
+    }).catch(function(){});
+  } catch(e){}
+}
+function syncPull(){
+  if(!SYNC_URL || !navigator.onLine || !S.goals.length) return;
+  S.goals.forEach(function(g){
+    if(g.done) return;
+    fetch(SYNC_URL + '?k=' + encodeURIComponent(goalKey(g)))
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if(j && j.done && !g.done){ g.done = parseLocal(j.done); prev = {}; commit(false); }
+      })
+      .catch(function(){});
+  });
+}
+
+/* ---------- helpers ---------- */
+function copy(text){
+  if(navigator.clipboard && window.isSecureContext){
+    return navigator.clipboard.writeText(text).then(function(){ return true; }, function(){ return false; });
+  }
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    var ok = document.execCommand('copy');
+    ta.parentNode.removeChild(ta);
+    return Promise.resolve(ok);
+  } catch(e){ return Promise.resolve(false); }
+}
+var toastT;
+function toast(msg){
+  el.toast.textContent = msg;
+  el.toast.classList.add('on');
+  clearTimeout(toastT);
+  toastT = setTimeout(function(){ el.toast.classList.remove('on'); }, 2600);
+}
+function outsideClick(dialog, e){
+  if(e.target !== dialog) return false;                 // clicks inside bubble from children
+  var r = dialog.getBoundingClientRect();
+  return e.clientY < r.top || e.clientY > r.bottom || e.clientX < r.left || e.clientX > r.right;
+}
+
+/* ---------- goals dialog: add, edit, reorder, remove ---------- */
+function openDlg(){
+  resetForm();
+  drawRows();
+  if(!el.dlg.open) el.dlg.showModal();
+  setTimeout(function(){ $('#fName').focus(); }, 30);
+}
+function setFormKind(isEvent){
+  formKindEvent = !!isEvent;
+  $('#kDeadline').setAttribute('aria-pressed', String(!formKindEvent));
+  $('#kEvent').setAttribute('aria-pressed', String(formKindEvent));
+}
+function resetForm(){
+  editingIndex = -1;
+  $('#fName').value = ''; $('#fDate').value = ''; $('#fTime').value = '';
+  setFormKind(false);
+  $('#bSubmit').textContent = 'Add goal';
+  $('#bCancelEdit').hidden = true;
+  drawRows();
+}
+function startEdit(i){
+  var g = S.goals[i];
+  editingIndex = i;
+  $('#fName').value = g.name;
+  $('#fDate').value = fmtLocal(g.target, false);
+  $('#fTime').value = isEod(g.target) ? '' : pad(g.target.getHours()) + ':' + pad(g.target.getMinutes());
+  setFormKind(g.event);
+  $('#bSubmit').textContent = 'Save changes';
+  $('#bCancelEdit').hidden = false;
+  drawRows();
+  $('#fName').focus();
+  $('#fName').select();
+}
+function drawRows(){
+  $('#gCount').textContent = S.goals.length ? S.goals.length + (S.goals.length === 1 ? ' goal' : ' goals') : '';
+  el.rows.innerHTML = '';
+  if(!S.goals.length){
+    var d = document.createElement('div');
+    d.className = 'hint';
+    d.textContent = 'No goals yet.';
+    el.rows.appendChild(d);
+    return;
+  }
+  S.goals.forEach(function(g, i){
+    var r = document.createElement('div');
+    r.className = 'row' + (i === editingIndex ? ' editing' : '');
+    r.innerHTML = '<span class="rn"></span><span class="rd"></span>' +
+      '<button type="button" title="Show this one">▲</button>' +
+      '<button type="button" title="Edit">✎</button>' +
+      '<button type="button" title="Remove">✕</button>';
+    r.querySelector('.rn').textContent = (g.event ? '★ ' : '') + g.name + (g.done ? '  ✓' : '');
+    r.querySelector('.rd').textContent = fmtLocal(g.target, !isEod(g.target)).replace('T', ' ');
+    var bs = r.querySelectorAll('button');
+    bs[0].onclick = function(){ if(i){ focusGoal(i); } drawRows(); };
+    bs[1].onclick = function(){ startEdit(i); };
+    bs[2].onclick = function(){
+      S.goals.splice(i, 1);
+      if(editingIndex === i) resetForm();
+      prev = {}; commit(false); drawRows();
+    };
+    el.rows.appendChild(r);
+  });
+}
+
+/* ---------- share: this one, or all ---------- */
+var shareOpen = false;
+function closeShare(){
+  if(!shareOpen) return;
+  shareOpen = false;
+  var w = $('#shareWrap');
+  if(w) w.parentNode.replaceChild($('#bShareTpl').content.firstElementChild.cloneNode(true), w);
+  wireShare();
+}
+function wireShare(){
+  var b = $('#bShare');
+  if(b) b.onclick = openShare;
+}
+function openShare(){
+  if(!S.goals.length){ toast('Add a goal first.'); return; }
+  if(S.goals.length === 1){ doShare(false); return; }
+  var b = $('#bShare');
+  var wrap = document.createElement('span');
+  wrap.id = 'shareWrap';
+  wrap.style.display = 'flex';
+  wrap.style.gap = '6px';
+  wrap.innerHTML = '<button class="b" id="shOne">This one</button>' +
+                   '<button class="b" id="shAll">All ' + S.goals.length + '</button>';
+  b.parentNode.replaceChild(wrap, b);
+  shareOpen = true;
+  $('#shOne').onclick = function(){ doShare(false); closeShare(); };
+  $('#shAll').onclick = function(){ doShare(true); closeShare(); };
+  $('#shOne').focus();
+  setTimeout(function(){ document.addEventListener('click', onDocClickShare, true); }, 0);
+}
+function onDocClickShare(e){
+  var w = $('#shareWrap');
+  if(w && !w.contains(e.target)){
+    document.removeEventListener('click', onDocClickShare, true);
+    closeShare();
+  }
+}
+function doShare(all){
+  var link = baseUrl() + (all ? buildHash(S.goals, false) : '#' + goalToken(S.goals[0]));
+  copy(link).then(function(ok){
+    toast(ok ? (all ? 'All ' + S.goals.length + ' copied.' : 'This one copied.')
+             : 'Copy the address bar to share.');
+  });
+}
+
+/* ---------- keyboard + swipe ---------- */
+var KEYS = [
+  ['← →', 'previous / next goal'],
+  ['Tab', 'next goal'],
+  ['1 – 9', 'jump to a goal'],
+  ['G', 'goals'],
+  ['S', 'share'],
+  ['D', 'mark done'],
+  ['T', 'light / dark'],
+  ['?', 'this panel'],
+  ['Esc', 'close']
+];
+function drawKeys(){
+  var k = $('#keys');
+  k.innerHTML = '';
+  KEYS.forEach(function(row){
+    var a = document.createElement('kbd'); a.textContent = row[0];
+    var b = document.createElement('div'); b.textContent = row[1];
+    k.appendChild(a); k.appendChild(b);
+  });
+}
+function anyDialogOpen(){ return el.dlg.open || el.about.open; }
+
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape'){
+    if(el.dlg.open) el.dlg.close();
+    else if(el.about.open) el.about.close();
+    else closeShare();
+    return;
+  }
+  if(anyDialogOpen()) return;                 // let the form have the keyboard
+  if(e.metaKey || e.ctrlKey || e.altKey) return;
+  var t = e.target.tagName;
+  if(t === 'INPUT' || t === 'TEXTAREA') return;
+
+  if(e.key === 'ArrowRight'){ e.preventDefault(); cycleFocus(1); return; }
+  if(e.key === 'ArrowLeft'){ e.preventDefault(); cycleFocus(-1); return; }
+  if(e.key === 'Tab' && S.goals.length > 1){ e.preventDefault(); cycleFocus(e.shiftKey ? -1 : 1); return; }
+  if(e.key >= '1' && e.key <= '9'){ focusGoal(+e.key - 1); return; }
+
+  switch(e.key.toLowerCase()){
+    case 'g': e.preventDefault(); openDlg(); break;
+    case 's': e.preventDefault(); openShare(); break;
+    case 'd': if(!el.done.hidden) markDone(); break;
+    case 't': $('#bTheme').click(); break;
+    case '?': case '/': e.preventDefault(); openAbout(); break;
+  }
+});
+
+var touchX = null, touchY = null;
+document.addEventListener('touchstart', function(e){
+  if(anyDialogOpen() || e.touches.length !== 1) return;
+  touchX = e.touches[0].clientX; touchY = e.touches[0].clientY;
+}, {passive:true});
+document.addEventListener('touchend', function(e){
+  if(touchX === null) return;
+  var dx = e.changedTouches[0].clientX - touchX;
+  var dy = e.changedTouches[0].clientY - touchY;
+  touchX = touchY = null;
+  if(Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.6) cycleFocus(dx < 0 ? 1 : -1);
+}, {passive:true});
+
+/* ---------- about ---------- */
+function openAbout(){
+  drawKeys();
+  if(!el.about.open) el.about.showModal();
+}
+
+/* ---------- wire up ---------- */
+$('#bAdd').onclick = openDlg;
+$('#bClose').onclick = function(){ el.dlg.close(); };
+$('#bCancelEdit').onclick = resetForm;
+$('#bDone').onclick = markDone;
+$('#bAbout').onclick = openAbout;
+$('#bAboutClose').onclick = function(){ el.about.close(); };
+$('#kDeadline').onclick = function(){ setFormKind(false); };
+$('#kEvent').onclick = function(){ setFormKind(true); };
+wireShare();
+
+el.dlg.addEventListener('click', function(e){ if(outsideClick(el.dlg, e)) el.dlg.close(); });
+el.about.addEventListener('click', function(e){ if(outsideClick(el.about, e)) el.about.close(); });
+el.dlg.addEventListener('close', resetForm);
+
+$('#bTheme').onclick = function(){
+  var light = document.documentElement.dataset.theme === 'light';
+  document.documentElement.dataset.theme = light ? 'dark' : 'light';
+  try { localStorage.setItem('baaki.theme', light ? 'dark' : 'light'); } catch(e){}
+  prev = {};
+  render(true);
+};
+$('#addForm').onsubmit = function(e){
+  e.preventDefault();
+  var name = $('#fName').value.trim(), date = $('#fDate').value, time = $('#fTime').value;
+  var target = parseLocal(date + (time ? 'T' + time : ''));
+  if(!name || !target){ toast('Need a name and a date.'); return; }
+  if(editingIndex >= 0){
+    var g = S.goals[editingIndex];
+    g.name = name; g.target = target; g.event = formKindEvent;
+    toast('Saved.');
+  } else {
+    S.goals.unshift({ name:name, target:target, event:formKindEvent, done:null });
+    toast('Added.');
+  }
+  S.edit = true;
+  prev = {};
+  commit(false);
+  resetForm();
+};
+
+window.addEventListener('hashchange', function(){
+  if(quiet) return;
+  load(); prev = {}; render(true);
+});
+window.addEventListener('resize', function(){ prev = {}; render(true); });
+window.addEventListener('focus', syncPull);
+
+try {
+  var th = localStorage.getItem('baaki.theme');
+  if(th) document.documentElement.dataset.theme = th;
+  else if(window.matchMedia('(prefers-color-scheme: light)').matches) document.documentElement.dataset.theme = 'light';
+} catch(e){}
+
+load();
+/* Normalise the address on arrival: drops junk tokens and settles
+   encoding, so the next Share hands over a clean link. */
+if(S.goals.length && location.hash !== buildHash(S.goals, S.edit)) commit(false);
+render(true);
+setInterval(function(){ render(false); }, 1000);
+if(!S.goals.length) setTimeout(openDlg, 350);
+syncPull();
+
+/* offline-from-a-URL needs sw.js next to this file. Harmless without it. */
+if('serviceWorker' in navigator && location.protocol.indexOf('http') === 0){
+  navigator.serviceWorker.register('sw.js').catch(function(){});
+}
+/* analytics: online only, never blocks anything */
+if(GA_ID && navigator.onLine){
+  var gs = document.createElement('script');
+  gs.async = true;
+  gs.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+  document.head.appendChild(gs);
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = function(){ window.dataLayer.push(arguments); };
+  window.gtag('js', new Date());
+  window.gtag('config', GA_ID);
+}
+})();
+</script>
+<template id="bShareTpl"><button class="b" id="bShare" title="Share (s)">Share</button></template>
+</body>
+</html>
