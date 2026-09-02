@@ -17,6 +17,11 @@ Legend: **★** = load-bearing, removing it changes what Baaki is.
 | Ladder only ever gets finer | A unit that appears and disappears makes you re-read the screen. One-way is legible. |
 | Switch at local midnight, not at the target's clock time | "It's today" is a human fact, not an arithmetic one. Bare dates mean end-of-day so the day you're given is the day you get. |
 | Mirrored overdue ladder (`+M:SS` → `+H:MM` → `+N days`) | The ramp was smooth going down and fell off a cliff going up. Being late is information too, and it deserves the same resolution. |
+| Tenths in the last ten minutes | The one rung that is not a decision unit. The ramp went flat at the end — `3:00` and `0:03` ticked with the same texture — so the closing minutes felt no different from the opening ones. Now it visibly accelerates into zero. |
+| The tenths are small and dim | So the seconds stay the number you read. A decimal at full weight makes you re-read the screen, which is the opposite of a glance. |
+| Reduced motion removes the rung entirely | Slowing a 10 Hz digit down would just look broken. Someone who asked for less motion should get the plain seconds, not a compromise. |
+| The tab and the favicon stay on whole seconds | A title changing ten times a second is unreadable, and it wakes the OS for nothing. |
+| Chips never carry tenths | Seven of them ticking at 10 Hz is a slot machine, not a board. |
 | Human span underneath (`1 yr 2 mo`) | 427 is motivating but not plannable. The second line makes it plannable without stealing the glance. |
 | Span hidden under a month | It would just repeat the hero number. Redundancy is noise. |
 | Tab title shows `D-427 · Name` | The cheapest "always visible" there is. Works on every OS, costs nothing, needs no install. |
@@ -46,6 +51,7 @@ Legend: **★** = load-bearing, removing it changes what Baaki is.
 | Chips capped at 7, rest collapse | Past that the board stops being glanceable, which is the only thing it's for. |
 | Snark at 10+ goals | Fifteen countdowns is a project plan wearing a countdown's clothes. We don't block it. We mention it. |
 | Junk tokens dropped, address normalised | A half-broken link should still show what it can, and the next Share should hand over something clean. |
+| A target may carry seconds | It used to fail the regex, and the goal disappeared entirely rather than degrading. Zero seconds are still left out when the link is rewritten, so ordinary links stay short. |
 
 ## Done
 
@@ -72,6 +78,21 @@ Legend: **★** = load-bearing, removing it changes what Baaki is.
 | Dialog closes on outside click | Every other dialog on earth does. |
 | About panel with the Sreedharan story | The origin is the best thing about this tool and it was invisible. Also where the keyboard map lives, so the main screen stays clean. |
 
+## This screen
+
+Per-device, never in the link. Sharing a board must never reach across and change somebody else's display — that is invariant 2 read backwards.
+
+| Feature | Why it exists |
+|---|---|
+| Fullscreen, on a key and a button | One keypress turns any old laptop into a wall board. It is the cheapest possible version of the whole idea. |
+| Keep the screen awake | A board is useless the moment the phone sleeps. |
+| Keep-awake is **not** remembered | A setting that outlives the sitting is how somebody's battery dies next week and they never work out why. This is a this-sitting decision, like fullscreen. |
+| Size of the number scales the hero only | The point is one number readable from further away. Zooming the whole page would move the supporting lines too, and they were already the right size. |
+| Size is remembered, per device | It is about the screen you are at, not the goal. Two people opening the same link should each keep their own. |
+| A big screen with no pointer starts bigger | That is a wall, not a desk. "TV mode" is not a mode; it is a better default. |
+| Rotation lock appears only when it could work | The browser API needs fullscreen or an installed app. A toggle that silently does nothing is worse than no toggle. |
+| All of it lives under `?` | The main screen keeps one number on it. Anything requiring a choice hides behind a key, which is the second rubric test. |
+
 ## Distribution
 
 | Feature | Why it exists |
@@ -82,3 +103,6 @@ Legend: **★** = load-bearing, removing it changes what Baaki is.
 | Desktop wrapper (Tauri) | The three things a browser tab cannot do: float above other windows, start with the machine, remember where it was. |
 | Wrapper injects its own chrome | So `baaki.html` stays one portable file with no idea it's ever inside an app. |
 | GA4 off by default | It only counts opens of a hosted link. Worth having, not worth pretending it measures use. |
+| Update check against a 200-byte `version.json` | A file you emailed cannot be recalled. This is the only channel a downloaded copy has, and it costs a fifth of a kilobyte. |
+| It is a dot, not a banner | The board is something you walk past. Anything that interrupts that has already broken it. Silent offline, silent when the host does not answer. |
+| Two candidate URLs, tried in order | A host that will not send CORS headers is invisible to a file opened from a disk, and you find that out only in the field. |

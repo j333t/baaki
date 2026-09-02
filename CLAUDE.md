@@ -26,7 +26,8 @@ sw.js               offline cache for the hosted copy
 manifest.webmanifest  add-to-home-screen
 sync-worker.js      optional Cloudflare worker for online "Done"
 desktop/            Tauri wrapper. wraps baaki.html unmodified.
-test.mjs            103 browser checks, frozen clock
+test.mjs            137 browser checks, frozen clock
+version.json        200 bytes, so an emailed copy can learn it is old
 docs/               rubric, feature ledger, backlog, easter eggs
 ```
 
@@ -39,6 +40,8 @@ docs/               rubric, feature ledger, backlog, easter eggs
 - **Every colour is generated, not stored.** Ramps interpolate between anchors. Do not paste 36 hex values anywhere.
 - **Tests are the spec.** `node test.mjs` uses a frozen clock and a real browser. Add a case for anything with a date boundary in it — that is where every bug so far has lived.
 - **Dates are local, always.** `new Date('2027-01-01')` parses as UTC and is a trap. Use `parseLocal`.
+- **Per-device settings never touch the link.** Size, fullscreen, keep-awake, rotation: `localStorage` or nothing. If a setting can ride in a shared link it can change somebody else's screen, and that is a different product.
+- **Only the hero may repaint on a frame.** The tenths run on `requestAnimationFrame`; the gradient, chips, tab title and favicon stay on the one-second beat. A title that flickers ten times a second is unreadable and wakes the OS.
 - **No magic colour assertions in tests.** Compare behaviour (deadline vs event) rather than an interpolated hex, or the test breaks every time a ramp is nudged.
 
 ## The link format

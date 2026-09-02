@@ -17,7 +17,7 @@
   --ink:#fff; --dim:rgba(255,255,255,.60); --faint:rgba(255,255,255,.30);
   --line:rgba(255,255,255,.16); --panel:rgba(255,255,255,.07); --panel2:rgba(255,255,255,.13);
   --g1:#080c1c; --g2:#141c44; --ang:155deg;
-  --hero-w:300;
+  --hero-w:300; --hero-k:1;
 }
 html[data-theme=light]{
   --ink:#141821; --dim:rgba(20,24,33,.62); --faint:rgba(20,24,33,.34);
@@ -43,8 +43,10 @@ main{display:flex;flex-direction:column;align-items:center;gap:var(--s2);min-wid
 #name .star{font-size:.7em;opacity:.5;flex:none}
 #hero{display:flex;align-items:baseline;gap:var(--s3);justify-content:center;flex-wrap:wrap;
   margin:calc(var(--s2) * -1) 0 var(--s1)}
-#num{font-size:clamp(4.5rem,21vw,15rem);font-weight:var(--hero-w);letter-spacing:-.04em;
-  line-height:.94;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+#num{font-size:calc(clamp(4.5rem,21vw,15rem) * var(--hero-k));font-weight:var(--hero-w);
+  letter-spacing:-.04em;line-height:.94;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+/* the tenths are texture, not the number - small and dim so the eye still lands on the seconds */
+#num .dec{font-size:.44em;font-style:normal;opacity:.4;letter-spacing:0}
 #unit{font-size:var(--f2);font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
 #sub{font-size:var(--f1);color:var(--dim);letter-spacing:.04em;display:flex;gap:var(--s2);
   flex-wrap:wrap;justify-content:center}
@@ -78,6 +80,10 @@ button.b{font:500 var(--f1)/1 inherit;font-family:inherit;color:var(--dim);backg
 button.b:hover,button.b:focus-visible{background:var(--panel2);color:var(--ink);outline:none;border-color:var(--line)}
 button.b.primary{color:var(--ink);background:var(--panel2);border-color:var(--line)}
 button.b.ghost{background:none}
+button.b svg{display:block}
+#bAbout{position:relative}
+#bAbout.dot::after{content:"";position:absolute;top:6px;right:7px;width:5px;height:5px;
+  border-radius:50%;background:var(--ink);opacity:.8}
 
 #toast{position:fixed;bottom:calc(var(--s6) + var(--s3));left:50%;transform:translateX(-50%) translateY(8px);
   background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:99px;
@@ -88,8 +94,9 @@ button.b.ghost{background:none}
 #fx{position:fixed;inset:0;pointer-events:none;z-index:40}
 
 dialog{border:1px solid var(--line);border-radius:18px;padding:0;
-  max-width:min(94vw,440px);width:100%;margin:auto;
-  background:var(--g1);color:var(--ink);box-shadow:0 30px 80px rgba(0,0,0,.45)}
+  max-width:min(94vw,440px);width:100%;margin:auto;max-height:92vh;overflow:auto;
+  background:var(--g1);color:var(--ink);box-shadow:0 30px 80px rgba(0,0,0,.45);
+  overscroll-behavior:contain}
 dialog::backdrop{background:rgba(0,0,0,.55)}
 .dlg{padding:var(--s4);display:flex;flex-direction:column;gap:var(--s3);text-align:left}
 .dlg h2{font-size:var(--f2);font-weight:600;letter-spacing:-.01em;display:flex;
@@ -119,8 +126,22 @@ html[data-theme=light] input::-webkit-calendar-picker-indicator{filter:none}
 .acts{display:flex;gap:var(--s2);justify-content:flex-end;flex-wrap:wrap}
 kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;background:var(--panel2);
   border:1px solid var(--line);border-radius:5px;padding:2px 6px;color:var(--ink)}
-.keys{display:grid;grid-template-columns:auto 1fr;gap:var(--s1) var(--s3);font-size:var(--f0);
+.keys{display:grid;grid-template-columns:auto 1fr auto 1fr;gap:var(--s1) var(--s2);font-size:var(--f0);
   color:var(--dim);align-items:center}
+@media (max-width:400px){.keys{grid-template-columns:auto 1fr}}
+.screen{border-top:1px solid var(--line);padding-top:var(--s3);display:flex;flex-direction:column;gap:var(--s2)}
+.screen h3{font-size:var(--f0);font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--faint)}
+.opts{display:flex;flex-direction:column;gap:var(--s1)}
+.opt{display:flex;align-items:center;gap:var(--s1);font-size:var(--f1);color:var(--dim)}
+.opt .lbl{flex:1;min-width:0}
+.opt button{font:500 var(--f0)/1 inherit;font-family:inherit;color:var(--dim);background:var(--panel);
+  border:1px solid transparent;border-radius:7px;padding:7px 10px;cursor:pointer;min-width:32px}
+.opt button:hover,.opt button:focus-visible{background:var(--panel2);color:var(--ink);outline:none;border-color:var(--line)}
+.opt button[aria-pressed=true]{color:var(--ink);background:var(--panel2);border-color:var(--line)}
+.opt .val{font-variant-numeric:tabular-nums;color:var(--ink);opacity:.8;min-width:4ch;
+  text-align:center;font-size:var(--f0)}
+#upd{font-size:var(--f0);color:var(--ink);opacity:.85}
+#upd a{color:var(--ink)}
 .dev{font-size:1.6rem;letter-spacing:.04em;opacity:.9;font-weight:400}
 .story{font-size:var(--f1);color:var(--dim);line-height:1.65}
 .story b{color:var(--ink);font-weight:500}
@@ -143,6 +164,7 @@ kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;background:var(--pa
   <button class="b" id="bAdd" title="Goals (g)">Goals</button>
   <button class="b" id="bShare" title="Share (s)">Share</button>
   <button class="b primary" id="bDone" hidden title="Mark done (d)">Done</button>
+  <button class="b" id="bFull" hidden title="Fullscreen (f)" aria-label="Fullscreen"><svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M1 5.5V1h4.5M10.5 1H15v4.5M15 10.5V15h-4.5M5.5 15H1v-4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   <button class="b" id="bTheme" title="Light / dark (t)">&#9686;</button>
   <button class="b ghost" id="bAbout" title="About (?)">?</button>
 </div>
@@ -195,6 +217,13 @@ kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;background:var(--pa
     the link sends the countdown. No server, no account, nothing to sign up for.
   </p>
   <div class="keys" id="keys"></div>
+  <div class="screen">
+    <h3>This screen</h3>
+    <div class="opts" id="opts"></div>
+    <div id="upd" hidden></div>
+    <div class="hint">Kept on this device, never in the link. How big the number is
+      depends on the room you are standing in, not on the goal.</div>
+  </div>
   <div class="hint">
     Free and always will be.
     <!-- Put your own link here when you have one: -->
@@ -215,11 +244,22 @@ kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;background:var(--pa
               Empty = fully offline; the link carries the done stamp.
    GA_ID    : GA4 measurement id, e.g. 'G-ABC1234XYZ'. Online only.
    ============================================================ */
-var VERSION  = '1.0.0';
+var VERSION  = '1.1.0';
 var SYNC_URL = '';
 var GA_ID    = '';
+/* UPDATE : a 200-byte {"version","url"} somewhere online. Two candidates,
+            tried in order, because a host that will not send CORS headers
+            is silently useless to a file opened from a disk. */
+var UPDATE_URLS = [
+  'https://raw.githubusercontent.com/j333t/baaki/main/version.json',
+  'https://j333t.github.io/baaki/version.json'
+];
 
 var DAY = 864e5, HOUR = 36e5, MIN = 6e4;
+/* The last ten minutes carry tenths. Someone who asked for less motion
+   gets none of it: FINE goes to zero and the rung never opens. */
+var FINE = (window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches)
+  ? 0 : 10 * MIN;
 function $(s){ return document.querySelector(s); }
 var el = {
   name:$('#name'), num:$('#num'), unit:$('#unit'), sub:$('#sub'), tag:$('#tag'),
@@ -246,15 +286,21 @@ function dec(s){ try { return decodeURIComponent(s); } catch(e){ return s; } }
 function pad(n){ return String(n).padStart(2,'0'); }
 
 function parseLocal(s){
-  var m = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ](\d{1,2}):(\d{2}))?$/.exec(String(s||'').trim());
+  var m = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/.exec(String(s||'').trim());
   if(!m) return null;
   var t = m[4] !== undefined;
-  var d = new Date(+m[1], +m[2]-1, +m[3], t?+m[4]:23, t?+m[5]:59, t?0:59, t?0:999);
+  /* Seconds are optional and rare, but a link that carries them used to
+     parse as nothing at all - the goal simply disappeared. A bare date
+     still means the end of that day. */
+  var d = new Date(+m[1], +m[2]-1, +m[3], t?+m[4]:23, t?+m[5]:59, t?(+m[6]||0):59, t?0:999);
   return isNaN(d.getTime()) ? null : d;
 }
 function fmtLocal(d, withTime){
   var b = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
-  return withTime ? b+'T'+pad(d.getHours())+':'+pad(d.getMinutes()) : b;
+  if(!withTime) return b;
+  /* seconds only appear when they are not zero, so ordinary links stay short */
+  var s = d.getSeconds();
+  return b+'T'+pad(d.getHours())+':'+pad(d.getMinutes()) + (s ? ':'+pad(s) : '');
 }
 function isEod(d){ return d.getHours()===23 && d.getMinutes()===59 && d.getSeconds()===59; }
 
@@ -333,10 +379,18 @@ function commit(pushState){
      more than a day out ... DAYS    changes at local midnight
      the day itself ........ H:MM    changes each minute
      the last hour ......... M:SS    changes each second
+     the last ten minutes .. M:SS.t  changes ten times a second
+
+   The tenths are the one rung that is not a decision unit - nobody
+   acts on a tenth of a second. They are there because the ramp went
+   flat at the end: 3:00 and 0:03 ticked with exactly the same
+   texture. Now the board visibly accelerates into zero. They are
+   drawn small and dim, so the seconds stay the number you read.
 
    Past a deadline it mirrors, in grey, so the ramp stays smooth
    in both directions:
 
+     first ten minutes over  +M:SS.t
      first hour over ....... +M:SS
      first day over ........ +H:MM
      after that ............ +N days
@@ -359,17 +413,20 @@ function view(g, now){
   if(ms <= 0){
     if(g.event) return { m:'arrived' };
     var over = -ms;
+    if(over < FINE) return { m:'overFine', ms:over };
     if(over < HOUR) return { m:'overMs', ms:over };
     if(over < DAY)  return { m:'overHm', ms:over };
     return { m:'overD', days:Math.max(1, dayDiff(g.target, now)) };
   }
   var d = dayDiff(now, g.target);
-  if(d >= 1)    return { m:'days', days:d, ms:ms };
-  if(ms > HOUR) return { m:'hm', ms:ms };
-  return          { m:'ms', ms:ms };
+  if(d >= 1)     return { m:'days', days:d, ms:ms };
+  if(ms > HOUR)  return { m:'hm', ms:ms };
+  if(ms > FINE)  return { m:'ms', ms:ms };
+  return           { m:'fine', ms:ms };
 }
 function hm(ms){ return Math.floor(ms/HOUR) + ':' + pad(Math.floor(ms%HOUR/MIN)); }
 function ms2(ms){ return Math.floor(ms/MIN) + ':' + pad(Math.floor(ms%MIN/1000)); }
+function ms1(ms){ return ms2(ms) + '.' + Math.floor(ms % 1000 / 100); }
 
 function heroOf(v, g){
   switch(v.m){
@@ -378,8 +435,10 @@ function heroOf(v, g){
     case 'overD':   return { n:'+'+v.days, u: v.days===1 ? 'day over' : 'days over' };
     case 'overHm':  return { n:'+'+hm(v.ms), u:'hours over' };
     case 'overMs':  return { n:'+'+ms2(v.ms), u:'minutes over' };
+    case 'overFine':return { n:'+'+ms1(v.ms), u:'minutes over' };
     case 'days':    return { n:String(v.days), u: v.days===1 ? 'day' : 'days' };
     case 'hm':      return { n:hm(v.ms), u: g.event ? 'hours · today' : 'hours · today' };
+    case 'fine':    return { n:ms1(v.ms), u:'minutes' };
     default:        return { n:ms2(v.ms), u:'minutes' };
   }
 }
@@ -390,10 +449,10 @@ function shortOf(g, now){
     case 'arrived': return '★';
     case 'overD':   return '+'+v.days+'d';
     case 'overHm':  return '+'+hm(v.ms);
-    case 'overMs':  return '+'+ms2(v.ms);
+    case 'overMs':  case 'overFine': return '+'+ms2(v.ms);
     case 'days':    return v.days+'d';
     case 'hm':      return hm(v.ms);
-    default:        return ms2(v.ms);
+    default:        return ms2(v.ms);   /* 'ms' and 'fine' both, deliberately coarse */
   }
 }
 function humanSpan(now, target){
@@ -515,6 +574,17 @@ var SNARK = [
 var snarkPick = SNARK[(Math.random() * SNARK.length) | 0];
 
 /* ---------- render ---------- */
+/* The hero is the only thing that can carry a decimal, so it is the
+   only thing that repaints on a frame. Split out so the fast path
+   can call it without touching anything else. */
+function setNum(s){
+  var i = s.indexOf('.');
+  if(i < 0){ el.num.textContent = s; return; }
+  el.num.textContent = '';
+  var whole = document.createElement('span'); whole.textContent = s.slice(0, i);
+  var dec = document.createElement('i'); dec.className = 'dec'; dec.textContent = s.slice(i);
+  el.num.appendChild(whole); el.num.appendChild(dec);
+}
 var t0 = Date.now();
 function render(force){
   var now = new Date();
@@ -545,7 +615,7 @@ function render(force){
     el.name.lastChild.textContent = g.name;
     prev.nm = g.name + g.event;
   }
-  if(prev.n !== h.n){ el.num.textContent = h.n; prev.n = h.n; }
+  if(prev.n !== h.n){ setNum(h.n); prev.n = h.n; }
   if(prev.u !== h.u){ el.unit.textContent = h.u; prev.u = h.u; }
 
   var span = (v.m === 'days') ? humanSpan(now, g.target) : '';
@@ -566,9 +636,12 @@ function render(force){
   var meta = document.querySelector('meta[name=theme-color]');
   if(meta) meta.content = c[0];
 
-  var title = (v.m === 'days' ? 'D-' + v.days : h.n) + ' · ' + g.name;
+  /* the tab and the favicon stay on whole seconds. A title that
+     flickers ten times a second is unreadable and wakes the OS. */
+  var steady = v.m === 'fine' ? ms2(v.ms) : v.m === 'overFine' ? '+' + ms2(v.ms) : h.n;
+  var title = (v.m === 'days' ? 'D-' + v.days : steady) + ' · ' + g.name;
   if(document.title !== title) document.title = title;
-  setIcon(v.m === 'days' ? String(v.days) : h.n, c[1]);
+  setIcon(v.m === 'days' ? String(v.days) : steady, c[1]);
 
   /* other goals, capped so the board stays glanceable */
   var rest = S.goals.slice(1);
@@ -597,8 +670,23 @@ function render(force){
   }
 
   el.done.hidden = !(S.edit && !g.done && v.m !== 'arrived');
+  if(v.m === 'fine' || v.m === 'overFine') fineStart();
   maybeCelebrate(g, v);
 }
+/* The fast path. Runs only inside the last ten minutes, writes only
+   the hero, and stops itself the moment the goal leaves that window.
+   Everything else - gradient, chips, tab, favicon - stays at 1 Hz. */
+var fineRaf = 0;
+function fineTick(){
+  fineRaf = 0;
+  if(!S.goals.length) return;
+  var g = S.goals[0], v = view(g, new Date());
+  if(v.m !== 'fine' && v.m !== 'overFine') return;
+  var n = heroOf(v, g).n;
+  if(prev.n !== n){ setNum(n); prev.n = n; }
+  fineRaf = requestAnimationFrame(fineTick);
+}
+function fineStart(){ if(!fineRaf) fineRaf = requestAnimationFrame(fineTick); }
 /* Focus is a rotation, not a promotion. Pulling one goal to the
    front would scramble the order, and then "previous" could not
    undo "next". Rotating keeps the ring intact, so the arrows are
@@ -632,7 +720,7 @@ function maybeCelebrate(g, v){
   if(celebrated[k]) return;
   if(v.m === 'done'){ celebrated[k] = 1; fire(v.tier); return; }
   if(v.m === 'arrived'){ celebrated[k] = 1; fire('arrived'); return; }
-  if(v.m === 'overMs' && v.ms < 3 * MIN){
+  if((v.m === 'overFine' || v.m === 'overMs') && v.ms < 3 * MIN){
     /* crossed zero with the page open. Every clock agrees on the
        deadline, so this fires at the same moment on every copy. */
     celebrated[k] = 1; fire('ontime');
@@ -858,6 +946,197 @@ function doShare(all){
   });
 }
 
+/* ---------- this screen -----------------------------------
+   Per-device, never in the link. The link carries the goal; how
+   big the number is and whether the screen sleeps is about the
+   room you are standing in, not about the goal. Sharing a link
+   must never reach across and change somebody else's display.
+------------------------------------------------------------ */
+function lsGet(k){ try { return localStorage.getItem('baaki.' + k); } catch(e){ return null; } }
+function lsSet(k, v){ try { localStorage.setItem('baaki.' + k, v); } catch(e){} }
+
+/* --- fullscreen: one key turns any old laptop into a wall board --- */
+function canFull(){
+  var e = document.documentElement;
+  return !!(e.requestFullscreen || e.webkitRequestFullscreen);
+}
+function isFull(){ return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+function toggleFull(){
+  var e = document.documentElement, p;
+  try {
+    p = isFull()
+      ? (document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen())
+      : (e.requestFullscreen ? e.requestFullscreen({ navigationUI:'hide' }) : e.webkitRequestFullscreen());
+  } catch(err){ p = null; }
+  if(p && p['catch']) p['catch'](function(){ toast('Fullscreen is not allowed here.'); });
+}
+document.addEventListener('fullscreenchange', function(){ drawOpts(); });
+document.addEventListener('webkitfullscreenchange', function(){ drawOpts(); });
+
+/* --- keep the screen awake ---
+   Deliberately not remembered. A board propped on a desk wants the
+   screen on for this sitting; a setting that outlives the sitting is
+   how a battery dies next week and nobody knows why. */
+var wake = null, wakeWant = false;
+function acquireWake(){
+  if(!wakeWant || wake || !navigator.wakeLock || document.hidden) return;
+  navigator.wakeLock.request('screen').then(function(s){
+    wake = s;
+    s.addEventListener('release', function(){ wake = null; });
+  })['catch'](function(){ wakeWant = false; drawOpts(); });
+}
+function setWake(on){
+  if(!navigator.wakeLock) return;
+  wakeWant = !!on;
+  if(wakeWant){ acquireWake(); toast('Screen stays awake until you close this.'); }
+  else {
+    if(wake){ wake.release()['catch'](function(){}); wake = null; }
+    toast('Screen may sleep again.');
+  }
+  drawOpts();
+}
+document.addEventListener('visibilitychange', function(){ if(!document.hidden) acquireWake(); });
+
+/* --- rotation lock ---
+   The API only works fullscreen or installed, so the control only
+   appears when it can actually do something. A dead toggle is worse
+   than no toggle. */
+var rotLock = false;
+function canRotate(){
+  return !!(window.screen && screen.orientation && screen.orientation.lock) &&
+         (isFull() || (window.matchMedia && matchMedia('(display-mode:standalone)').matches));
+}
+function setRot(on){
+  if(!canRotate()) return;
+  if(on){
+    screen.orientation.lock(screen.orientation.type).then(function(){
+      rotLock = true; toast('Rotation locked.'); drawOpts();
+    })['catch'](function(){ toast('This browser will not lock rotation.'); });
+  } else {
+    try { screen.orientation.unlock(); } catch(e){}
+    rotLock = false; toast('Rotation free again.'); drawOpts();
+  }
+}
+
+/* --- size of the number ---
+   Scales the hero only. The supporting lines stay put, because the
+   point is one number readable from further away, not a page that
+   zooms. */
+var STEPS = [.7, .85, 1, 1.2, 1.45, 1.75, 2.1];
+var sizeIx = 2;
+function applySize(){ document.documentElement.style.setProperty('--hero-k', STEPS[sizeIx]); }
+/* A big screen with nothing to point at is a wall board, not a desk.
+   Start it bigger there, so nobody has to go and find the setting. */
+function defaultSize(){
+  if(!window.matchMedia) return 2;
+  var big = matchMedia('(min-width:1500px)').matches;
+  var noPointer = matchMedia('(pointer:none),(pointer:coarse)').matches;
+  return (big && noPointer) ? 4 : 2;
+}
+function setSize(i, say){
+  i = Math.max(0, Math.min(STEPS.length - 1, i));
+  if(i === sizeIx && say !== 'reset') return;
+  sizeIx = i; applySize(); lsSet('size', sizeIx);
+  if(say === true) toast('Number ' + Math.round(STEPS[sizeIx] * 100) + '%');
+  drawOpts();
+}
+function bumpSize(n){ setSize(sizeIx + n, true); }
+function resetSize(){ setSize(defaultSize(), 'reset'); toast('Number reset.'); }
+
+/* ---------- update check -----------------------------------
+   A file you emailed cannot be recalled, so a downloaded copy has
+   no other way to learn it is old. 200 bytes, online only, once per
+   open. It never blocks and never nags: a dot on the "?" button,
+   and a line inside the panel if you go looking.
+------------------------------------------------------------ */
+var newer = null;
+function cmpVer(a, b){
+  var A = String(a).split('.'), B = String(b).split('.');
+  for(var i = 0; i < 3; i++){
+    var diff = (parseInt(A[i], 10) || 0) - (parseInt(B[i], 10) || 0);
+    if(diff) return diff;
+  }
+  return 0;
+}
+function checkUpdate(i){
+  i = i || 0;
+  if(!window.fetch || !navigator.onLine || i >= UPDATE_URLS.length) return;
+  fetch(UPDATE_URLS[i], { cache:'no-store' })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(j){
+      if(!j || !j.version){ checkUpdate(i + 1); return; }
+      if(cmpVer(j.version, VERSION) <= 0) return;
+      newer = j;
+      var b = $('#bAbout');
+      b.classList.add('dot');
+      b.title = 'Version ' + j.version + ' is out (?)';
+      drawOpts();
+    })['catch'](function(){ checkUpdate(i + 1); });
+}
+
+/* ---------- the "this screen" panel ---------- */
+function optRow(label){
+  var r = document.createElement('div');
+  r.className = 'opt';
+  var l = document.createElement('span');
+  l.className = 'lbl';
+  l.textContent = label;
+  r.appendChild(l);
+  return r;
+}
+function optBtn(row, text, pressed, fn){
+  var b = document.createElement('button');
+  b.type = 'button';
+  b.textContent = text;
+  if(pressed !== null) b.setAttribute('aria-pressed', pressed ? 'true' : 'false');
+  b.onclick = fn;
+  row.appendChild(b);
+  return b;
+}
+function drawOpts(){
+  var o = $('#opts');
+  if(!o) return;
+  o.innerHTML = '';
+  var r;
+  if(canFull()){
+    r = optRow('Fullscreen');
+    optBtn(r, isFull() ? 'Exit' : 'Enter', isFull(), toggleFull);
+    o.appendChild(r);
+  }
+  if(navigator.wakeLock){
+    r = optRow('Keep the screen awake');
+    optBtn(r, wakeWant ? 'On' : 'Off', wakeWant, function(){ setWake(!wakeWant); });
+    o.appendChild(r);
+  }
+  if(canRotate()){
+    r = optRow('Lock rotation');
+    optBtn(r, rotLock ? 'Locked' : 'Free', rotLock, function(){ setRot(!rotLock); });
+    o.appendChild(r);
+  }
+  r = optRow('Size of the number');
+  optBtn(r, '−', null, function(){ bumpSize(-1); });
+  var val = document.createElement('span');
+  val.className = 'val';
+  val.textContent = Math.round(STEPS[sizeIx] * 100) + '%';
+  r.appendChild(val);
+  optBtn(r, '+', null, function(){ bumpSize(1); });
+  optBtn(r, 'Reset', null, resetSize);
+  o.appendChild(r);
+
+  var u = $('#upd');
+  u.innerHTML = '';
+  u.hidden = !newer;
+  if(newer){
+    u.appendChild(document.createTextNode('Version ' + newer.version + ' is out. '));
+    var a = document.createElement('a');
+    a.href = newer.url || 'https://j333t.github.io/baaki/';
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.textContent = 'Get it';
+    u.appendChild(a);
+  }
+}
+
 /* ---------- keyboard + swipe ---------- */
 var KEYS = [
   ['← →', 'previous / next goal'],
@@ -867,6 +1146,10 @@ var KEYS = [
   ['S', 'share'],
   ['D', 'mark done'],
   ['T', 'light / dark'],
+  ['F', 'fullscreen'],
+  ['W', 'keep the screen awake'],
+  ['+ −', 'bigger / smaller number'],
+  ['0', 'reset the size'],
   ['?', 'this panel'],
   ['Esc', 'close']
 ];
@@ -897,12 +1180,17 @@ document.addEventListener('keydown', function(e){
   if(e.key === 'ArrowLeft'){ e.preventDefault(); cycleFocus(-1); return; }
   if(e.key === 'Tab' && S.goals.length > 1){ e.preventDefault(); cycleFocus(e.shiftKey ? -1 : 1); return; }
   if(e.key >= '1' && e.key <= '9'){ focusGoal(+e.key - 1); return; }
+  if(e.key === '+' || e.key === '='){ e.preventDefault(); bumpSize(1); return; }
+  if(e.key === '-' || e.key === '_'){ e.preventDefault(); bumpSize(-1); return; }
+  if(e.key === '0'){ e.preventDefault(); resetSize(); return; }
 
   switch(e.key.toLowerCase()){
     case 'g': e.preventDefault(); openDlg(); break;
     case 's': e.preventDefault(); openShare(); break;
     case 'd': if(!el.done.hidden) markDone(); break;
     case 't': $('#bTheme').click(); break;
+    case 'f': e.preventDefault(); toggleFull(); break;
+    case 'w': setWake(!wakeWant); break;
     case '?': case '/': e.preventDefault(); openAbout(); break;
   }
 });
@@ -923,6 +1211,7 @@ document.addEventListener('touchend', function(e){
 /* ---------- about ---------- */
 function openAbout(){
   drawKeys();
+  drawOpts();
   if(!el.about.open) el.about.showModal();
 }
 
@@ -941,6 +1230,8 @@ el.dlg.addEventListener('click', function(e){ if(outsideClick(el.dlg, e)) el.dlg
 el.about.addEventListener('click', function(e){ if(outsideClick(el.about, e)) el.about.close(); });
 el.dlg.addEventListener('close', resetForm);
 
+$('#bFull').onclick = toggleFull;
+$('#bFull').hidden = !canFull();
 $('#bTheme').onclick = function(){
   var light = document.documentElement.dataset.theme === 'light';
   document.documentElement.dataset.theme = light ? 'dark' : 'light';
@@ -980,6 +1271,12 @@ try {
   else if(window.matchMedia('(prefers-color-scheme: light)').matches) document.documentElement.dataset.theme = 'light';
 } catch(e){}
 
+/* size is remembered per device; a screen nobody has sized yet gets
+   the guess from defaultSize() */
+var savedSize = lsGet('size');
+sizeIx = savedSize === null ? defaultSize() : Math.max(0, Math.min(STEPS.length - 1, parseInt(savedSize, 10) || 0));
+applySize();
+
 load();
 /* Normalise the address on arrival: drops junk tokens and settles
    encoding, so the next Share hands over a clean link. */
@@ -988,6 +1285,7 @@ render(true);
 setInterval(function(){ render(false); }, 1000);
 if(!S.goals.length) setTimeout(openDlg, 350);
 syncPull();
+checkUpdate();
 
 /* offline-from-a-URL needs sw.js next to this file. Harmless without it. */
 if('serviceWorker' in navigator && location.protocol.indexOf('http') === 0){

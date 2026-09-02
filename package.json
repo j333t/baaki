@@ -1,6 +1,6 @@
 {
   "name": "baaki",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A deadline countdown. The link carries the goal.",
   "scripts": {
     "test": "node test.mjs",

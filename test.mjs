@@ -97,7 +97,7 @@ ok('over by minutes: +M:SS', r.num, '+40:00');
 ok('over by minutes: unit', r.unit, 'minutes over');
 
 r = await open('#Ship~2026-09-02T09:59');
-ok('just over: seconds tick', r.num, '+1:00');
+ok('just over: seconds tick, now with tenths', r.num, '+1:00.0');
 
 console.log('\n--- something good, not a deadline ---');
 
@@ -327,6 +327,142 @@ ok('the rest collapse', r.chips[7], '+3 more');
 ok('and we mention it', (await page.locator('#snark').textContent()).trim().length > 0, true);
 r = await open('#One~2027-01-01+Two~2027-02-01');
 ok('no snark for a sane number of goals', (await page.locator('#snark').textContent()).trim(), '');
+
+console.log('\n--- the last ten minutes: tenths ---');
+// a target written down to the second used to drop the goal entirely
+r = await open('#New%20Year~2027-01-01T00:00:00');
+ok('seconds in a target still parse', r.name, 'New Year');
+ok('seconds: the number is right', r.num, '121');
+r = await open('#Ship~2026-09-02T10:07:30');
+ok('seconds land on the tenths rung', r.num, '7:30.0');
+ok('seconds survive the round trip', r.hash, '#Ship~2026-09-02T10:07:30');
+r = await open('#Ship~2026-09-02T10:07:00');
+ok('a zero second is not written back', r.hash, '#Ship~2026-09-02T10:07');
+
+
+// the rung opens under ten minutes and not a moment sooner
+r = await open('#Ship~2026-09-02T10:11');
+ok('11 min out: still whole seconds', r.num, '11:00');
+r = await open('#Ship~2026-09-02T10:09');
+ok('9 min out: tenths appear', r.num, '9:00.0');
+ok('9 min out: unit unchanged', r.unit, 'minutes');
+ok('the tenths are their own dim element', await page.locator('#num .dec').textContent(), '.0');
+ok('the seconds stay the number you read', await page.locator('#num span').first().textContent(), '9:00');
+
+// the tab and the favicon must not flicker ten times a second
+ok('title stays on whole seconds', r.title, '9:00 · Ship');
+
+// chips never carry tenths - seven of them at 10 Hz is a slot machine
+r = await open('#Metro~2027-11-03+Ship~2026-09-02T10:09');
+ok('chips stay coarse', r.chips[0].includes('9:00.'), false);
+ok('chips still tick in seconds', r.chips[0].includes('9:00'), true);
+
+// mirrored, the same way the rest of the ladder is
+r = await open('#Ship~2026-09-02T09:55');
+ok('5 min over: tenths mirror', r.num, '+5:00.0');
+ok('5 min over: unit', r.unit, 'minutes over');
+r = await open('#Ship~2026-09-02T09:49');
+ok('11 min over: back to whole seconds', r.num, '+11:00');
+
+// the zero-hour celebration used to live entirely inside the old rung
+r = await open('#Ship~2026-09-02T09:59');
+ok('1 min over: still celebrates at zero', await page.locator('#hero').getAttribute('class'), 'pop');
+
+// a request for less motion turns the rung off rather than slowing it down
+{
+  const calm = await browser.newContext({ timezoneId: TZ, locale: 'en-IN', colorScheme: 'dark',
+    reducedMotion: 'reduce', viewport: { width: 1100, height: 700 } });
+  const cp = await calm.newPage();
+  await cp.clock.setFixedTime(new Date(NOW));
+  await cp.goto(FILE + '#Ship~2026-09-02T10:09');
+  await cp.waitForTimeout(220);
+  ok('reduced motion: no tenths at all', (await cp.locator('#num').textContent()).trim(), '9:00');
+  await calm.close();
+}
+
+console.log('\n--- this screen: per-device, never in the link ---');
+
+r = await open('#Ship~2027-01-01');
+const hashBefore = r.hash;
+const subBefore = await page.evaluate(() => getComputedStyle(document.querySelector('#sub')).fontSize);
+const heroK = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--hero-k').trim());
+
+await page.keyboard.press('+');
+await page.keyboard.press('+');
+await page.waitForTimeout(80);
+ok('+ grows the number', await heroK(), '1.45');
+ok('it scales the hero only', await page.evaluate(() => getComputedStyle(document.querySelector('#sub')).fontSize), subBefore);
+ok('size never touches the link', await page.evaluate(() => location.hash), hashBefore);
+
+await page.keyboard.press('-');
+await page.waitForTimeout(80);
+ok('- shrinks it back a step', await heroK(), '1.2');
+
+// it is about this screen, so it has to survive a reload
+r = await open('#Ship~2027-01-01');
+ok('size is remembered on this device', await heroK(), '1.2');
+
+await page.keyboard.press('0');
+await page.waitForTimeout(80);
+ok('0 puts it back', await heroK(), '1');
+
+// the panel
+await page.keyboard.press('?');
+await page.waitForTimeout(150);
+const labels = await page.locator('#opts .lbl').allTextContents();
+ok('the panel offers a size control', labels.includes('Size of the number'), true);
+ok('fullscreen is offered where it works', labels.includes('Fullscreen'), true);
+ok('rotation lock stays hidden until it could work', labels.includes('Lock rotation'), false);
+ok('nothing shouts about an update by default', await page.locator('#upd').isVisible(), false);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(120);
+
+// a wall board is a big screen with nothing to point at
+{
+  const tv = await browser.newContext({ timezoneId: TZ, locale: 'en-IN', colorScheme: 'dark',
+    viewport: { width: 1920, height: 1080 }, hasTouch: true, isMobile: false });
+  const tp = await tv.newPage();
+  await tp.clock.setFixedTime(new Date(NOW));
+  await tp.goto(FILE + '#Ship~2027-01-01');
+  await tp.waitForTimeout(220);
+  const k = await tp.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--hero-k').trim());
+  ok('a big screen with no mouse starts bigger', Number(k) > 1, true);
+  await tv.close();
+}
+
+console.log('\n--- update check: quiet, or silent ---');
+
+// a downloaded file has no other way to learn it is old
+await page.route('**/version.json', route =>
+  route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ version: '9.9.9', url: 'https://example.com/' }) }));
+r = await open('#Ship~2027-01-01');
+await page.waitForTimeout(500);
+ok('a newer version puts a dot on "?"', await page.locator('#bAbout').evaluate(b => b.classList.contains('dot')), true);
+await page.keyboard.press('?');
+await page.waitForTimeout(150);
+ok('and one line inside the panel', (await page.locator('#upd').textContent()).includes('9.9.9'), true);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(120);
+await page.unroute('**/version.json');
+
+// the same version is not news
+await page.route('**/version.json', route =>
+  route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ version: '1.1.0' }) }));
+r = await open('#Ship~2027-01-01');
+await page.waitForTimeout(500);
+ok('the current version says nothing', await page.locator('#bAbout').evaluate(b => b.classList.contains('dot')), false);
+await page.unroute('**/version.json');
+
+// and a host that will not answer must never be visible
+await page.route('**/version.json', route => route.abort());
+r = await open('#Ship~2027-01-01');
+await page.waitForTimeout(500);
+ok('a dead host is silent', await page.locator('#bAbout').evaluate(b => b.classList.contains('dot')), false);
+ok('and the board is unharmed', r.num, '121');
+await page.unroute('**/version.json');
+
+// leave the device clean, or every screenshot below inherits a size
+await page.evaluate(() => localStorage.removeItem('baaki.size'));
 
 console.log('\n--- screenshots ---');
 const shots = [

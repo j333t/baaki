@@ -1,7 +1,7 @@
 /* Makes the hosted page work with the network off.
    First visit online caches it; after that it opens on a plane.
    Not needed for the downloaded file - that is offline by nature. */
-const CACHE = 'baaki-v1';
+const CACHE = 'baaki-v2';
 const ASSETS = ['./', './index.html', './baaki.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -24,6 +24,7 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
   if (url.origin !== location.origin) return;          // never touch analytics or sync
+  if (url.pathname.endsWith('version.json')) return;   // the update check must never read a cache
   e.respondWith(
     caches.match(e.request).then(hit =>
       hit || fetch(e.request).then(res => {
