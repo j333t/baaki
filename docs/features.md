@@ -92,6 +92,8 @@ Per-device, never in the link. Sharing a board must never reach across and chang
 | A big screen with no pointer starts bigger | That is a wall, not a desk. "TV mode" is not a mode; it is a better default. |
 | Rotation lock appears only when it could work | The browser API needs fullscreen or an installed app. A toggle that silently does nothing is worse than no toggle. |
 | All of it lives under `?` | The main screen keeps one number on it. Anything requiring a choice hides behind a key, which is the second rubric test. |
+| A sound at zero, off by default | The old blanket "no sound" was protecting against a board that makes noise *at* you. A sound you deliberately switch on for the last ten seconds of a launch is the opposite of that. |
+| Sound is remembered, keep-awake is not | Different risks. Sound goes wrong as noise in the wrong room, and only inside the last ten seconds of a deadline. Keep-awake goes wrong as a flat battery next Tuesday, whether or not you are looking. |
 
 ## Distribution
 
@@ -105,4 +107,8 @@ Per-device, never in the link. Sharing a board must never reach across and chang
 | GA4 off by default | It only counts opens of a hosted link. Worth having, not worth pretending it measures use. |
 | Update check against a 200-byte `version.json` | A file you emailed cannot be recalled. This is the only channel a downloaded copy has, and it costs a fifth of a kilobyte. |
 | It is a dot, not a banner | The board is something you walk past. Anything that interrupts that has already broken it. Silent offline, silent when the host does not answer. |
+| A QR code on `Q` | A board on a projector is useless until the link is in somebody's hand, and nobody types a URL off a wall. This is the only path from a screen to a pocket. |
+| The code is always dark on light | It is not decoration. A themed code that half-scans has cost somebody more time than it saved. |
+| It refuses rather than degrades | Past about 270 characters it says the board is too long instead of drawing something a camera cannot read. A code that does not scan is worse than no code. |
+| The encoder is checked by a real decoder | `npm run test:qr` reads its own output back with `jsqr`. Eyeballing a QR tells you nothing — v1 to v6 looked perfect while every code from v7 up was unreadable. |
 | Two candidate URLs, tried in order | A host that will not send CORS headers is invisible to a file opened from a disk, and you find that out only in the field. |

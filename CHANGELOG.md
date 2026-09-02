@@ -20,6 +20,31 @@ Anything that changes the **link format** is a breaking change and needs a major
 
 ---
 
+## 1.2.0 — unreleased
+
+Two things that do something, and one that was measured and dropped.
+
+### A code to scan
+- **`Q` draws a QR of the board.** A board on a projector is useless until the link is in somebody's hand, and nobody types a URL off a wall. Byte mode, error correction L, versions 1 to 10 — about 270 characters, which is a board with six or seven goals on it. Past that it says so, rather than drawing something unscannable.
+- **Always dark on light, in both themes.** A code is not decoration; it either scans or it wastes somebody's time.
+- **Verified against a real decoder**, not by eye. `npm run test:qr` renders each version and reads it back with `jsqr`. That is how the encoder bug below was found, and it is the only way this could have been trusted.
+- **Bug the decoder caught:** from version 7 there are alignment patterns sitting *on* the timing lines. The obvious "skip any module already reserved" test drops them, and every code from v7 up came out unreadable while v1–v6 looked perfect. Only the three corners holding a finder should be skipped.
+
+### A sound at zero, if you ask for it
+- **`M` turns on ten ticks and a chime.** Off until somebody switches it on, per device, never in the link — a board that makes a noise in a room it was not invited into is a different and much worse product, which is what the old blanket "no sound" rule was really protecting against.
+- **This one *is* remembered**, unlike keep-awake. The risk it carries is noise in the wrong room, and that only happens inside the last ten seconds of a deadline. The risk keep-awake carries is a flat battery next Tuesday, which happens whether you are looking or not.
+- It is also the thing the tenths rung was built for.
+
+### Measured and not built
+- **The `z.` compressed fragment loses.** Measured on real boards: it is *longer* for one to four goals with long names, and longer at every single count with ordinary short names like "Ship" or "Launch". It only starts winning at five long-named goals, and only by 4%. The backlog's own rule was "only when it's actually shorter" — so it is not built, and the numbers are in `backlog.md` so it stops coming back.
+
+### Under it
+- **The desktop build was broken and CI proved it.** `desktop/dist/index.html` is generated, so it is gitignored, so the folder is empty, so git never creates it on a fresh checkout and `sync-dist.mjs` had nothing to copy into. A machine that had ever run a local build would never have seen this. It now makes the directory.
+- 152 browser checks plus 9 decoder checks, up from 137.
+- **55 KB → 69 KB.** The QR encoder is about 10 KB of that and it is by far the most expensive thing in the file. It earns it by being the only way a board gets off a wall and into a pocket — but this is the last one that gets to cost that much.
+
+---
+
 ## 1.1.0 — unreleased
 
 Shipped 1.0.0 first, then this. The order mattered: until the thing is

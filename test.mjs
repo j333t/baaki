@@ -464,6 +464,84 @@ await page.unroute('**/version.json');
 // leave the device clean, or every screenshot below inherits a size
 await page.evaluate(() => localStorage.removeItem('baaki.size'));
 
+console.log('\n--- a code to scan ---');
+
+r = await open('#Ship~2027-01-01');
+ok('nothing on screen until asked', await page.locator('#qr').isVisible(), false);
+await page.keyboard.press('q');
+await page.waitForTimeout(200);
+ok('q draws one', await page.locator('#qr').isVisible(), true);
+
+const qr = await page.evaluate(() => {
+  const cv = document.querySelector('#qrCv');
+  const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+  let dark = 0;
+  for (let i = 0; i < d.length; i += 4) if (d[i] < 128) dark++;
+  return { side: cv.width, dark };
+});
+ok('it is a real grid, not an empty box', qr.dark > 100, true);
+ok('a short link picks a small version', (qr.side - 8 - 17) / 4 <= 5, true);
+ok('always dark on light, whatever the theme', qr.dark < qr.side * qr.side, true);
+
+// it carries what you are looking at, and never the Done button
+r = await open('#Ship~2027-01-01+Later~2027-06-01+!edit');
+await page.keyboard.press('q');
+await page.waitForTimeout(200);
+ok('the code mentions how many goals it carries', (await page.locator('#qrNote').textContent()).includes('2'), true);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(120);
+ok('Esc closes it', await page.locator('#qr').isVisible(), false);
+
+// a board too big for a code says so rather than drawing something unscannable
+r = await open('#' + Array.from({length: 14}, (_, i) => encodeURIComponent(`A rather long milestone name ${i + 1}`) + `~2027-0${(i % 9) + 1}-15`).join('+'));
+await page.keyboard.press('q');
+await page.waitForTimeout(200);
+ok('too long: it says so', (await page.locator('#qrNote').textContent()).includes('too long'), true);
+ok('too long: and draws nothing', await page.evaluate(() => document.querySelector('#qrCv').width <= 1), true);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(120);
+
+console.log('\n--- sound: off until you ask ---');
+
+await page.evaluate(() => localStorage.removeItem('baaki.sound'));
+r = await open('#Ship~2027-01-01');
+await page.keyboard.press('?');
+await page.waitForTimeout(150);
+let soundBtn = page.locator('#opts .opt', { hasText: 'Sound at zero' }).locator('button');
+ok('a board is silent until somebody switches it on', await soundBtn.textContent(), 'Off');
+await page.keyboard.press('Escape');
+await page.waitForTimeout(120);
+
+const hashPre = await page.evaluate(() => location.hash);
+await page.keyboard.press('m');
+await page.waitForTimeout(150);
+await page.keyboard.press('?');
+await page.waitForTimeout(150);
+soundBtn = page.locator('#opts .opt', { hasText: 'Sound at zero' }).locator('button');
+ok('m turns it on', await soundBtn.textContent(), 'On');
+await page.keyboard.press('Escape');
+await page.waitForTimeout(120);
+ok('sound never touches the link', await page.evaluate(() => location.hash), hashPre);
+
+// unlike keep-awake, this one is a preference and is remembered
+r = await open('#Ship~2027-01-01');
+await page.keyboard.press('?');
+await page.waitForTimeout(150);
+soundBtn = page.locator('#opts .opt', { hasText: 'Sound at zero' }).locator('button');
+ok('and it is remembered on this device', await soundBtn.textContent(), 'On');
+await page.keyboard.press('Escape');
+await page.waitForTimeout(120);
+
+// the last ten seconds are where it earns its place, and it must not throw there
+const errs = [];
+page.on('pageerror', e => errs.push(e.message));
+r = await open('#Ship~2026-09-02T10:00:08');
+await page.waitForTimeout(400);
+ok('ticking through the last ten seconds is quiet code', errs.length, 0);
+ok('and the number is where it should be', r.num, '0:08.0');
+
+await page.evaluate(() => localStorage.removeItem('baaki.sound'));
+
 console.log('\n--- screenshots ---');
 const shots = [
   ['far-dark',   '#Metro%20Phase%202~2027-11-03', 'dark'],

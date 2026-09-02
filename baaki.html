@@ -142,6 +142,8 @@ kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;background:var(--pa
   text-align:center;font-size:var(--f0)}
 #upd{font-size:var(--f0);color:var(--ink);opacity:.85}
 #upd a{color:var(--ink)}
+.qrbox{display:flex;justify-content:center;background:#fff;border-radius:12px;padding:var(--s3)}
+#qrCv{image-rendering:pixelated;image-rendering:crisp-edges;width:100%;max-width:260px;height:auto}
 .dev{font-size:1.6rem;letter-spacing:.04em;opacity:.9;font-weight:400}
 .story{font-size:var(--f1);color:var(--dim);line-height:1.65}
 .story b{color:var(--ink);font-weight:500}
@@ -198,6 +200,13 @@ kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;background:var(--pa
   </form>
 </div></dialog>
 
+<dialog id="qr"><div class="dlg">
+  <h2>Point a phone at it</h2>
+  <div class="qrbox"><canvas id="qrCv" width="1" height="1"></canvas></div>
+  <div class="hint" id="qrNote"></div>
+  <div class="acts"><button type="button" class="b" id="bQrClose">Close</button></div>
+</div></dialog>
+
 <dialog id="about"><div class="dlg">
   <h2>Baaki <span class="dev">&#2348;&#2366;&#2325;&#2368;</span></h2>
   <p class="story">
@@ -244,7 +253,7 @@ kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;background:var(--pa
               Empty = fully offline; the link carries the done stamp.
    GA_ID    : GA4 measurement id, e.g. 'G-ABC1234XYZ'. Online only.
    ============================================================ */
-var VERSION  = '1.1.0';
+var VERSION  = '1.2.0';
 var SYNC_URL = '';
 var GA_ID    = '';
 /* UPDATE : a 200-byte {"version","url"} somewhere online. Two candidates,
@@ -264,7 +273,7 @@ function $(s){ return document.querySelector(s); }
 var el = {
   name:$('#name'), num:$('#num'), unit:$('#unit'), sub:$('#sub'), tag:$('#tag'),
   others:$('#others'), snark:$('#snark'), done:$('#bDone'), toast:$('#toast'),
-  rows:$('#rows'), dlg:$('#dlg'), about:$('#about'), hero:$('#hero')
+  rows:$('#rows'), dlg:$('#dlg'), about:$('#about'), hero:$('#hero'), qr:$('#qr')
 };
 
 /* ---------- link format ------------------------------------
@@ -671,6 +680,7 @@ function render(force){
 
   el.done.hidden = !(S.edit && !g.done && v.m !== 'arrived');
   if(v.m === 'fine' || v.m === 'overFine') fineStart();
+  soundTick(v);
   maybeCelebrate(g, v);
 }
 /* The fast path. Runs only inside the last ten minutes, writes only
@@ -684,6 +694,7 @@ function fineTick(){
   if(v.m !== 'fine' && v.m !== 'overFine') return;
   var n = heroOf(v, g).n;
   if(prev.n !== n){ setNum(n); prev.n = n; }
+  soundTick(v);
   fineRaf = requestAnimationFrame(fineTick);
 }
 function fineStart(){ if(!fineRaf) fineRaf = requestAnimationFrame(fineTick); }
@@ -734,6 +745,7 @@ var PAL = {
 };
 function fire(tier){
   if(!tier) tier = 'ontime';
+  chime(tier);
   var spec = tier === 'early'   ? {n:240, v:15, g:.26}
            : tier === 'arrived' ? {n:300, v:16, g:.22}
            : tier === 'ontime'  ? {n:150, v:12, g:.24}
@@ -901,6 +913,281 @@ function drawRows(){
   });
 }
 
+/* ---------- QR: getting the board off the wall -------------
+   A board on a projector is useless until the link is in
+   somebody's hand, and nobody types a URL off a screen. So the
+   board draws its own code.
+
+   Byte mode, error correction L, versions 1 to 10 - about 270
+   characters, which is a board with several goals on it. Past
+   that it says so, rather than drawing something unscannable.
+
+   Always dark-on-light, in both themes. A code is not decoration;
+   it either scans or it wastes somebody's time.
+------------------------------------------------------------ */
+
+/* per version, at level L: error-correction codewords per block,
+   then the data codewords in each block */
+var QR_EC = [
+  [7,  [19]],       [10, [34]],       [15, [55]],   [20, [80]],
+  [26, [108]],      [18, [68,68]],    [20, [78,78]], [24, [97,97]],
+  [30, [116,116]],  [18, [68,68,69,69]]
+];
+/* alignment-pattern centres; versions 1 and 2 indexed from 0 */
+var QR_ALIGN = ['', '', '6,18', '6,22', '6,26', '6,30', '6,34',
+                '6,22,38', '6,24,42', '6,26,46', '6,28,50'];
+
+/* GF(256), the field the Reed-Solomon codes live in */
+var GEXP = [], GLOG = [];
+(function(){
+  for(var i = 0, x = 1; i < 256; i++){
+    GEXP[i] = x;
+    if(GLOG[x] === undefined) GLOG[x] = i;
+    x <<= 1;
+    if(x & 256) x ^= 285;
+  }
+})();
+function gmul(a, b){ return (a && b) ? GEXP[(GLOG[a] + GLOG[b]) % 255] : 0; }
+
+/* generator polynomial, highest degree first */
+function rsPoly(n){
+  var p = [1];
+  for(var i = 0; i < n; i++){
+    var q = [], j;
+    for(j = 0; j <= p.length; j++) q.push(0);
+    for(j = 0; j < p.length; j++){
+      q[j] ^= p[j];
+      q[j + 1] ^= gmul(p[j], GEXP[i]);
+    }
+    p = q;
+  }
+  return p;
+}
+function rsEc(data, n){
+  var g = rsPoly(n), r = data.slice(), i, j;
+  for(i = 0; i < n; i++) r.push(0);
+  for(i = 0; i < data.length; i++){
+    var c = r[i];
+    if(!c) continue;
+    for(j = 0; j < g.length; j++) r[i + j] ^= gmul(g[j], c);
+  }
+  return r.slice(data.length);
+}
+
+/* the URL as bytes. Surrogate pairs matter: somebody will put an
+   emoji in a goal name, and a broken pair is a broken code. */
+function utf8(s){
+  var b = [], i, c;
+  for(i = 0; i < s.length; i++){
+    c = s.charCodeAt(i);
+    if(c >= 0xD800 && c <= 0xDBFF && i + 1 < s.length){
+      c = 0x10000 + ((c - 0xD800) << 10) + (s.charCodeAt(++i) - 0xDC00);
+    }
+    if(c < 0x80) b.push(c);
+    else if(c < 0x800) b.push(0xC0 | c >> 6, 0x80 | c & 63);
+    else if(c < 0x10000) b.push(0xE0 | c >> 12, 0x80 | (c >> 6) & 63, 0x80 | c & 63);
+    else b.push(0xF0 | c >> 18, 0x80 | (c >> 12) & 63, 0x80 | (c >> 6) & 63, 0x80 | c & 63);
+  }
+  return b;
+}
+
+/* BCH remainder, used by both the format and the version bits */
+function bch(v, gen, deg){
+  var d = v;
+  while(bitLen(d) >= deg + 1) d ^= gen << (bitLen(d) - deg - 1);
+  return d;
+}
+function bitLen(x){ var n = 0; while(x){ n++; x >>>= 1; } return n; }
+
+/* returns an n x n array of 0/1, or null if the text will not fit */
+function qrMatrix(text){
+  var bytes = utf8(text), i, j, k, v = 0, dataCw = 0;
+  for(i = 0; i < QR_EC.length; i++){
+    var d = 0;
+    for(j = 0; j < QR_EC[i][1].length; j++) d += QR_EC[i][1][j];
+    if(bytes.length <= Math.floor((d * 8 - (i + 1 >= 10 ? 20 : 12)) / 8)){
+      v = i + 1; dataCw = d; break;
+    }
+  }
+  if(!v) return null;
+
+  /* mode indicator, length, payload, terminator, pad */
+  var bits = [];
+  function put(val, len){ for(var b = len - 1; b >= 0; b--) bits.push((val >> b) & 1); }
+  put(4, 4);
+  put(bytes.length, v >= 10 ? 16 : 8);
+  for(i = 0; i < bytes.length; i++) put(bytes[i], 8);
+  put(0, Math.min(4, dataCw * 8 - bits.length));
+  while(bits.length % 8) bits.push(0);
+  var cw = [];
+  for(i = 0; i < bits.length; i += 8){
+    var b8 = 0;
+    for(j = 0; j < 8; j++) b8 = (b8 << 1) | bits[i + j];
+    cw.push(b8);
+  }
+  var pad = [236, 17], p = 0;
+  while(cw.length < dataCw) cw.push(pad[p++ & 1]);
+
+  /* split into blocks, add error correction, interleave */
+  var ecLen = QR_EC[v - 1][0], sizes = QR_EC[v - 1][1];
+  var dB = [], eB = [], off = 0, maxD = 0;
+  for(i = 0; i < sizes.length; i++){
+    var blk = cw.slice(off, off + sizes[i]);
+    off += sizes[i];
+    if(sizes[i] > maxD) maxD = sizes[i];
+    dB.push(blk); eB.push(rsEc(blk, ecLen));
+  }
+  var out = [];
+  for(i = 0; i < maxD; i++) for(j = 0; j < dB.length; j++) if(i < dB[j].length) out.push(dB[j][i]);
+  for(i = 0; i < ecLen; i++) for(j = 0; j < eB.length; j++) out.push(eB[j][i]);
+
+  /* the grid, and a parallel map of what is a function pattern
+     and therefore never masked and never carries data */
+  var n = v * 4 + 17;
+  var m = [], res = [];
+  for(i = 0; i < n; i++){
+    m.push([]); res.push([]);
+    for(j = 0; j < n; j++){ m[i].push(0); res[i].push(0); }
+  }
+  function finder(r, c){
+    for(var dr = -1; dr <= 7; dr++) for(var dc = -1; dc <= 7; dc++){
+      var rr = r + dr, cc = c + dc;
+      if(rr < 0 || rr >= n || cc < 0 || cc >= n) continue;
+      var on = (dr >= 0 && dr <= 6 && (dc === 0 || dc === 6)) ||
+               (dc >= 0 && dc <= 6 && (dr === 0 || dr === 6)) ||
+               (dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4);
+      m[rr][cc] = on ? 1 : 0;
+      res[rr][cc] = 1;
+    }
+  }
+  finder(0, 0); finder(0, n - 7); finder(n - 7, 0);
+
+  for(i = 8; i < n - 8; i++){
+    m[6][i] = (i % 2 === 0) ? 1 : 0; res[6][i] = 1;
+    m[i][6] = (i % 2 === 0) ? 1 : 0; res[i][6] = 1;
+  }
+
+  var ap = QR_ALIGN[v] ? QR_ALIGN[v].split(',') : [];
+  for(i = 0; i < ap.length; i++) for(j = 0; j < ap.length; j++){
+    var ar = +ap[i], ac = +ap[j];
+    /* The three corners that already hold a finder are skipped - and
+       only those. Testing "is this module reserved" instead looks
+       right and is wrong: from version 7 there are alignment patterns
+       sitting on the timing lines, which are reserved too, and
+       dropping them makes every code from v7 up unreadable. */
+    if((ar === 6 && ac === 6) || (ar === 6 && ac === n - 7) || (ar === n - 7 && ac === 6)) continue;
+    for(var dr2 = -2; dr2 <= 2; dr2++) for(var dc2 = -2; dc2 <= 2; dc2++){
+      m[ar + dr2][ac + dc2] = (Math.max(Math.abs(dr2), Math.abs(dc2)) !== 1) ? 1 : 0;
+      res[ar + dr2][ac + dc2] = 1;
+    }
+  }
+
+  m[n - 8][8] = 1; res[n - 8][8] = 1;            // the one module that is always dark
+  for(i = 0; i <= 8; i++){ res[8][i] = 1; res[i][8] = 1; }
+  for(i = n - 8; i < n; i++){ res[8][i] = 1; res[i][8] = 1; }
+
+  if(v >= 7){
+    var vbits = (v << 12) | bch(v << 12, 0x1F25, 12);
+    for(i = 0; i < 18; i++){
+      var vb = (vbits >> i) & 1, vr = Math.floor(i / 3), vc = i % 3;
+      m[vr][n - 11 + vc] = vb; res[vr][n - 11 + vc] = 1;
+      m[n - 11 + vc][vr] = vb; res[n - 11 + vc][vr] = 1;
+    }
+  }
+
+  /* the zigzag, two columns at a time, skipping the timing column */
+  var idx = 0, bit = 0, up = true;
+  for(var col = n - 1; col > 0; col -= 2){
+    if(col === 6) col--;
+    for(k = 0; k < n; k++){
+      var row = up ? n - 1 - k : k;
+      for(var s = 0; s < 2; s++){
+        var cc2 = col - s;
+        if(res[row][cc2]) continue;
+        m[row][cc2] = (idx < out.length) ? (out[idx] >> (7 - bit)) & 1 : 0;
+        if(++bit === 8){ bit = 0; idx++; }
+      }
+    }
+    up = !up;
+  }
+
+  /* eight masks; the spec picks the least ugly one, and "ugly"
+     here means "hard for a camera", so it is worth doing properly */
+  function maskAt(mk, r, c){
+    switch(mk){
+      case 0: return (r + c) % 2 === 0;
+      case 1: return r % 2 === 0;
+      case 2: return c % 3 === 0;
+      case 3: return (r + c) % 3 === 0;
+      case 4: return (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0;
+      case 5: return (r * c) % 2 + (r * c) % 3 === 0;
+      case 6: return ((r * c) % 2 + (r * c) % 3) % 2 === 0;
+      default: return ((r + c) % 2 + (r * c) % 3) % 2 === 0;
+    }
+  }
+  function penalty(g){
+    var s = 0, r, c, run, dark = 0;
+    for(r = 0; r < n; r++){                       // runs in rows and columns
+      run = 1;
+      for(c = 1; c < n; c++){
+        if(g[r][c] === g[r][c - 1]) run++;
+        else { if(run >= 5) s += 3 + run - 5; run = 1; }
+      }
+      if(run >= 5) s += 3 + run - 5;
+    }
+    for(c = 0; c < n; c++){
+      run = 1;
+      for(r = 1; r < n; r++){
+        if(g[r][c] === g[r - 1][c]) run++;
+        else { if(run >= 5) s += 3 + run - 5; run = 1; }
+      }
+      if(run >= 5) s += 3 + run - 5;
+    }
+    for(r = 0; r < n - 1; r++) for(c = 0; c < n - 1; c++){  // 2x2 blocks
+      if(g[r][c] === g[r][c + 1] && g[r][c] === g[r + 1][c] && g[r][c] === g[r + 1][c + 1]) s += 3;
+    }
+    var pat = '10111010000', pat2 = '00001011101';          // finder-lookalikes
+    for(r = 0; r < n; r++){
+      var rowS = '', colS = '';
+      for(c = 0; c < n; c++){ rowS += g[r][c]; colS += g[c][r]; }
+      s += 40 * (count(rowS, pat) + count(rowS, pat2) + count(colS, pat) + count(colS, pat2));
+    }
+    for(r = 0; r < n; r++) for(c = 0; c < n; c++) if(g[r][c]) dark++;
+    s += 10 * Math.floor(Math.abs(dark * 100 / (n * n) - 50) / 5);
+    return s;
+  }
+  function count(s, sub){
+    var c = 0, i = 0;
+    while((i = s.indexOf(sub, i)) >= 0){ c++; i++; }
+    return c;
+  }
+
+  var best = null, bestScore = Infinity;
+  for(var mk = 0; mk < 8; mk++){
+    var g = [];
+    for(i = 0; i < n; i++){
+      g.push([]);
+      for(j = 0; j < n; j++) g[i].push(res[i][j] ? m[i][j] : (m[i][j] ^ (maskAt(mk, i, j) ? 1 : 0)));
+    }
+    /* format bits: 01 for level L, then the mask */
+    var fv = (1 << 3) | mk;
+    var fbits = (((fv << 10) | bch(fv << 10, 0x537, 10)) ^ 0x5412);
+    for(i = 0; i < 15; i++){
+      var fb = (fbits >> i) & 1;
+      if(i < 6) g[i][8] = fb;
+      else if(i < 8) g[i + 1][8] = fb;
+      else g[n - 15 + i][8] = fb;
+      if(i < 8) g[8][n - 1 - i] = fb;
+      else if(i < 9) g[8][15 - i - 1 + 1] = fb;
+      else g[8][15 - i - 1] = fb;
+    }
+    g[n - 8][8] = 1;
+    var sc = penalty(g);
+    if(sc < bestScore){ bestScore = sc; best = g; }
+  }
+  return best;
+}
+
 /* ---------- share: this one, or all ---------- */
 var shareOpen = false;
 function closeShare(){
@@ -923,11 +1210,13 @@ function openShare(){
   wrap.style.display = 'flex';
   wrap.style.gap = '6px';
   wrap.innerHTML = '<button class="b" id="shOne">This one</button>' +
-                   '<button class="b" id="shAll">All ' + S.goals.length + '</button>';
+                   '<button class="b" id="shAll">All ' + S.goals.length + '</button>' +
+                   '<button class="b" id="shQr">Code</button>';
   b.parentNode.replaceChild(wrap, b);
   shareOpen = true;
   $('#shOne').onclick = function(){ doShare(false); closeShare(); };
   $('#shAll').onclick = function(){ doShare(true); closeShare(); };
+  $('#shQr').onclick = function(){ closeShare(); openQr(); };
   $('#shOne').focus();
   setTimeout(function(){ document.addEventListener('click', onDocClickShare, true); }, 0);
 }
@@ -944,6 +1233,32 @@ function doShare(all){
     toast(ok ? (all ? 'All ' + S.goals.length + ' copied.' : 'This one copied.')
              : 'Copy the address bar to share.');
   });
+}
+
+/* ---------- the code on screen ---------- */
+function openQr(){
+  if(!S.goals.length){ toast('Add a goal first.'); return; }
+  var link = baseUrl() + buildHash(S.goals, false);
+  var g = qrMatrix(link), cv = $('#qrCv'), note = $('#qrNote');
+  if(!g){
+    cv.width = cv.height = 1;
+    note.textContent = 'This board is too long to fit in a code. Share fewer goals, or send the link.';
+  } else {
+    /* one module to a pixel, then CSS blows it up without smoothing.
+       Cheaper than drawing big, and it stays crisp at any size. */
+    var quiet = 4, side = g.length + quiet * 2, r, c;
+    cv.width = cv.height = side;
+    var x = cv.getContext('2d');
+    x.fillStyle = '#fff'; x.fillRect(0, 0, side, side);
+    x.fillStyle = '#000';
+    for(r = 0; r < g.length; r++) for(c = 0; c < g.length; c++) if(g[r][c]) x.fillRect(c + quiet, r + quiet, 1, 1);
+    note.textContent =
+      (S.goals.length === 1 ? 'One goal. ' : 'All ' + S.goals.length + ' goals. ') +
+      (location.protocol === 'file:'
+        ? 'This copy is a file on this computer, so the code points at a path only this machine has. Host it to make the code travel.'
+        : 'Anyone who scans it gets the same board.');
+  }
+  if(!el.qr.open) el.qr.showModal();
 }
 
 /* ---------- this screen -----------------------------------
@@ -996,6 +1311,67 @@ function setWake(on){
   drawOpts();
 }
 document.addEventListener('visibilitychange', function(){ if(!document.hidden) acquireWake(); });
+
+/* --- a sound at zero, if you ask for it ---
+   Off until somebody switches it on, per device, never in the link.
+   A board that makes a noise in a room it was not invited into is a
+   different and much worse product - which is what the old blanket
+   "no sound" rule was really protecting against.
+
+   Unlike keep-awake, this one *is* remembered. The risk it carries is
+   noise in the wrong room, and that only happens inside the last ten
+   seconds of a deadline; the risk keep-awake carries is a flat battery
+   next Tuesday, which happens whether you are looking or not.
+
+   Ten ticks and a chime, which is the moment the tenths rung exists for. */
+var soundOn = false, actx = null, lastTick = -1;
+function audio(){
+  if(!actx){
+    var A = window.AudioContext || window.webkitAudioContext;
+    if(!A) return null;
+    try { actx = new A(); } catch(e){ return null; }
+  }
+  if(actx.state === 'suspended' && actx.resume) actx.resume()['catch'](function(){});
+  return actx;
+}
+/* a raw oscillator switched on and off clicks; the envelope is the
+   difference between a note and a fault */
+function beep(freq, len, vol, at){
+  var a = audio();
+  if(!a) return;
+  var t = a.currentTime + (at || 0);
+  var o = a.createOscillator(), g = a.createGain();
+  o.type = 'sine';
+  o.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(vol, t + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+  o.connect(g); g.connect(a.destination);
+  o.start(t); o.stop(t + len + 0.03);
+}
+function setSound(on){
+  soundOn = !!on;
+  lsSet('sound', soundOn ? '1' : '');
+  if(soundOn){ beep(880, 0.09, 0.16); toast('Sound on for the last ten seconds.'); }
+  else toast('Sound off.');
+  drawOpts();
+}
+/* one tick a second through the last ten, and only on the way down */
+function soundTick(v){
+  if(!soundOn || (v.m !== 'fine' && v.m !== 'ms')){ lastTick = -1; return; }
+  var secs = Math.ceil(v.ms / 1000);
+  if(secs > 10 || secs < 1){ lastTick = -1; return; }
+  if(secs === lastTick) return;
+  lastTick = secs;
+  beep(720, 0.05, 0.10);
+}
+function chime(tier){
+  if(!soundOn) return;
+  if(tier === 'late'){ beep(392, 0.5, 0.14); return; }
+  beep(659, 0.14, 0.14, 0);
+  beep(880, 0.14, 0.14, 0.13);
+  beep(1319, 0.5, 0.15, 0.26);
+}
 
 /* --- rotation lock ---
    The API only works fullscreen or installed, so the control only
@@ -1108,6 +1484,11 @@ function drawOpts(){
     optBtn(r, wakeWant ? 'On' : 'Off', wakeWant, function(){ setWake(!wakeWant); });
     o.appendChild(r);
   }
+  if(window.AudioContext || window.webkitAudioContext){
+    r = optRow('Sound at zero');
+    optBtn(r, soundOn ? 'On' : 'Off', soundOn, function(){ setSound(!soundOn); });
+    o.appendChild(r);
+  }
   if(canRotate()){
     r = optRow('Lock rotation');
     optBtn(r, rotLock ? 'Locked' : 'Free', rotLock, function(){ setRot(!rotLock); });
@@ -1146,8 +1527,10 @@ var KEYS = [
   ['S', 'share'],
   ['D', 'mark done'],
   ['T', 'light / dark'],
+  ['Q', 'a code to scan'],
   ['F', 'fullscreen'],
   ['W', 'keep the screen awake'],
+  ['M', 'sound at zero'],
   ['+ −', 'bigger / smaller number'],
   ['0', 'reset the size'],
   ['?', 'this panel'],
@@ -1162,11 +1545,12 @@ function drawKeys(){
     k.appendChild(a); k.appendChild(b);
   });
 }
-function anyDialogOpen(){ return el.dlg.open || el.about.open; }
+function anyDialogOpen(){ return el.dlg.open || el.about.open || el.qr.open; }
 
 document.addEventListener('keydown', function(e){
   if(e.key === 'Escape'){
     if(el.dlg.open) el.dlg.close();
+    else if(el.qr.open) el.qr.close();
     else if(el.about.open) el.about.close();
     else closeShare();
     return;
@@ -1190,7 +1574,9 @@ document.addEventListener('keydown', function(e){
     case 'd': if(!el.done.hidden) markDone(); break;
     case 't': $('#bTheme').click(); break;
     case 'f': e.preventDefault(); toggleFull(); break;
+    case 'q': e.preventDefault(); openQr(); break;
     case 'w': setWake(!wakeWant); break;
+    case 'm': setSound(!soundOn); break;
     case '?': case '/': e.preventDefault(); openAbout(); break;
   }
 });
@@ -1222,6 +1608,8 @@ $('#bCancelEdit').onclick = resetForm;
 $('#bDone').onclick = markDone;
 $('#bAbout').onclick = openAbout;
 $('#bAboutClose').onclick = function(){ el.about.close(); };
+$('#bQrClose').onclick = function(){ el.qr.close(); };
+el.qr.addEventListener('click', function(e){ if(outsideClick(el.qr, e)) el.qr.close(); });
 $('#kDeadline').onclick = function(){ setFormKind(false); };
 $('#kEvent').onclick = function(){ setFormKind(true); };
 wireShare();
@@ -1273,6 +1661,7 @@ try {
 
 /* size is remembered per device; a screen nobody has sized yet gets
    the guess from defaultSize() */
+soundOn = !!lsGet('sound');
 var savedSize = lsGet('size');
 sizeIx = savedSize === null ? defaultSize() : Math.max(0, Math.min(STEPS.length - 1, parseInt(savedSize, 10) || 0));
 applySize();

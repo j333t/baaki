@@ -11,13 +11,31 @@ A **fail** names the test it fails, so we know what would have to change.
 |---|---|
 | **Theme system** — five font directions (neutral, grotesk, serif, mono, display), pure black / pure white, drop-or-paste a theme file | The big one. Absorbs fonts, colours, motion and shareable customisation into a single primitive. Design settled: three colour anchors per mode, generated ramps, JSON to author and a compact string to travel. **Not before there are users** — it is polish for people who do not exist yet. |
 | **Fonts via CDN with system fallback** | Typography degrades gracefully offline. The service worker should cache the font files on first online visit, so after one online open it's identical offline too. Falls out of the theme system; do them together. |
-| **`z.` compressed fragment** | `CompressionStream('deflate-raw')`, zero dependency. Only when it's actually shorter — measured, it *loses* below ~200 chars and wins 58% at 12 goals. |
-
-## Built in 1.1.0
+## Built
 
 Kept for a moment so the reasoning is traceable, then they move to `features.md` and out of here.
 
-Update check · fullscreen · keep the screen awake · size of the number · TV default · rotation lock · tenths in the last ten minutes.
+**1.1.0** — update check · fullscreen · keep the screen awake · size of the number · TV default · rotation lock · tenths in the last ten minutes.
+**1.2.0** — QR code · a sound at zero.
+
+## Measured and rejected
+
+**`z.` compressed fragment.** The note here used to say it "wins 58% at 12 goals". Measured properly,
+on boards people actually have, `deflate-raw` + base64url gives:
+
+| goals | long names | short names |
+|---|---|---|
+| 1 | **loses 10 chars** | loses 10 |
+| 2 | **loses 13** | loses 13 |
+| 3 | **loses 11** | loses 11 |
+| 4 | **loses 2** | loses 11 |
+| 5 | wins 6 (4%) | loses 10 |
+| 8 | wins 32 (14%) | **loses 3** |
+
+Base64 costs a third more than it saves until there is real repetition to find. With ordinary short
+names — Ship, Launch, Beta — it loses at *every* count. It only wins on a board with five or more
+long-named goals, and twelve goals is a project plan in disguise, which the snark line already says.
+The rule was "only when it's actually shorter". It isn't. **Not built.**
 
 ## Per-device (point 15)
 
@@ -25,8 +43,6 @@ Cheap wins first.
 
 | Idea | Score |
 |---|---|
-| **A sound at zero, if you ask for it** | glance: n/a. cold open: **needs work** — it must be off until someone turns it on, per device, never in the link, or a shared board makes noise in a room it was not invited into. weight: pass (a few lines of WebAudio, no file to ship). one primitive: pass, it extends *this screen*. → **worth building, after the theme system.** Note the earlier "sound on zero" rejection was about a board that makes noise *at* you; a sound you deliberately switch on for the last ten seconds of a launch is a different thing, and the tenths rung is exactly the moment it would land. |
-| **QR code for the current link** | pass ×4, ~1 KB with a tiny generator. Genuinely useful for getting a board onto a phone from a projected screen. Cheapest thing left in this file. |
 | **Gyroscope parallax on the gradient** | glance: pass. weight: pass. **fails "one primitive"** — a whole new input for a decorative effect. Fun though. Revisit if a theme wants it. |
 | **Ambient light sensor → auto dark/light** | **fails cold open** — near-zero browser support, would need a fallback anyway. |
 | **Android home-screen widget** | **fails weight** — needs a real store app. Out of scope until there's demand. |

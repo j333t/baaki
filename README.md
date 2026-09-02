@@ -16,7 +16,7 @@ baaki.html#Metro%20Phase%202~2027-11-03
 
 | | What it is | Gets you |
 |---|---|---|
-| **baaki.html** | One file, 55 KB, no install | Every OS, every phone, works with the wifi off. Pin the tab — the title reads `D-427 · Metro Phase 2` even when you're not looking. |
+| **baaki.html** | One file, 69 KB, no install | Every OS, every phone, works with the wifi off. Pin the tab — the title reads `D-427 · Metro Phase 2` even when you're not looking. |
 | **desktop wrapper** | A small app around the same file | Floats above your other windows, starts with the machine, comes back where you left it. Desktop only. |
 
 Start with the file. Add the wrapper for whoever wants a window that won't get buried.
@@ -70,7 +70,17 @@ Days are **calendar days**. No workday or holiday rules: those need a country-sp
 
 ## Keys
 
-`← →` or `Tab` cycle goals · `1`–`9` jump · `G` goals · `S` share · `D` done · `T` light/dark · `F` fullscreen · `W` keep the screen awake · `+` `−` size of the number · `0` reset it · `?` about · `Esc` close. Swipe left/right on touch.
+`← →` or `Tab` cycle goals · `1`–`9` jump · `G` goals · `S` share · `Q` a code to scan · `D` done · `T` light/dark · `F` fullscreen · `W` keep the screen awake · `M` sound at zero · `+` `−` size of the number · `0` reset it · `?` about · `Esc` close. Swipe left/right on touch.
+
+---
+
+## Getting it off the wall
+
+`Q` draws a QR code of exactly what you're looking at. A board on a projector is useless until the link is in somebody's hand, and nobody types a URL off a screen.
+
+It's always dark on light, in both themes — a code is not decoration, it either scans or it wastes someone's time. It covers about 270 characters, which is a board with six or seven goals on it; past that it says the board is too long rather than drawing something a camera can't read.
+
+The encoder is checked by a **real decoder**, not by eye: `npm run test:qr` renders each version and reads it back with `jsqr`. That's not ceremony — codes for versions 1 to 6 looked perfect while every code from version 7 up was unreadable, and nothing but a decoder would have told you.
 
 ---
 
@@ -83,6 +93,7 @@ Four things about the screen you're standing at, not about the goal — so **non
 | **Fullscreen** (`F`) | One key turns any old laptop into a wall board. |
 | **Keep the screen awake** (`W`) | For a phone propped on a desk. Deliberately **not** remembered between visits — a setting that outlives the sitting is how a battery dies next week and nobody knows why. |
 | **Size of the number** (`+` `−` `0`) | Scales the hero only; the supporting lines stay put. Remembered per device. A big screen with nothing to point at is a wall, not a desk, so it starts bigger there on its own. |
+| **Sound at zero** (`M`) | Ten ticks and a chime. **Off until you switch it on** — a board that makes a noise in a room it wasn't invited into is a different and much worse product. Remembered, unlike keep-awake: the risk here is noise in the wrong room and only in the last ten seconds of a deadline, where the other risk is a flat battery next Tuesday.  |
 | **Lock rotation** | Phones. The browser API only works fullscreen or installed, so the control only appears when it can actually do something — a dead toggle is worse than no toggle. |
 
 ---
@@ -142,10 +153,14 @@ The wrapper injects its own drag strip and pin/close buttons, so `baaki.html` is
 ## Tests
 
 ```bash
-npm install && npx playwright install chromium --only-shell && node test.mjs
+npm install && npx playwright install chromium --only-shell
+npm test          # 152 checks in a real browser, frozen clock
+npm run test:qr   #   9 codes rendered and read back with a real decoder
 ```
 
-137 checks in a real browser against a frozen clock: every rung of the ladder in both directions and its boundaries, both goal kinds, pressing Done for real, editing and adding goals, keyboard navigation, share-one-vs-all, dialog centring and outside-click, chip capping and snark, link round-tripping with `+ ~ ! %` in names, junk hashes, the per-device controls staying out of the link, the update check in all three states (newer / same / dead host), reduced motion, and the whole thing with the network off. Screenshots land in `shots/`.
+`test.mjs` runs against a frozen clock: every rung of the ladder in both directions and its boundaries, both goal kinds, pressing Done for real, editing and adding goals, keyboard navigation, share-one-vs-all, dialog centring and outside-click, chip capping and snark, link round-tripping with `+ ~ ! %` in names, junk hashes, the per-device controls staying out of the link, the update check in all three states (newer / same / dead host), reduced motion, the QR dialog refusing a board that's too long, sound staying off until asked, and the whole thing with the network off. Screenshots land in `shots/`.
+
+`qr-check.mjs` is separate because it needs `jsqr` to decode what the page drew. The product file has no dependencies and never will; the test harness is allowed one.
 
 ---
 
