@@ -1,6 +1,6 @@
 # Baaki — working notes
 
-**बाकी** — Hindi for *what's remaining*. A deadline board you can email.
+**बाकी** — Hindi for *what's remaining*. A deadline board you can send with one link.
 One number, big, on a wall. Inspired by E. Sreedharan's site boards on the Delhi Metro.
 
 ## The three invariants
@@ -26,7 +26,7 @@ sw.js               offline cache for the hosted copy
 manifest.webmanifest  add-to-home-screen
 sync-worker.js      optional Cloudflare worker for online "Done"
 desktop/            Tauri wrapper. wraps baaki.html unmodified.
-test.mjs            185 browser checks, frozen clock
+test.mjs            219 browser checks, frozen clock
 USAGE.md            the link grammar, written for a script or an LLM to follow
 qr-check.mjs        renders each QR version and reads it back with a real decoder
 live-check.mjs      the hosted copy: redirect, service worker, offline, update path
@@ -42,6 +42,7 @@ docs/               rubric, feature ledger, backlog, easter eggs
 - **The wrapper never edits the page.** Desktop-only chrome is injected from `main.rs`. If you find yourself adding `if (isTauri)` to `baaki.html`, stop.
 - **Every colour is generated, not stored.** Ramps interpolate between anchors. Do not paste 36 hex values anywhere.
 - **No fixed pixel measurements.** Everything comes off `--u` and `--ft`, which come off the viewport, and every step is a power of phi (spacing) or 1.25 (type). A raw `px` in a new rule is a bug unless it is a hairline.
+- **Dialog content gets its own scale.** `.dlg` re-declares `--u`/`--f0`/`--f1`/`--f2` with much gentler clamps than root - read up close, not across a room. The hero screen keeps the dramatic sweep; nothing inside a panel should. If a panel starts feeling dense or oversized again, this is the first place to look, not the root scale.
 - **No webfonts, ever.** Five faces, all system stacks. The file must look like itself on a plane.
 - **Nothing about the look travels in the link.** Surface, typeface, hue, size, sound: `localStorage` or nothing. Sending somebody a date must not restyle their screen.
 - **Tests are the spec.** `node test.mjs` uses a frozen clock and a real browser. Add a case for anything with a date boundary in it — that is where every bug so far has lived.
@@ -51,8 +52,10 @@ docs/               rubric, feature ledger, backlog, easter eggs
 - **Never trust a QR by eye.** Run `npm run test:qr`. Versions 1–6 looked perfect while every code from v7 up was unreadable; only a decoder catches that.
 - **Nothing makes a sound until the page has been touched.** Sound is on by default and that is only safe because of this rule; it is enforced in `beep()`, not left to browser autoplay policy. Per device, never in the link.
 - **Confetti is for finishing, never for the clock running out.** A deadline crossing zero unmarked is a miss. Only Done, and something good arriving, may celebrate.
+- **The number itself never moves.** It is the one thing on screen that has to stay still to be read at a glance. Any future "urgency" effect belongs in `#pulse` (the background glow, triggered from the real tick in `render()`) or in sound, never in a transform on `#num`.
+- **A script that fails partway saves nothing.** `_edit.py`'s `Doc.rep()` calls `sys.exit()` on a mismatch, which skips `Doc.done()` - every edit already applied in that run, in memory, is lost, even the ones that printed "ok". Always check for the `--- N edits ---` trailer, not just the "ok" lines, before trusting a run landed.
 - **The fast path repaints everything when the rung changes**, or the colour and the tag land a second after the number does.
-- **Watch out for `display` beating `[hidden]`.** `button.b` sets `display:inline-flex`, which silently overrides the browser's `[hidden]{display:none}`. Any new rule that sets `display` on something hideable needs `[hidden]{display:none}` alongside it.
+- **Watch out for `display` beating `[hidden]`.** `button.b` and `.hist` both did this before being caught - a class rule that sets `display` on an element also toggled via `.hidden` silently wins over the browser's own `[hidden]{display:none}`. Any new class like that needs `[hidden]{display:none}` written in beside it, and a test that actually checks `isVisible()` after hiding it, not just after showing it.
 - **A media query does not outrank a later plain rule.** Equal specificity, later wins. Scope responsive overrides with an ID.
 - **No magic colour assertions in tests.** Compare behaviour (deadline vs event) rather than an interpolated hex, or the test breaks every time a ramp is nudged.
 

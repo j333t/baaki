@@ -20,6 +20,40 @@ Anything that changes the **link format** is a breaking change and needs a major
 
 ---
 
+## 1.5.0 — unreleased
+
+A correction pass. Most of 1.4.0's new surface was too much at once -
+this round is mostly about pulling it back to something that reads
+calm on first look, plus two features that were asked for directly.
+
+### The panels were overwhelming, and now they are not
+- **Dialog content gets its own, tamer scale** - `--u`/`--f0`/`--f1`/`--f2` are re-declared on `.dlg`, near-fixed rather than the hero's dramatic viewport sweep. About and Goals were reusing type and spacing meant to be read across a room; scoped down, they read like a normal, calm app screen instead of a billboard. The panel's own outer size, rounding and shadow are untouched - only what is *inside* got smaller.
+- **A styled scrollbar.** Everything else on this screen was designed; the one the OS drew by default was the last unstyled thing in the file.
+
+### Choosing a date, properly
+- **The native `<input type=time>` is gone.** Its spinner chrome was the one control on the page that still looked like 2013. In its place, a small text field that reads back exactly what it parses - "8:30pm" in, "8:30pm" back - built on the same idea as the main field.
+- **A date already gone is disabled in the calendar, not just dim.** This tool only ever counts forward; a stray tap should not be able to create a deadline in the past. The grid still shows those days for context - a calendar with holes in it looks broken - it just does not respond. Typing one in in the free-text field still works: that is the deliberate way round the guard, not an accident of one.
+- **Time chips for today respect the clock too** - 9 am is dimmed out at 10 am, Noon is not.
+- **"yesterday" parses now.** It was the one obvious word missing, and the past-date escape hatch is not a real escape hatch if the word for the most common past date does not work.
+
+### Two things that were asked for directly
+- **Lock goals**, under `?` → This screen. Not a permission system - there is no server, so permission would be theatre - but a guard against your own thumb on a kiosk or a wall display. Goals will not open, Done will not fire, until it is switched back off, which anyone can do, any time, on their own device.
+- **A private change log**, same place. Not a sync channel - it never leaves the browser, never rides in a link - but a link only tells you what a goal *is*, not what happened to it. Every add, edit, removal and Done gets a line, on this device, with a Clear button next to it.
+
+### The rest
+- **Adding or editing a goal closes the dialog immediately.** It used to stay open, quietly inviting a second goal, then a third. The rarer moves - copy every goal, hand someone the bare tool with nothing on it - moved into the Goals dialog itself, as small text links next to the list they act on.
+- **Share is one button with one job**: press it, the board you are looking at is on the clipboard. It used to turn into a choice - "this one, or all?" - by literally replacing itself with two other buttons, which read as the Share button breaking rather than a menu opening.
+- **The number itself no longer moves.** A scale animation ("heartbeat") on the digits was disturbing the one thing on this screen that has to stay perfectly still to be read at a glance, and it ran on its own timer, so its beat drifted from the second it was supposed to represent. A soft glow behind the number does the pulsing now - triggered explicitly on the same tick that updates the digits, so it can never be out of sync with what it is echoing, and it is gated off entirely under reduced motion.
+- **A handful of quiet, rotating tips** fill the line under the board that used to sit empty for anyone with one to nine goals - "type friday 6pm instead of clicking through a calendar," that kind of thing. Picked once per load, same restraint as the existing 10-goals-or-more snark.
+- **A regression from 1.4.0, found and fixed**: the empty board's "click anywhere to add a goal" behaviour was written, tested as passing in that round's transcript, and never actually saved - the script that carried it hit a later, unrelated failure and exited before writing the file, silently discarding several edits that had already printed as done. Restored here, and the tooling that caused it is now checked more carefully.
+- **Another instance of the `[hidden]` bug**: a `display:flex` rule on `.hist` was overriding the browser's own hidden-element behaviour, the same way a bar button did two versions ago. Same fix, same lesson: any class that sets `display` on an element also toggled via `.hidden` needs an explicit `[hidden]{display:none}` beside it.
+
+### Under it
+- 219 browser checks, up from 185.
+- 107 KB → 119 KB. Three real features this round (lock, log, tips) against a scale correction that should have made the file feel smaller than it is.
+
+---
+
 ## 1.4.0 — unreleased
 
 The release where the design became a system rather than a pile of

@@ -7,10 +7,11 @@ A **fail** names the test it fails, so we know what would have to change.
 
 ## Next up (all four tests pass)
 
-| Idea | Note |
-|---|---|
-| **Theme system** — five font directions (neutral, grotesk, serif, mono, display), pure black / pure white, drop-or-paste a theme file | The big one. Absorbs fonts, colours, motion and shareable customisation into a single primitive. Design settled: three colour anchors per mode, generated ramps, JSON to author and a compact string to travel. **Not before there are users** — it is polish for people who do not exist yet. |
-| **Fonts via CDN with system fallback** | Typography degrades gracefully offline. The service worker should cache the font files on first online visit, so after one online open it's identical offline too. Falls out of the theme system; do them together. |
+Nothing queued right now. The theme system was the last big item here; it shipped in
+1.4.0. **Fonts via CDN with system fallback** was filed alongside it and never built —
+1.4.0 committed instead to "no webfont, ever" (`CLAUDE.md`), so a CDN font would now
+break a house rule rather than extend one. Moved below, not built, for that reason.
+
 ## Built
 
 Kept for a moment so the reasoning is traceable, then they move to `features.md` and out of here.
@@ -19,6 +20,15 @@ Kept for a moment so the reasoning is traceable, then they move to `features.md`
 **1.2.0** — QR code · a sound at zero.
 **1.3.0** — plain-words date field · hue control · three-tier Done colour · Done delta · live empty board · share-this-one-first · About panel legibility, and six behaviour bugs.
 **1.4.0** — viewport-derived geometric scale · theme system (4 surfaces, 5 faces) · tactile calendar · heartbeat rhythm · burn-in wander · rebuilt tool bar with live indicators · USAGE.md.
+**1.5.0** — a tamer scale for dialog content · a typed time field, replacing the native picker · past dates disabled in the calendar · lock goals · a private on-device change log · rotating idle tips · share simplified to one job · the number's own bounce replaced with a synced background pulse.
+
+## Deliberately not built
+
+**Fonts via CDN.** Was filed as the natural next step after the theme system. It
+conflicts with a rule 1.4.0 adopted while building that system: no webfont, ever, five
+system-stack faces only. A file whose whole promise is that it needs nothing should
+not open a network connection to look like itself. Revisit only if that rule itself is
+ever revisited.
 
 ## Deliberately not built, from the theme design
 
@@ -33,7 +43,7 @@ it needs to be opt-in on the *receiving* side, which is a different feature.
 | Idea | Note |
 |---|---|
 | **Choose the sound** | A short list of tones rather than the one built in, per device. Cheap, and the kind of thing somebody fiddles with once and then loves. The settings surface it belongs in now exists. |
-| **Weight budget** | 107 KB. Every feature so far has been argued for one at a time and every one won. The next question is not "does this earn 2 KB" but "what is the ceiling, and what comes out when we hit it". |
+| **Weight budget** | 119 KB. Every feature so far has been argued for one at a time and every one won. The next question is not "does this earn 2 KB" but "what is the ceiling, and what comes out when we hit it". |
 
 ## Measured and rejected
 

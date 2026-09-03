@@ -98,22 +98,19 @@ main{display:flex;flex-direction:column;align-items:center;gap:var(--s2);min-wid
 #tag{font-size:var(--f0);letter-spacing:.2em;text-transform:uppercase;color:var(--faint);
   min-height:1em}
 #hero.pop{animation:pop .9s cubic-bezier(.16,1,.3,1)}
-/* A heartbeat, not a blink: two quick thumps and a long relaxation,
-   the rhythm you already know. It appears only inside the last hour,
-   because a board four hundred days out has nothing to be tense about,
-   and its period shortens all the way to zero. */
-@keyframes beat{
-  0%{transform:scale(1)}
-  5%{transform:scale(1.021)}
-  11%{transform:scale(1.003)}
-  17%{transform:scale(1.013)}
-  30%{transform:scale(1)}
-  100%{transform:scale(1)}
-}
-#num.beat{animation:beat var(--beat,2.4s) cubic-bezier(.32,0,.28,1) infinite;
-  transform-origin:50% 62%;will-change:transform}
 @keyframes pop{0%{opacity:0;transform:scale(.82)}60%{opacity:1;transform:scale(1.05)}
   100%{opacity:1;transform:scale(1)}}
+/* A heartbeat belongs behind the number, not in it - the digits are
+   the one thing on this screen that must never move, or the "clear
+   time signal" they exist to give becomes the thing being disturbed.
+   #pulse sits under everything, painted first in the DOM so it never
+   needs a z-index, and pointer-events:none so it can never be in the
+   way. It is triggered from JS on the exact tick that moves the
+   number, never on its own timer - that is what keeps it in sync,
+   where the old scale animation (removed) could drift. */
+#pulse{position:fixed;inset:0;opacity:0;pointer-events:none;
+  background:radial-gradient(ellipse 68% 52% at 50% 40%, var(--g2), transparent 72%);
+  mix-blend-mode:screen}
 
 #others{display:flex;flex-wrap:wrap;gap:var(--s1);justify-content:center;
   margin-top:var(--s4);max-width:min(92vw,64ch)}
@@ -187,12 +184,24 @@ dialog{border:1px solid var(--line);border-radius:calc(var(--u) * .9);padding:0;
   #about .acts{grid-column:1 / -1}
 }
 dialog::backdrop{background:rgba(0,0,0,.55)}
-.dlg{padding:var(--s4);display:flex;flex-direction:column;gap:var(--s3);text-align:left}
+dialog,.rows{scrollbar-width:thin;scrollbar-color:var(--faint) transparent}
+dialog::-webkit-scrollbar,.rows::-webkit-scrollbar{width:8px;height:8px}
+dialog::-webkit-scrollbar-track,.rows::-webkit-scrollbar-track{background:transparent}
+dialog::-webkit-scrollbar-thumb,.rows::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
+dialog::-webkit-scrollbar-thumb:hover,.rows::-webkit-scrollbar-thumb:hover{background:var(--faint)}
+.dlg{
+  /* a calmer, near-fixed scale for dense content - a phone and a 4K
+     monitor should both read this as "a normal app", not a billboard */
+  --u:clamp(7px, .16vmin + .34vmax, 11px);
+  --f0:clamp(11px, .10vmin + .16vmax, 12px);
+  --f1:clamp(12.5px, .10vmin + .20vmax, 13.5px);
+  --f2:clamp(14px, .12vmin + .24vmax, 15.5px);
+  padding:var(--s4);display:flex;flex-direction:column;gap:var(--s3);text-align:left}
 .dlg:focus{outline:none}
 .colA,.colB{display:flex;flex-direction:column;gap:var(--s3);min-width:0}
-/* the read-back sits with the name and the kind, so the eye that just
-   chose a day does not have to travel to find out what it chose */
-.colA .parsed{margin-top:auto}
+/* the read-back sits right under the kind buttons, where the eye
+   already is - not stretched to the bottom, which just left a gap */
+.colA .parsed{margin-top:calc(var(--s1) * -1)}
 .dlg h2{font-size:var(--f2);font-weight:600;letter-spacing:-.01em;display:flex;
   justify-content:space-between;align-items:baseline;gap:var(--s2)}
 .dlg h2 span{font-size:var(--f0);font-weight:400;color:var(--faint);letter-spacing:.1em;text-transform:uppercase}
@@ -230,13 +239,18 @@ form.add{display:flex;flex-direction:column;gap:var(--s3)}
 .pkgrid button.off{color:var(--faint);opacity:.55}
 .pkgrid button.now{border-color:var(--line);color:var(--ink)}
 .pkgrid button.sel{background:var(--ink);color:var(--sheet);border-color:var(--ink);font-weight:600}
-.pkgrid button.gone{opacity:.4}
+.pkgrid button.gone{opacity:.32}
+.pkgrid button:disabled,.times button:disabled{cursor:not-allowed;pointer-events:none}
 .times{display:flex;flex-wrap:wrap;gap:var(--s1);border-top:1px solid var(--line);padding-top:var(--s2)}
 .times button{font:500 var(--f0)/1 var(--face);color:var(--dim);background:none;
   border:1px solid transparent;border-radius:99px;padding:6px 10px;cursor:pointer}
 .times button:hover,.times button:focus-visible{background:var(--panel2);color:var(--ink);outline:none}
 .times button.sel{color:var(--ink);background:var(--panel2);border-color:var(--line)}
-.times input[type=time]{width:auto;padding:5px 8px;font-size:var(--f0);border-radius:99px}
+.times input.otherTime{width:11.5em;flex:none;padding:6px 10px;font-size:var(--f0);border-radius:99px;
+  background:none;border:1px solid var(--line);color:var(--dim)}
+.times input.otherTime:focus{color:var(--ink);border-color:var(--ink)}
+.times input.otherTime::placeholder{color:var(--faint)}
+.times button.gone{opacity:.4}
 input.typed{font-size:var(--f0);padding:9px var(--s3);color:var(--dim)}
 input.typed:focus{color:var(--ink)}
 .quick button{font:500 var(--f0)/1 inherit;font-family:inherit;color:var(--dim);background:var(--panel);
@@ -281,6 +295,22 @@ kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;background:var(--pa
 .opt button[aria-pressed=true]{color:var(--ink);background:var(--panel2);border-color:var(--line)}
 .opt .val{font-variant-numeric:tabular-nums;color:var(--ink);opacity:.8;min-width:4ch;
   text-align:center;font-size:var(--f0)}
+body.empty main{cursor:pointer}
+body.empty main:hover #snark{color:var(--dim)}
+body.locked #bAdd{opacity:.45}
+.hist{border-top:1px solid var(--line);padding-top:var(--s2);display:flex;flex-direction:column;gap:var(--s1)}
+.hist h4{font-size:var(--f0);font-weight:500;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--faint);display:flex;justify-content:space-between;align-items:baseline}
+.hist h4 button{font:400 var(--f0)/1 var(--face);color:var(--faint);background:none;border:none;
+  cursor:pointer;text-decoration:underline;text-underline-offset:2px;letter-spacing:0;text-transform:none}
+.hist h4 button:hover{color:var(--dim)}
+.hist ol{list-style:none;display:flex;flex-direction:column;gap:4px;font-size:var(--f0);color:var(--faint)}
+.hist ol b{color:var(--dim);font-weight:500}
+.hist[hidden]{display:none}
+.glinks{display:flex;gap:var(--s3);flex-wrap:wrap;margin-top:calc(var(--s2) * -1)}
+.glinks button{font:400 var(--f0)/1 var(--face);color:var(--faint);background:none;border:none;
+  cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.glinks button:hover{color:var(--dim)}
 #upd{font-size:var(--f0);color:var(--ink);opacity:.85}
 #upd a{color:var(--ink)}
 .qrbox{display:flex;justify-content:center;background:#fff;border-radius:calc(var(--u)*.6);padding:var(--s3)}
@@ -302,14 +332,14 @@ kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;background:var(--pa
 @media (max-width:520px){#others{margin-top:var(--s3)}}
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.01ms !important;transition-duration:.01ms !important}
-  /* an infinite animation crushed to .01ms is a strobe, not a courtesy */
-  #num.beat{animation:none !important}
   main{transition:none !important}
+  #pulse{display:none}
 }
 </style>
 </head>
 <body>
 
+<div id="pulse" aria-hidden="true"></div>
 <main>
   <div id="name">Baaki</div>
   <div id="hero"><span id="num">&mdash;</span><span id="unit"></span></div>
@@ -334,6 +364,7 @@ kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;background:var(--pa
 
 <dialog id="dlg"><div class="dlg">
   <h2>Goals <span id="gCount"></span></h2>
+  <div class="glinks" id="gLinks"></div>
   <div class="rows" id="rows"></div>
   <form class="add" id="addForm">
     <div class="colA">
@@ -426,6 +457,7 @@ kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;background:var(--pa
       <div id="upd" hidden></div>
       <div class="hint">Kept on this device, never in the link. How the board looks
         depends on the room you are standing in, not on the goal.</div>
+      <div class="hist" id="hist" hidden></div>
     </div>
   </div>
   <div class="hint">
@@ -448,7 +480,7 @@ kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;background:var(--pa
               Empty = fully offline; the link carries the done stamp.
    GA_ID    : GA4 measurement id, e.g. 'G-ABC1234XYZ'. Online only.
    ============================================================ */
-var VERSION  = '1.4.0';
+var VERSION  = '1.5.0';
 var SYNC_URL = '';
 var GA_ID    = '';
 /* UPDATE : a 200-byte {"version","url"} somewhere online. Two candidates,
@@ -460,10 +492,10 @@ var UPDATE_URLS = [
 ];
 
 var DAY = 864e5, HOUR = 36e5, MIN = 6e4;
+var REDUCE_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches);
 /* The last ten minutes carry tenths. Someone who asked for less motion
    gets none of it: FINE goes to zero and the rung never opens. */
-var FINE = (window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches)
-  ? 0 : 10 * MIN;
+var FINE = REDUCE_MOTION ? 0 : 10 * MIN;
 function $(s){ return document.querySelector(s); }
 var el = {
   name:$('#name'), num:$('#num'), unit:$('#unit'), sub:$('#sub'), tag:$('#tag'),
@@ -589,6 +621,7 @@ function parseWhen(str, now){
   /* the words people actually use */
   if(/^(today|tonight)$/.test(s)) return atTime(day, hh, mm);
   if(/^(tomorrow|tmrw|tmw)$/.test(s)){ day.setDate(day.getDate() + 1); return atTime(day, hh, mm); }
+  if(/^yesterday$/.test(s)){ day.setDate(day.getDate() - 1); return atTime(day, hh, mm); }
   if(/^day after( tomorrow)?$/.test(s)){ day.setDate(day.getDate() + 2); return atTime(day, hh, mm); }
 
   if((m = s.match(/^(?:end of (?:the )?(week|month|year|quarter)|(eow|eom|eoy))$/))){
@@ -660,6 +693,26 @@ function parseWhen(str, now){
     return atTime(d2, hh, mm);
   }
   return null;
+}
+/* A tiny, standalone time parser for the "other" field - just a clock
+   time, no date words. Shares no state with parseWhen; it exists so
+   that field can drop the native <input type=time>, whose spinner
+   chrome reads like it is from 2013. */
+function parseTimeOnly(str){
+  var s = String(str || '').toLowerCase().trim(), m;
+  if((m = s.match(/^(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m\.?$/))){
+    var h = (+m[1]) % 12; if(m[3] === 'p') h += 12;
+    return { hh:h, mm:+(m[2] || 0) };
+  }
+  if((m = s.match(/^(\d{1,2}):(\d{2})$/)) && +m[1] < 24 && +m[2] < 60)
+    return { hh:+m[1], mm:+m[2] };
+  return null;
+}
+/* the exact inverse of the parser above, so a prefilled value always
+   reads back as itself */
+function fmtTimeShort(d){
+  var h = d.getHours(), mi = d.getMinutes(), ap = h < 12 ? 'am' : 'pm', h12 = h % 12 || 12;
+  return h12 + (mi ? ':' + pad(mi) : '') + ap;
 }
 /* what it understood, said back, so nothing is a guess */
 function whenLabel(d){
@@ -967,6 +1020,24 @@ var SNARK = [
 ];
 var snarkPick = SNARK[(Math.random() * SNARK.length) | 0];
 
+/* A one-goal board has nothing filling that line - free real estate
+   for the odd thing worth knowing, picked once per load and left
+   alone, the same way the snark above is. Not instructions; just the
+   occasional nudge toward a key most people never try. */
+var TIPS = [
+  'Type "friday 6pm" instead of clicking through a calendar.',
+  'Q draws a code - point a phone at the screen from across the room.',
+  'F turns this into a wall board. Any old laptop will do.',
+  'Pin the tab. The title counts down too.',
+  'H turns the colour. It is yours, not the goal\'s.',
+  'This whole board is the address bar. Copy it, and you have copied it.',
+  'D only shows up once there is a Done to press.',
+  'Numbers 1 through 9 jump straight to a goal.',
+  '+ and \u2212 change how big the number is, not what it says.',
+  'Swipe on a phone; arrow keys everywhere else.'
+];
+var tipPick = TIPS[(Math.random() * TIPS.length) | 0];
+
 /* ---------- render ---------- */
 /* The hero is the only thing that can carry a decimal, so it is the
    only thing that repaints on a frame. Split out so the fast path
@@ -1006,7 +1077,8 @@ function render(force){
     el.sub.firstChild.textContent = dateLabel(eoy);
     el.tag.textContent = 'an example';
     el.others.innerHTML = '';
-    el.snark.textContent = 'Press G, or Goals below, to count something of your own.';
+    el.snark.textContent = 'Click anywhere, or press G, to count something of your own.';
+    document.body.classList.add('empty');
     el.done.hidden = true;
     document.title = 'Baaki · ' + left + ' days left in ' + yr;
     var g0 = paint(gradFor(left, light, false), null);
@@ -1016,6 +1088,7 @@ function render(force){
     return;
   }
 
+  document.body.classList.remove('empty');
   var g = S.goals[0], v = view(g, now), h = heroOf(v, g);
 
   var nameHtml = (g.event ? '<span class="star">★</span>' : '') + '<span></span>';
@@ -1087,19 +1160,16 @@ function render(force){
       more.onclick = openDlg;
       el.others.appendChild(more);
     }
-    el.snark.textContent = S.goals.length >= 10 ? snarkPick : '';
+    el.snark.textContent = S.goals.length >= 10 ? snarkPick : tipPick;
   }
 
-  /* Something good has nothing to complete - it arrives, and that is
-     the end of it. A Done button there is a button with no meaning. */
-  /* the closer it gets, the faster it beats. Nothing above an hour. */
+  /* Under an hour, once a second - never on the fine (10 Hz) path,
+     which would turn a heartbeat into a strobe. The number is doing
+     the urgency; the glow just breathes along with it. */
   var secs = (v.m === 'ms' || v.m === 'fine') ? v.ms / 1000 : -1;
-  if(secs >= 0){
-    root.style.setProperty('--beat', (0.42 + 2.2 * Math.pow(Math.min(1, secs / 3600), 0.45)).toFixed(2) + 's');
-    el.num.classList.add('beat');
-  } else el.num.classList.remove('beat');
+  if(secs >= 0) pulse((0.9 + 1.7 * Math.pow(Math.min(1, secs / 3600), 0.45)).toFixed(2));
 
-  el.done.hidden = !(S.edit && !g.done && !g.event);
+  el.done.hidden = !(S.edit && !g.done && !g.event && !locked);
   if(v.m === 'fine' || v.m === 'overFine'){ fineMode = v.m; fineStart(); }
   else fineMode = v.m;
   soundTick(v);
@@ -1130,6 +1200,22 @@ function fineTick(){
 function fineStart(){ if(!fineRaf) fineRaf = requestAnimationFrame(fineTick); }
 /* In black and white mode the background stops carrying the colour, so
    the number has to. Same ramp, different surface. */
+/* A pulse is a forced restart of a decaying transition, not a loop -
+   called once, from the one place that already owns the real clock
+   (render's 1 Hz beat), so it can never run ahead of or behind the
+   number it is echoing. The decay gets quicker as zero nears: not
+   more beats per second, but each one landing sharper. */
+var pulseEl = null;
+function pulse(fade){
+  if(REDUCE_MOTION) return;
+  if(!pulseEl) pulseEl = document.getElementById('pulse');
+  if(!pulseEl) return;
+  pulseEl.style.transition = 'none';
+  pulseEl.style.opacity = '.5';
+  void pulseEl.offsetWidth;                    /* flush, so the next line truly restarts */
+  pulseEl.style.transition = 'opacity ' + fade + 's ease-out';
+  pulseEl.style.opacity = '0';
+}
 function setAccent(c, root){
   var t = document.documentElement.dataset.theme;
   if(t === 'black'){
@@ -1177,9 +1263,11 @@ function cycleFocus(dir){ rotate(dir > 0 ? 1 : -1); }
 
 /* ---------- done + celebration ---------- */
 function markDone(){
+  if(locked) return;
   var g = S.goals[0];
   if(!g || g.done || g.event) return;
   g.done = new Date();
+  logEvent('done', g.name, '');
   prev = {};
   commit(false);
   syncPush(g);
@@ -1315,6 +1403,7 @@ function outsideClick(dialog, e){
 
 /* ---------- goals dialog: add, edit, reorder, remove ---------- */
 function openDlg(){
+  if(locked){ toast('Goals are locked on this device \u2014 turn it off under ? \u2192 This screen.'); return; }
   drawQuick();
   resetForm();
   drawPicker();
@@ -1369,12 +1458,18 @@ function pickTime(hh){
   pickDate(hh === null ? eod(d) : atTime(d, hh, 0), false);
 }
 
-function pkBtn(label, cls, fn){
+function pkBtn(label, cls, fn, disabled){
   var b = document.createElement('button');
   b.type = 'button';
   b.className = cls || '';
   b.textContent = label;
-  b.onclick = fn;
+  /* A day, or a time, already gone is out of scope for a tool that
+     only ever counts forward. It stays visible for context - the grid
+     would look broken with holes in it - but it does not respond. The
+     free-text field is the one deliberate way round this; typing one
+     in is a choice, tapping a dead cell by accident should not be. */
+  if(disabled) b.disabled = true;
+  else b.onclick = fn;
   return b;
 }
 function drawPicker(){
@@ -1398,17 +1493,18 @@ function drawPicker(){
     var start = new Date(first.getFullYear(), first.getMonth(), 1 - first.getDay());
     for(i = 0; i < 42; i++){
       var d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+      var past = dayDiff(now, d) < 0;
       var cls = [];
       if(d.getMonth() !== pkCursor.getMonth()) cls.push('off');
       if(dayDiff(now, d) === 0) cls.push('now');
-      if(dayDiff(now, d) < 0) cls.push('gone');
+      if(past) cls.push('gone');
       if(pkSel && dayDiff(pkSel, d) === 0) cls.push('sel');
       grid.appendChild(pkBtn(String(d.getDate()), cls.join(' '), (function(dd){
         return function(){
           var keep = pkSel && !isEod(pkSel);
           pickDate(keep ? atTime(new Date(dd.getTime()), pkSel.getHours(), pkSel.getMinutes()) : eod(new Date(dd.getTime())), false);
         };
-      })(d)));
+      })(d), past));
     }
   } else if(pkView === 'month'){
     grid.className = 'pkgrid wide';
@@ -1433,20 +1529,33 @@ function drawPicker(){
 
   var t = $('#fTimes');
   t.innerHTML = '';
+  var refDay = pkSel ? new Date(pkSel.getFullYear(), pkSel.getMonth(), pkSel.getDate())
+                     : new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  var refIsToday = dayDiff(now, refDay) === 0;
   TIMES.forEach(function(row){
     var on = pkSel && (row[1] === null ? isEod(pkSel) : (!isEod(pkSel) && pkSel.getHours() === row[1] && pkSel.getMinutes() === 0));
-    t.appendChild(pkBtn(row[0], 'x' + (on ? ' sel' : ''), function(){ pickTime(row[1]); }));
+    var gone = refIsToday && row[1] !== null && atTime(new Date(refDay.getTime()), row[1], 0) < now;
+    t.appendChild(pkBtn(row[0], 'x' + (on ? ' sel' : '') + (gone ? ' gone' : ''), function(){ pickTime(row[1]); }, gone));
   });
+  /* a small text field standing in for the native time widget, whose
+     spinner chrome never matched anything else on this screen. It
+     reuses the same idea as the main field: type it, see it read back. */
   var other = document.createElement('input');
-  other.type = 'time';
+  other.type = 'text';
+  other.inputMode = 'numeric';
+  other.autocomplete = 'off';
+  other.className = 'otherTime';
+  other.placeholder = 'other, e.g. 8:30pm';
   other.setAttribute('aria-label', 'Another time');
-  other.value = (pkSel && !isEod(pkSel)) ? pad(pkSel.getHours()) + ':' + pad(pkSel.getMinutes()) : '';
-  other.onchange = function(){
-    if(!this.value) return;
-    var p = this.value.split(':');
+  other.value = (pkSel && !isEod(pkSel)) ? fmtTimeShort(pkSel) : '';
+  var commitOther = function(){
+    var tm = parseTimeOnly(other.value);
+    if(!tm) return;
     var base = pkSel || parseWhen('today');
-    pickDate(atTime(new Date(base.getFullYear(), base.getMonth(), base.getDate()), +p[0], +p[1]), false);
+    pickDate(atTime(new Date(base.getFullYear(), base.getMonth(), base.getDate()), tm.hh, tm.mm), false);
   };
+  other.addEventListener('change', commitOther);
+  other.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); commitOther(); other.blur(); } });
   t.appendChild(other);
 }
 function pkStep(dir){
@@ -1465,8 +1574,8 @@ function showParsed(){
   /* A date already gone is usually a slip, and occasionally the point -
      you are logging something you missed. Say so, do not refuse. */
   out.lastChild.textContent = (d - new Date() < 0)
-    ? (formKindEvent ? ' — already happened, so it will show as arrived.'
-                     : ' — already gone, so it will open as overdue.')
+    ? (formKindEvent ? ' — that has already happened. Baaki only counts forward; use this if you mean it.'
+                     : ' — that is in the past. Baaki only counts forward; use this if you mean it.')
     : '';
   out.className = 'parsed' + ((d - new Date() < 0) ? ' past' : '');
 }
@@ -1493,8 +1602,28 @@ function startEdit(i){
   $('#fName').focus();
   $('#fName').select();
 }
+function drawGoalLinks(){
+  var box = $('#gLinks');
+  if(!box) return;
+  box.innerHTML = '';
+  if(S.goals.length > 1){
+    var all = document.createElement('button');
+    all.type = 'button';
+    all.textContent = 'Copy all ' + S.goals.length;
+    all.onclick = function(){ doShare(true); };
+    box.appendChild(all);
+  }
+  if(S.goals.length >= 1){
+    var bare = document.createElement('button');
+    bare.type = 'button';
+    bare.textContent = 'Copy link with no goal';
+    bare.onclick = shareBare;
+    box.appendChild(bare);
+  }
+}
 function drawRows(){
   $('#gCount').textContent = S.goals.length ? S.goals.length + (S.goals.length === 1 ? ' goal' : ' goals') : '';
+  drawGoalLinks();
   el.rows.innerHTML = '';
   if(!S.goals.length){
     var d = document.createElement('div');
@@ -1516,6 +1645,7 @@ function drawRows(){
     bs[0].onclick = function(){ if(i){ focusGoal(i); } drawRows(); };
     bs[1].onclick = function(){ startEdit(i); };
     bs[2].onclick = function(){
+      logEvent('remove', g.name, dateLabel(g.target));
       S.goals.splice(i, 1);
       if(editingIndex === i) resetForm();
       prev = {}; commit(false); drawRows();
@@ -1799,50 +1929,17 @@ function qrMatrix(text){
   return best;
 }
 
-/* ---------- share: this one, or all ---------- */
-var shareOpen = false;
-function closeShare(){
-  if(!shareOpen) return;
-  shareOpen = false;
-  var w = $('#shareWrap');
-  if(w) w.parentNode.replaceChild($('#bShareTpl').content.firstElementChild.cloneNode(true), w);
-  wireShare();
-}
-function wireShare(){
-  var b = $('#bShare');
-  if(b) b.onclick = openShare;
-}
+/* ---------- share: one button, one job -----------------------
+   It used to offer a choice first - "this one, or all?" - and the
+   button itself turned into that choice, in place, so Share visibly
+   vanished the moment you touched it. One job is clearer: press it,
+   the board you are looking at is on the clipboard. The rarer moves
+   (copy every goal, hand someone the bare tool) live in the Goals
+   dialog instead, next to the list they are about.
+------------------------------------------------------------ */
 function openShare(){
   if(!S.goals.length){ toast('Add a goal first.'); return; }
-  /* The one you are looking at, straight to the clipboard, every time.
-     Everything else is an alternative you can reach for afterwards. */
   doShare(false);
-  var b = $('#bShare');
-  var wrap = document.createElement('span');
-  wrap.id = 'shareWrap';
-  wrap.style.display = 'flex';
-  wrap.style.gap = '6px';
-  wrap.innerHTML = (S.goals.length > 1
-                     ? '<button class="b" id="shAll">Copy all ' + S.goals.length + ' instead</button>' : '') +
-                   '<button class="b" id="shBare">Just the tool</button>' +
-                   '<button class="b" id="shQr">Code</button>';
-  b.parentNode.replaceChild(wrap, b);
-  shareOpen = true;
-  if($('#shAll')) $('#shAll').onclick = function(){ doShare(true); closeShare(); };
-  $('#shBare').onclick = function(){
-    copy(baseUrl()).then(function(ok){ toast(ok ? 'Empty board copied.' : 'Copy the address bar.'); });
-    closeShare();
-  };
-  $('#shQr').onclick = function(){ closeShare(); openQr(); };
-  $('#shBare').focus();
-  setTimeout(function(){ document.addEventListener('click', onDocClickShare, true); }, 0);
-}
-function onDocClickShare(e){
-  var w = $('#shareWrap');
-  if(w && !w.contains(e.target)){
-    document.removeEventListener('click', onDocClickShare, true);
-    closeShare();
-  }
 }
 function doShare(all){
   var link = baseUrl() + (all ? buildHash(S.goals, false) : '#' + goalToken(S.goals[0]));
@@ -1850,6 +1947,9 @@ function doShare(all){
     toast(ok ? (all ? 'All ' + S.goals.length + ' copied.' : 'Link copied.')
              : 'Copy the address bar to share.');
   });
+}
+function shareBare(){
+  copy(baseUrl()).then(function(ok){ toast(ok ? 'Empty board link copied.' : 'Copy the address bar.'); });
 }
 
 /* ---------- the tool strip -----------------------------------
@@ -1981,6 +2081,65 @@ document.addEventListener('webkitfullscreenchange', function(){ drawOpts(); draw
    Deliberately not remembered. A board propped on a desk wants the
    screen on for this sitting; a setting that outlives the sitting is
    how a battery dies next week and nobody knows why. */
+/* ---------- a private notebook, not a sync channel --------
+   Still no server, still no account: this never leaves the browser
+   and never rides in a link. It exists because a link tells you what
+   a goal *is*, not what happened to it - who moved a date, when a
+   goal was dropped. That is worth having on the one machine that did
+   it, even if it cannot follow the goal anywhere else.
+------------------------------------------------------------ */
+var LOG_MAX = 40;
+function logEvent(action, name, detail){
+  var log;
+  try { log = JSON.parse(lsGet('log') || '[]'); } catch(e){ log = []; }
+  log.unshift({ t:Date.now(), a:action, n:name, d:detail || '' });
+  if(log.length > LOG_MAX) log.length = LOG_MAX;
+  try { lsSet('log', JSON.stringify(log)); } catch(e){}
+}
+function drawHistory(){
+  var box = $('#hist');
+  if(!box) return;
+  var log;
+  try { log = JSON.parse(lsGet('log') || '[]'); } catch(e){ log = []; }
+  if(!log.length){ box.hidden = true; box.innerHTML = ''; return; }
+  box.hidden = false;
+  var verb = { add:'added', edit:'edited', remove:'removed', done:'marked done' };
+  box.innerHTML = '';
+  var h = document.createElement('h4');
+  h.appendChild(document.createTextNode('On this device'));
+  var clr = document.createElement('button');
+  clr.type = 'button';
+  clr.textContent = 'Clear';
+  clr.onclick = function(){ try { localStorage.removeItem('baaki.log'); } catch(e){} drawHistory(); };
+  h.appendChild(clr);
+  box.appendChild(h);
+  var ol = document.createElement('ol');
+  log.slice(0, 6).forEach(function(row){
+    var li = document.createElement('li');
+    var when = new Date(row.t).toLocaleDateString(undefined, { day:'numeric', month:'short' });
+    li.innerHTML = when + ' \u2014 ' + (verb[row.a] || row.a) + ' <b></b>' + (row.d ? ' \u00b7 ' + row.d : '');
+    li.querySelector('b').textContent = row.n;
+    ol.appendChild(li);
+  });
+  box.appendChild(ol);
+}
+
+/* ---------- lock: stop an accidental tap from changing the board ---
+   Not a permission system - there is no server, so "permission" would
+   be theatre. This is the opposite kind of thing: a guard against
+   your own thumb on a kiosk or a wall display, not against another
+   person. Anyone can switch it back off, on their own device, any
+   time. Per device, never in the link. */
+var locked = false;
+function setLocked(on){
+  locked = !!on;
+  lsSet('locked', locked ? '1' : '');
+  document.body.classList.toggle('locked', locked);
+  render(true);
+  toast(locked ? 'Goals locked on this device.' : 'Goals unlocked.');
+  drawOpts();
+}
+
 var wake = null, wakeWant = false;
 function acquireWake(){
   if(!wakeWant || wake || !navigator.wakeLock || document.hidden) return;
@@ -2241,6 +2400,9 @@ function drawOpts(){
     optBtn(r, soundOn ? 'On' : 'Off', soundOn, function(){ setSound(!soundOn); });
     o.appendChild(r);
   }
+  r = optRow('Lock goals');
+  optBtn(r, locked ? 'Locked' : 'Free', locked, function(){ setLocked(!locked); });
+  o.appendChild(r);
   if(canRotate()){
     r = optRow('Lock rotation');
     optBtn(r, rotLock ? 'Locked' : 'Free', rotLock, function(){ setRot(!rotLock); });
@@ -2283,6 +2445,7 @@ function drawOpts(){
   optBtn(r, 'Reset', null, resetSize);
   o.appendChild(r);
 
+  drawHistory();
   var u = $('#upd');
   u.innerHTML = '';
   u.hidden = !newer;
@@ -2333,7 +2496,6 @@ document.addEventListener('keydown', function(e){
     if(el.dlg.open) el.dlg.close();
     else if(el.qr.open) el.qr.close();
     else if(el.about.open) el.about.close();
-    else closeShare();
     return;
   }
   if(anyDialogOpen()) return;                 // let the form have the keyboard
@@ -2395,6 +2557,11 @@ function openAbout(){
 
 /* ---------- wire up ---------- */
 $('#bAdd').onclick = openDlg;
+/* an example nobody can act on is a poster. Anywhere on the empty
+   board opens the form; locked mode still refuses, same as G. */
+document.querySelector('main').addEventListener('click', function(){
+  if(!S.goals.length) openDlg();
+});
 $('#bClose').onclick = function(){ el.dlg.close(); };
 $('#bCancelEdit').onclick = resetForm;
 $('#bDone').onclick = markDone;
@@ -2420,7 +2587,7 @@ $('#pkTitle').onclick = function(){
 };
 $('#kDeadline').onclick = function(){ setFormKind(false); };
 $('#kEvent').onclick = function(){ setFormKind(true); };
-wireShare();
+$('#bShare').onclick = openShare;
 
 el.dlg.addEventListener('click', function(e){ if(outsideClick(el.dlg, e)) el.dlg.close(); });
 el.about.addEventListener('click', function(e){ if(outsideClick(el.about, e)) el.about.close(); });
@@ -2436,15 +2603,17 @@ $('#addForm').onsubmit = function(e){
   if(editingIndex >= 0){
     var g = S.goals[editingIndex];
     g.name = name; g.target = target; g.event = formKindEvent;
+    logEvent('edit', name, dateLabel(target));
     toast('Saved.');
   } else {
     S.goals.unshift({ name:name, target:target, event:formKindEvent, done:null });
+    logEvent('add', name, dateLabel(target));
     toast('Added.');
   }
   S.edit = true;
   prev = {};
   commit(false);
-  resetForm();
+  el.dlg.close();
 };
 
 window.addEventListener('hashchange', function(){
@@ -2465,6 +2634,8 @@ try {
 /* size is remembered per device; a screen nobody has sized yet gets
    the guess from defaultSize() */
 soundOn = lsGet('sound') === null ? true : !!lsGet('sound');
+locked = !!lsGet('locked');
+document.body.classList.toggle('locked', locked);
 hueOff = parseInt(lsGet('hue'), 10) || 0;
 hueDrift = !!lsGet('drift');
 var savedSize = lsGet('size');
@@ -2500,6 +2671,5 @@ if(GA_ID && navigator.onLine){
 }
 })();
 </script>
-<template id="bShareTpl"><button class="b" id="bShare" title="Share (s)">Share</button></template>
 </body>
 </html>

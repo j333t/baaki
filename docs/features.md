@@ -82,17 +82,24 @@ Legend: **★** = load-bearing, removing it changes what Baaki is.
 | Dark/light toggle, `t` | Something always on screen must suit the room it's in. |
 | Keyboard map (arrows, digits, g/s/d/t/?) | It's a wall board — you should be able to drive it without aiming a mouse. |
 | Swipe on touch | Same idea, thumbs. |
-| Share copies this one, immediately | The common case should not need a choice. "Copy all n instead" is the alternative, offered after the fact; one goal gets no popover at all. |
+| Share is one button, one job | Press it, the board you're looking at is on the clipboard. It used to morph into a choice by replacing itself with two other buttons, which read as broken, not as a menu. |
+| Copy-all and the bare tool link live in Goals | The rarer moves belong next to the list they act on, as quiet text links, not competing with the Share button for attention. |
 | Edit goals in place | Obvious in hindsight. Retyping a goal to fix a typo is the kind of thing that makes people stop using a tool. |
 | A calendar you tap, that zooms out | Choosing a date is not the same act as reciting one. Days → months → years puts any date three taps away, however far off. |
 | Typing still works, and steers the calendar | Fast for "friday", useless for "some Tuesday in March". Both doors, one room — the calendar is the truth and typing writes to it. |
 | `10m` is minutes, `mo` is months | It is what it means to anyone who has ever set a timer. Minutes and hours count from now, because "in 10 minutes" has an exact meaning. |
-| A date already gone is flagged, not refused | Usually a slip, occasionally the point — you are logging something you missed. Say so; do not decide for them. |
+| A date already gone is disabled in the grid | This tool only ever counts forward. It stays visible for context — a calendar with holes looks broken — but a stray tap cannot select it. |
+| Typing a past date still works | The deliberate way round the guard, not an accident of one. "yesterday" is recognised, same as "tomorrow". |
+| A typed time replaces the native picker | `<input type=time>` was the one control that still looked like 2013. A small text field reads back exactly what it parses — "8:30pm" in, "8:30pm" back. |
 | It says back what it understood | A parser that guesses silently is worse than no parser. It shows "Fri, 4 Sept 2026 · 6:00 pm", and refuses `31/2` rather than inventing a date. |
 | The calendar is still one click away | Typing wins for "friday"; a month grid wins for "some Tuesday in March". The picker sits invisibly on its own icon, which is the only way to open it that every browser agrees on. |
 | The empty board counts the rest of the year | A dash and "set a goal" is a form with its fields missing. This is a working demonstration, and it is true — which a placeholder never is. |
 | Nothing opens a dialog at you on arrival | The board says what to press and the button is visible. A modal on arrival is a small hostility. |
 | Sound is on, but a page nobody touched is silent | Written down as a rule, not left to browser autoplay policy. A link on a second monitor cannot go off in a meeting; once you have clicked, you are using it. |
+| Adding or editing a goal closes the dialog | It used to stay open, quietly inviting a second goal, then a third. One action, one result. |
+| Lock goals | Not a permission system — there's no server, so permission would be theatre. A guard against your own thumb on a kiosk or a wall display, switched back off by anyone, any time, on their own device. |
+| A private, per-device change log | The link tells you what a goal *is*, not what happened to it. Every add, edit, removal and Done gets a line, with a Clear button beside it. Never leaves the browser. |
+| Quiet, rotating tips fill the idle line | One to nine goals used to leave that line blank. Picked once per load, same restraint as the ten-goals-or-more snark it sits beside. |
 | Dialog closes on outside click | Every other dialog on earth does. |
 | About panel with the Sreedharan story | The origin is the best thing about this tool and it was invisible. Also where the keyboard map lives, so the main screen stays clean. |
 
@@ -125,8 +132,9 @@ Themes are data, and this is the whole extension surface. All of it per device.
 | Pure black and pure white surfaces | The colour moves off the background and into the number. On OLED that is most of the panel switched off, and the ramp still works — it has only changed which surface it lives on. |
 | Five typefaces, no webfont | A file whose whole promise is that it needs nothing must not open a network connection to look like itself. System stacks only. |
 | Themes do **not** travel in the link | Sending somebody a date must not restyle their screen. Same rule as hue, size and sound. It is the one piece of the original theme design deliberately not built. |
-| The number beats like a heart under an hour | Two quick thumps and a long relaxation, shortening to zero. A rhythm you already know reads as urgency without a single word. |
-| Reduced motion kills the beat outright | The blanket rule that crushes animations to `.01ms` turns an *infinite* one into a strobe. That needed its own exception. |
+| A glow behind the number pulses under an hour | The number itself never moves - it is the one thing on screen that has to stay still to be read at a glance. The pulse is triggered explicitly from the same tick that updates the digits, so it can never drift out of sync the way a free-running scale animation once did. |
+| Dialog content gets its own, tamer scale | About and Goals were reusing the hero's dramatic viewport sweep and read as oversized and dense at once. Scoped to `.dlg`, near-fixed rather than swept, so panels read like a normal app screen. Only the outer panel size still scales with the screen. |
+| A styled scrollbar | The one thing left on this screen the OS was still drawing by default. |
 | The whole board wanders a few pixels | It is meant to be left on for weeks. Nothing should sit in the same pixels that long. Two coprime periods, so the path never repeats. |
 | One height for every button in the bar | It read as scattered because nothing shared a measurement. |
 | Anything switched on is lit in the bar | A setting you cannot see is a setting you forget you left on — and that is also the place to turn it off. |

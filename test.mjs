@@ -208,17 +208,22 @@ await page.waitForTimeout(600);
 ok('empty board counts the rest of the year', /^\d{1,3}$/.test((await page.locator('#num').textContent()).trim()), true);
 ok('and says what it is', (await page.locator('#unit').textContent()).trim(), 'days left in 2026');
 ok('and says it is an example', (await page.locator('#tag').textContent()).trim(), 'an example');
-ok('and what to press', (await page.locator('#snark').textContent()).includes('Press G'), true);
+ok('and what to press', (await page.locator('#snark').textContent()).includes('press G'), true);
 ok('no dialog opens itself', await page.locator('#dlg').isVisible(), false);
+// the example itself is the invitation - clicking it opens the form
+await page.locator('main').click();
+await page.waitForTimeout(250);
+ok('clicking the example opens it too', await page.locator('#dlg').isVisible(), true);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(200);
 await page.keyboard.press('g');
 await page.waitForTimeout(250);
 ok('g opens it', await page.locator('#dlg').isVisible(), true);
 await page.fill('#fName', 'Phase 3 tender');
 await page.fill('#fWhen', '2026-12-25');
 await page.click('#addForm button[type=submit]');
-await page.waitForTimeout(200);
-await page.click('#bClose');
-await page.waitForTimeout(150);
+await page.waitForTimeout(250);
+ok('adding a goal closes the dialog by itself', await page.locator('#dlg').isVisible(), false);
 ok('added goal shows', (await page.locator('#num').textContent()).trim(), '114');
 ok('added goal lands in the link',
    decodeURIComponent(await page.evaluate(() => location.hash)).includes('Phase 3 tender~2026-12-25'), true);
@@ -301,14 +306,17 @@ await page.fill('#fName', 'Tender, revised');
 await page.fill('#fWhen', '2026-11-30');
 await page.click('#kEvent');
 await page.click('#bSubmit');
-await page.waitForTimeout(200);
+await page.waitForTimeout(250);
+ok('saving an edit closes the dialog too', await page.locator('#dlg').isVisible(), false);
 ok('edit renames in place',
    decodeURIComponent(await page.evaluate(() => location.hash)).includes('Tender, revised~2026-11-30*'), true);
+await page.click('#bAdd');
+await page.waitForTimeout(200);
 ok('edit did not add a second goal', await page.locator('.row').count(), 2);
-ok('form resets after saving', (await page.locator('#bSubmit').textContent()).trim(), 'Add goal');
+ok('the form was reset on the way out', (await page.locator('#bSubmit').textContent()).trim(), 'Add goal');
 await page.click('#bClose');
 
-console.log('\n--- share one, or all ---');
+console.log('\n--- share: one job, one click ---');
 await page.goto('about:blank');
 await page.goto(FILE + '#One~2027-01-01+Two~2027-02-01+Three~2027-03-01');
 await page.waitForTimeout(220);
@@ -316,13 +324,23 @@ await page.evaluate(() => { window.__copied = null; navigator.clipboard.writeTex
 await page.click('#bShare');
 await page.waitForTimeout(150);
 let copied = decodeURIComponent(await page.evaluate(() => window.__copied));
-ok('share copies this one without being asked', copied.endsWith('#One~2027-01-01'), true);
-ok('all is offered as the alternative', (await page.locator('#shAll').textContent()).trim(), 'Copy all 3 instead');
-await page.click('#shAll');
+ok('share copies this one, nothing else happens', copied.endsWith('#One~2027-01-01'), true);
+ok('the button is still just the button', await page.locator('#bShare').textContent(), 'Share');
+ok('there is no popover to speak of', await page.locator('#shAll').count(), 0);
+
+// the rarer moves live in Goals now, next to the list they act on
+await page.click('#bAdd');
+await page.waitForTimeout(200);
+ok('copy-all shows up when there is more than one', (await page.locator('#gLinks button').first().textContent()).trim(), 'Copy all 3');
+await page.locator('#gLinks button', { hasText: 'Copy all' }).click();
 await page.waitForTimeout(150);
 copied = decodeURIComponent(await page.evaluate(() => window.__copied));
 ok('all link carries every goal', copied.includes('One~2027-01-01+Two~2027-02-01+Three~2027-03-01'), true);
 ok('neither leaks !edit', copied.includes('!edit'), false);
+await page.locator('#gLinks button', { hasText: 'no goal' }).click();
+await page.waitForTimeout(150);
+ok('the bare tool link has no hash', decodeURIComponent(await page.evaluate(() => window.__copied)).endsWith('/baaki.html'), true);
+await page.click('#bClose');
 
 // one goal has no alternative worth offering
 await page.goto('about:blank');
@@ -331,8 +349,12 @@ await page.waitForTimeout(220);
 await page.evaluate(() => { window.__copied = null; navigator.clipboard.writeText = t => { window.__copied = t; return Promise.resolve(); }; });
 await page.click('#bShare');
 await page.waitForTimeout(200);
-ok('one goal: copied, no popover', decodeURIComponent(await page.evaluate(() => window.__copied)).endsWith('#Only~2027-01-01'), true);
-ok('one goal: nothing to choose between', await page.locator('#shAll').count(), 0);
+ok('one goal: copied, no fuss', decodeURIComponent(await page.evaluate(() => window.__copied)).endsWith('#Only~2027-01-01'), true);
+await page.click('#bAdd');
+await page.waitForTimeout(200);
+ok('one goal: copy-all is not offered', await page.locator('#gLinks button', { hasText: 'Copy all' }).count(), 0);
+ok('one goal: the bare link still is', await page.locator('#gLinks button', { hasText: 'no goal' }).count(), 1);
+await page.click('#bClose');
 
 console.log('\n--- a board with too many numbers on it ---');
 const many = Array.from({length: 11}, (_, i) => `Goal${i + 1}~2027-0${(i % 9) + 1}-15`).join('+');
@@ -341,7 +363,9 @@ ok('chips are capped', r.chips.length, 8);                  // 7 goals + the "mo
 ok('the rest collapse', r.chips[7], '+3 more');
 ok('and we mention it', (await page.locator('#snark').textContent()).trim().length > 0, true);
 r = await open('#One~2027-01-01+Two~2027-02-01');
-ok('no snark for a sane number of goals', (await page.locator('#snark').textContent()).trim(), '');
+// a sane goal count gets a quiet tip instead of snark - the line
+// used to sit empty, which was free space wasted
+ok('a sane goal count gets a tip, not snark', (await page.locator('#snark').textContent()).trim().length > 0, true);
 
 console.log('\n--- the last ten minutes: tenths ---');
 // a target written down to the second used to drop the goal entirely
@@ -628,6 +652,149 @@ ok('typed in plain words, stored exactly',
    decodeURIComponent(await page.evaluate(() => location.hash)).indexOf('Board review~2026-09-04T18:00') >= 0, true);
 await page.keyboard.press('Escape');
 await page.waitForTimeout(150);
+
+console.log('\n--- choosing a date: past is discouraged, not offered ---');
+// frozen clock: Wednesday 2 September 2026, 10:00 IST
+r = await open('#Seed~2027-01-01');
+await page.keyboard.press('g');
+await page.waitForTimeout(250);
+
+const dayCell = async (n) => page.locator('#pkGrid button').filter({ hasText: new RegExp('^' + n + '$') }).first();
+ok('yesterday in the grid is disabled', await (await dayCell(1)).isDisabled(), true);
+ok('today is not', await (await dayCell(2)).isDisabled(), false);
+ok('a day next week is not', await (await dayCell(10)).isDisabled(), false);
+
+// with no day chosen yet, "today" is the implied day - a time already
+// gone this morning should be dimmed out too
+ok('9 am is already gone today', await page.locator('#fTimes button', { hasText: '9 am' }).isDisabled(), true);
+ok('noon is not', await page.locator('#fTimes button', { hasText: 'Noon' }).isDisabled(), false);
+ok('end of day is never gone', await page.locator('#fTimes button', { hasText: 'End of day' }).isDisabled(), false);
+
+// pick a day that is not today - the same times open back up
+await (await dayCell(10)).click();
+await page.waitForTimeout(150);
+ok('9 am is fine on a future day', await page.locator('#fTimes button', { hasText: '9 am' }).isDisabled(), false);
+
+// the free-text field is the deliberate way round the guard
+await page.fill('#fWhen', 'yesterday');
+await page.waitForTimeout(100);
+ok('typing a past date still works', (await page.locator('#fParsed').textContent()).includes('past'), true);
+await page.fill('#fWhen', '');
+
+console.log('\n--- a typed time, standing in for the native picker ---');
+await (await dayCell(10)).click();
+await page.waitForTimeout(120);
+await page.fill('.otherTime', '8:30pm');
+await page.locator('.otherTime').press('Enter');
+await page.waitForTimeout(120);
+ok('a typed time lands in the field', await page.inputValue('#fWhen'), '2026-09-10T20:30');
+ok('and reads back the same way it was typed', await page.inputValue('.otherTime'), '8:30pm');
+await page.keyboard.press('Escape');
+await page.waitForTimeout(150);
+
+console.log('\n--- locking the board against an accidental tap ---');
+await page.evaluate(() => localStorage.removeItem('baaki.locked'));
+r = await open('#Ship~2027-01-01+!edit');
+ok('unlocked: Goals opens', (() => true)(), true);
+await page.keyboard.press('g');
+await page.waitForTimeout(200);
+ok('g opens it while unlocked', await page.locator('#dlg').isVisible(), true);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(150);
+
+await page.keyboard.press('?');
+await page.waitForTimeout(250);
+const lockBtn = page.locator('#opts .opt', { hasText: 'Lock goals' }).locator('button');
+ok('starts free', await lockBtn.textContent(), 'Free');
+await lockBtn.click();
+await page.waitForTimeout(120);
+ok('the same button now says locked', await lockBtn.textContent(), 'Locked');
+await page.keyboard.press('Escape');
+await page.waitForTimeout(150);
+
+await page.keyboard.press('g');
+await page.waitForTimeout(200);
+ok('g refuses while locked', await page.locator('#dlg').isVisible(), false);
+ok('and says why', (await page.locator('#toast').textContent()).includes('locked'), true);
+ok('Done is hidden while locked, even with !edit', await page.locator('#bDone').isVisible(), false);
+
+// it survives a reload, same as every other per-device setting
+await page.reload();
+await page.waitForTimeout(300);
+ok('the lock is remembered', await page.evaluate(() => document.body.classList.contains('locked')), true);
+await page.keyboard.press('g');
+await page.waitForTimeout(200);
+ok('still refuses after a reload', await page.locator('#dlg').isVisible(), false);
+
+// turning it back off is always available to whoever is holding the device
+await page.keyboard.press('?');
+await page.waitForTimeout(250);
+await page.locator('#opts .opt', { hasText: 'Lock goals' }).locator('button').click();
+await page.waitForTimeout(120);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(150);
+await page.keyboard.press('g');
+await page.waitForTimeout(200);
+ok('unlocking it lets Goals open again', await page.locator('#dlg').isVisible(), true);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(150);
+await page.evaluate(() => localStorage.removeItem('baaki.locked'));
+
+console.log('\n--- a private log of what changed, on this device ---');
+await page.evaluate(() => localStorage.removeItem('baaki.log'));
+await page.goto('about:blank');
+await page.goto(FILE + '#Seed~2027-01-01');
+await page.waitForTimeout(220);
+await page.keyboard.press('g');
+await page.waitForTimeout(200);
+await page.fill('#fName', 'Board review');
+await page.fill('#fWhen', '2026-12-25');
+await page.click('#addForm button[type=submit]');
+await page.waitForTimeout(200);
+await page.keyboard.press('?');
+await page.waitForTimeout(250);
+ok('an add shows up in the log', (await page.locator('#hist').textContent()).includes('added'), true);
+ok('with the goal it was about', (await page.locator('#hist').textContent()).includes('Board review'), true);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(150);
+
+await page.keyboard.press('g');
+await page.waitForTimeout(200);
+await page.locator('.row', { hasText: 'Board review' }).locator('button[title=Remove]').click();
+await page.waitForTimeout(150);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(150);
+await page.keyboard.press('?');
+await page.waitForTimeout(250);
+ok('a removal shows up too, most recent first',
+   (await page.locator('#hist ol li').first().textContent()).includes('removed'), true);
+
+await page.locator('#hist button', { hasText: 'Clear' }).click();
+await page.waitForTimeout(150);
+ok('clearing empties it', await page.locator('#hist').isVisible(), false);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(150);
+await page.evaluate(() => localStorage.removeItem('baaki.log'));
+
+console.log('\n--- the glow behind the number, not the number itself ---');
+const errs2 = [];
+page.on('pageerror', e => errs2.push(e.message));
+r = await open('#Ship~2026-09-02T10:20:00');           // 20 min out: the 1 Hz path, not the fine one
+await page.waitForTimeout(1300);
+ok('the hero never carries a beat class', (await page.locator('#num').getAttribute('class')) || '', '');
+ok('ticking the ordinary second path throws nothing', errs2.length, 0);
+
+{
+  const calm = await browser.newContext({ timezoneId: TZ, locale: 'en-IN', colorScheme: 'dark',
+    reducedMotion: 'reduce', viewport: { width: 1100, height: 700 } });
+  const cp = await calm.newPage();
+  await cp.clock.setFixedTime(new Date(NOW));
+  await cp.goto(FILE + '#Ship~2026-09-02T10:20:00');
+  await cp.waitForTimeout(300);
+  ok('reduced motion turns the glow off outright',
+     await cp.evaluate(() => getComputedStyle(document.querySelector('#pulse')).display), 'none');
+  await calm.close();
+}
 
 console.log('\n--- screenshots ---');
 const shots = [
