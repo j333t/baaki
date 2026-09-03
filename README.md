@@ -2,6 +2,8 @@
 
 *What's remaining.*
 
+**[Open it](https://j333t.github.io/baaki/)** · [download the file](https://github.com/j333t/baaki/releases/latest) · [desktop wrappers](https://github.com/j333t/baaki/releases/latest)
+
 A deadline board you can email. One number, big, in the spirit of E. Sreedharan's site boards on the Delhi Metro — a board in every office showing the days left, that everyone walked past.
 
 **The goal lives in the link.** Send the link, and the countdown goes with it. No server, no accounts, no sync — because a deadline has no state. It is just *target date minus now*.
@@ -135,7 +137,13 @@ Analytics: put a GA4 id in `GA_ID`. Online only. It counts *opens of the hosted 
 
 ## Building the desktop wrappers
 
-Each platform must be compiled on that platform. `.github/workflows/build.yml` does all four on GitHub's machines when you push a tag — the path that needs nothing installed locally.
+Each platform must be compiled on that platform. `.github/workflows/build.yml` does all four on GitHub's machines when you push a tag, then publishes them to a **GitHub Release** — the path that needs nothing installed locally.
+
+The release step matters on its own: a workflow artifact expires after 90 days and needs a GitHub login to reach, so a build that only ever becomes an artifact is a build nobody can have.
+
+```bash
+git tag v1.3.0 && git push origin v1.3.0
+```
 
 ```bash
 cd desktop && npx tauri build     # this OS only
