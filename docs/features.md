@@ -37,6 +37,12 @@ Legend: **★** = load-bearing, removing it changes what Baaki is.
 | Ramps generated from anchors, never stored | Storing 36 hex values makes themes miserable to author and too fat for a URL. Three anchors is fun to pick and fits in a link. |
 | Very slow gradient angle drift | The screen is alive without ever catching your eye. ±10° over 90 seconds is below the noticing threshold. |
 | Overdue goes desaturated grey | Urgency is over; what's left is a fact, not an alarm. Red forever is just noise you learn to ignore. |
+| Something good is violet → hot pink | Gold was muddy, and close enough to the deadline's red to be confusable from across a room. The two kinds of goal have to be one glance apart. |
+| A hue control, per device | Everything else in the ramp encodes distance and is not negotiable. Which end of the spectrum it sits at is not information, so it belongs to whoever is looking at the screen. |
+| Hue rotates through HSL, not `hue-rotate` | The CSS filter's matrix skews saturation and would quietly undo the work the ramps do. |
+| Overdue is never hue-shifted | Urgency is over. Turning a hue there would be inventing a signal that is not there. |
+| Arrived turns a full circle, slowly | That state is terminal — no distance left to encode — so the colour is free to be purely celebratory. Everywhere else the drift stays under the threshold of noticing. |
+| Done is three colours | A delivery three weeks late looked exactly like one three weeks early. Early keeps the arrival colour, on time is quieter, late fades to the overdue grey. |
 
 ## Goals
 
@@ -58,6 +64,9 @@ Legend: **★** = load-bearing, removing it changes what Baaki is.
 | Feature | Why it exists |
 |---|---|
 | ★ A Done button exists at all | A countdown cannot know you finished — it only knows time passed. Without a press there is no "early", only "not yet". |
+| A missed deadline does **not** celebrate | Zero on an unmarked deadline is a miss. Confetti there was celebrating exactly the case the Done button exists to distinguish. One low note, and grey. |
+| Something good has no Done button | Nothing to complete. It arrives, and that is the end of it. |
+| Done says how early or how late | "completed 14 Nov" is a fact with the interesting part removed. The delta is the only part a viewer cannot derive from the clock. |
 | Three tiers: early / on time / late | Early is the whole point of the Sreedharan story. Flattening them to "done" throws away the only interesting bit. |
 | Zero-hour celebration needs no server | Every clock already agrees on when the deadline arrives. That shared agreement is the one free sync channel in an offline tool. |
 | Done writes a stamp into a fresh link | Early and late can't be derived by a viewer, so a human carries the news. One paste is the price of no server. |
@@ -73,8 +82,14 @@ Legend: **★** = load-bearing, removing it changes what Baaki is.
 | Dark/light toggle, `t` | Something always on screen must suit the room it's in. |
 | Keyboard map (arrows, digits, g/s/d/t/?) | It's a wall board — you should be able to drive it without aiming a mouse. |
 | Swipe on touch | Same idea, thumbs. |
-| Share offers "this one" or "all" | Sharing all five when you meant one is a small betrayal, and there was no way to say which. |
+| Share copies this one, immediately | The common case should not need a choice. "Copy all n instead" is the alternative, offered after the fact; one goal gets no popover at all. |
 | Edit goals in place | Obvious in hindsight. Retyping a goal to fix a typo is the kind of thing that makes people stop using a tool. |
+| One field for *when*, in plain words | Two native pickers is three interactions to say "friday". `friday 6pm`, `in 3 weeks`, `end of year`, `31/3/27` all work. |
+| It says back what it understood | A parser that guesses silently is worse than no parser. It shows "Fri, 4 Sept 2026 · 6:00 pm", and refuses `31/2` rather than inventing a date. |
+| The calendar is still one click away | Typing wins for "friday"; a month grid wins for "some Tuesday in March". The picker sits invisibly on its own icon, which is the only way to open it that every browser agrees on. |
+| The empty board counts the rest of the year | A dash and "set a goal" is a form with its fields missing. This is a working demonstration, and it is true — which a placeholder never is. |
+| Nothing opens a dialog at you on arrival | The board says what to press and the button is visible. A modal on arrival is a small hostility. |
+| Sound is on, but a page nobody touched is silent | Written down as a rule, not left to browser autoplay policy. A link on a second monitor cannot go off in a meeting; once you have clicked, you are using it. |
 | Dialog closes on outside click | Every other dialog on earth does. |
 | About panel with the Sreedharan story | The origin is the best thing about this tool and it was invisible. Also where the keyboard map lives, so the main screen stays clean. |
 

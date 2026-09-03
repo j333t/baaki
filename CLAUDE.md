@@ -26,7 +26,7 @@ sw.js               offline cache for the hosted copy
 manifest.webmanifest  add-to-home-screen
 sync-worker.js      optional Cloudflare worker for online "Done"
 desktop/            Tauri wrapper. wraps baaki.html unmodified.
-test.mjs            152 browser checks, frozen clock
+test.mjs            185 browser checks, frozen clock
 qr-check.mjs        renders each QR version and reads it back with a real decoder
 live-check.mjs      the hosted copy: redirect, service worker, offline, update path
 version.json        200 bytes, so an emailed copy can learn it is old
@@ -45,7 +45,9 @@ docs/               rubric, feature ledger, backlog, easter eggs
 - **Per-device settings never touch the link.** Size, fullscreen, keep-awake, rotation: `localStorage` or nothing. If a setting can ride in a shared link it can change somebody else's screen, and that is a different product.
 - **Only the hero may repaint on a frame.** The tenths run on `requestAnimationFrame`; the gradient, chips, tab title and favicon stay on the one-second beat. A title that flickers ten times a second is unreadable and wakes the OS.
 - **Never trust a QR by eye.** Run `npm run test:qr`. Versions 1–6 looked perfect while every code from v7 up was unreadable; only a decoder catches that.
-- **Anything that makes noise is off until asked**, per device, never in the link. A shared board must not be able to make a sound in a room it was not invited into.
+- **Nothing makes a sound until the page has been touched.** Sound is on by default and that is only safe because of this rule; it is enforced in `beep()`, not left to browser autoplay policy. Per device, never in the link.
+- **Confetti is for finishing, never for the clock running out.** A deadline crossing zero unmarked is a miss. Only Done, and something good arriving, may celebrate.
+- **The fast path repaints everything when the rung changes**, or the colour and the tag land a second after the number does.
 - **No magic colour assertions in tests.** Compare behaviour (deadline vs event) rather than an interpolated hex, or the test breaks every time a ramp is nudged.
 
 ## The link format

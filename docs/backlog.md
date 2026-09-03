@@ -17,6 +17,13 @@ Kept for a moment so the reasoning is traceable, then they move to `features.md`
 
 **1.1.0** — update check · fullscreen · keep the screen awake · size of the number · TV default · rotation lock · tenths in the last ten minutes.
 **1.2.0** — QR code · a sound at zero.
+**1.3.0** — plain-words date field · hue control · three-tier Done colour · Done delta · live empty board · share-this-one-first · About panel legibility, and six behaviour bugs.
+
+## Asked for, not built yet
+
+| Idea | Note |
+|---|---|
+| **Choose the sound** | A short list of tones rather than the one built in, per device. Cheap, and the kind of thing somebody fiddles with once and then loves. Blocked on nothing; just after the theme system, which it should share a settings surface with. |
 
 ## Measured and rejected
 

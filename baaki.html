@@ -111,7 +111,21 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
   padding:2px 5px;line-height:1;font-family:inherit;border-radius:6px}
 .row button:hover,.row button:focus-visible{color:var(--ink);background:var(--panel2);outline:none}
 form.add{display:flex;flex-direction:column;gap:var(--s2)}
-.f2{display:flex;gap:var(--s2)}
+.when{display:flex;gap:var(--s2);align-items:stretch}
+.when input{flex:1;min-width:0}
+/* the native picker sits invisibly on top of the icon, which is the
+   only way to open it that every browser agrees on */
+.cal{position:relative;display:flex;align-items:center;justify-content:center;width:44px;flex:none;
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;color:var(--dim);cursor:pointer}
+.cal:hover{color:var(--ink)}
+.cal input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;padding:0;border:0}
+.quick{display:flex;flex-wrap:wrap;gap:var(--s1)}
+.quick button{font:500 var(--f0)/1 inherit;font-family:inherit;color:var(--dim);background:var(--panel);
+  border:1px solid transparent;border-radius:99px;padding:7px 11px;cursor:pointer}
+.quick button:hover,.quick button:focus-visible{background:var(--panel2);color:var(--ink);outline:none;border-color:var(--line)}
+.parsed{font-size:var(--f0);color:var(--dim);min-height:1.3em;letter-spacing:.02em}
+.parsed.no{color:var(--faint)}
+.parsed b{color:var(--ink);font-weight:500}
 input{font:400 var(--f1) inherit;font-family:inherit;color:var(--ink);background:var(--panel);
   border:1px solid var(--line);border-radius:10px;padding:11px var(--s3);width:100%}
 input:focus{outline:none;border-color:var(--ink)}
@@ -122,7 +136,14 @@ html[data-theme=light] input::-webkit-calendar-picker-indicator{filter:none}
   background:var(--panel);border:1px solid transparent;border-radius:10px;padding:11px;cursor:pointer}
 .kind button[aria-pressed=true]{color:var(--ink);background:var(--panel2);border-color:var(--line)}
 .hint{font-size:var(--f0);color:var(--faint);line-height:1.55}
+/* nothing in a dialog may be default-browser blue on a dark background */
+.dlg a{color:var(--ink);text-decoration:underline;text-decoration-thickness:1px;
+  text-underline-offset:3px;text-decoration-color:var(--faint);
+  transition:text-decoration-color .2s,color .2s}
+.dlg a:hover{text-decoration-color:var(--ink)}
+.dlg a:focus-visible{outline:1px solid var(--line);outline-offset:3px;border-radius:3px}
 .hint a{color:var(--dim)}
+.hint a:hover{color:var(--ink)}
 .acts{display:flex;gap:var(--s2);justify-content:flex-end;flex-wrap:wrap}
 kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;background:var(--panel2);
   border:1px solid var(--line);border-radius:5px;padding:2px 6px;color:var(--ink)}
@@ -130,7 +151,6 @@ kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;background:var(--pa
   color:var(--dim);align-items:center}
 @media (max-width:400px){.keys{grid-template-columns:auto 1fr}}
 .screen{border-top:1px solid var(--line);padding-top:var(--s3);display:flex;flex-direction:column;gap:var(--s2)}
-.screen h3{font-size:var(--f0);font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--faint)}
 .opts{display:flex;flex-direction:column;gap:var(--s1)}
 .opt{display:flex;align-items:center;gap:var(--s1);font-size:var(--f1);color:var(--dim)}
 .opt .lbl{flex:1;min-width:0}
@@ -145,8 +165,13 @@ kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;background:var(--pa
 .qrbox{display:flex;justify-content:center;background:#fff;border-radius:12px;padding:var(--s3)}
 #qrCv{image-rendering:pixelated;image-rendering:crisp-edges;width:100%;max-width:260px;height:auto}
 .dev{font-size:1.6rem;letter-spacing:.04em;opacity:.9;font-weight:400}
-.story{font-size:var(--f1);color:var(--dim);line-height:1.65}
+.story{font-size:var(--f1);color:var(--dim);line-height:1.6}
 .story b{color:var(--ink);font-weight:500}
+.lede{font-size:var(--f2);color:var(--ink);line-height:1.45;letter-spacing:-.01em;opacity:.92}
+.lede i{color:var(--dim)}
+.sec{font-size:var(--f0);font-weight:500;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--faint)}
+#about .dlg{gap:var(--s3)}
 @media (max-width:520px){#others{margin-top:var(--s3)}}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
 </style>
@@ -179,10 +204,15 @@ kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;background:var(--pa
   <div class="rows" id="rows"></div>
   <form class="add" id="addForm">
     <input id="fName" placeholder="What is the goal?" maxlength="80" required>
-    <div class="f2">
-      <input id="fDate" type="date" required>
-      <input id="fTime" type="time">
+    <div class="when">
+      <input id="fWhen" placeholder="When? friday · 31 mar · in 3 weeks · 6pm" autocomplete="off" required>
+      <span class="cal" title="Pick from a calendar">
+        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2.5 3.5h11v10h-11zM2.5 6.5h11M5.5 1.5v3M10.5 1.5v3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <input id="fDate" type="date" aria-label="Pick a date">
+      </span>
     </div>
+    <div class="quick" id="fQuick"></div>
+    <div class="parsed" id="fParsed"></div>
     <div class="kind">
       <button type="button" id="kDeadline" aria-pressed="true">Deadline</button>
       <button type="button" id="kEvent" aria-pressed="false">Something good &#9733;</button>
@@ -209,25 +239,24 @@ kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;background:var(--pa
 
 <dialog id="about"><div class="dlg">
   <h2>Baaki <span class="dev">&#2348;&#2366;&#2325;&#2368;</span></h2>
+  <p class="lede">Hindi for <i>what's remaining</i> — which is the only thing on the screen.</p>
   <p class="story">
-    <b>Baaki</b> is Hindi for <i>what's remaining</i>. It is the only word this tool needs,
-    because it is the only thing on the screen.
+    In the offices of the Delhi Metro, <b>E. Sreedharan</b> hung a board in every room
+    showing the days left to the next deadline. Not a plan. Not a chart. One number,
+    on a wall, that everybody walked past.
   </p>
   <p class="story">
-    In the offices of the Delhi Metro, <b>E. Sreedharan</b> — India's Metro Man — hung a board
-    in every room showing the days left to the next deadline. Not a plan. Not a chart.
-    One number, on a wall, that everybody walked past. The Delhi Metro was finished
-    ahead of schedule and under budget, which almost never happens anywhere.
-    <a href="https://en.wikipedia.org/wiki/E._Sreedharan" target="_blank" rel="noopener">Read about him</a> —
-    he is worth the ten minutes.
+    The Metro finished ahead of schedule and under budget, which almost never happens
+    anywhere. <a href="https://en.wikipedia.org/wiki/E._Sreedharan" target="_blank" rel="noopener">He is worth ten minutes of reading.</a>
   </p>
   <p class="story">
     This is that board, small enough to email. The goal lives in the link, so sending
     the link sends the countdown. No server, no account, nothing to sign up for.
   </p>
+  <h3 class="sec">Keys</h3>
   <div class="keys" id="keys"></div>
   <div class="screen">
-    <h3>This screen</h3>
+    <h3 class="sec">This screen</h3>
     <div class="opts" id="opts"></div>
     <div id="upd" hidden></div>
     <div class="hint">Kept on this device, never in the link. How big the number is
@@ -253,7 +282,7 @@ kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;background:var(--pa
               Empty = fully offline; the link carries the done stamp.
    GA_ID    : GA4 measurement id, e.g. 'G-ABC1234XYZ'. Online only.
    ============================================================ */
-var VERSION  = '1.2.0';
+var VERSION  = '1.3.0';
 var SYNC_URL = '';
 var GA_ID    = '';
 /* UPDATE : a 200-byte {"version","url"} somewhere online. Two candidates,
@@ -347,6 +376,121 @@ function buildHash(goals, edit){
   return p.length ? '#' + p.join('+') : '';
 }
 function baseUrl(){ return location.href.split('#')[0]; }
+
+/* ---------- when? ------------------------------------------
+   Two native pickers is three interactions to say "friday". This
+   takes what you would say out loud, and keeps the calendar one
+   click away for the times you genuinely want to look at a month.
+
+   A bare date still means the end of that day - the same promise
+   the link format makes, so typing and pasting agree.
+------------------------------------------------------------ */
+var MON = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+var DOW = ['sun','mon','tue','wed','thu','fri','sat'];
+
+function eod(d){ d.setHours(23,59,59,999); return d; }
+function atTime(d, hh, mm){
+  if(hh === null) return eod(d);
+  d.setHours(hh, mm, 0, 0);
+  return d;
+}
+function parseWhen(str, now){
+  now = now || new Date();
+  var s = String(str || '').toLowerCase().replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+  if(!s) return null;
+
+  /* take a time off the front of the problem, so the date half never
+     has to wonder whether 6 is a day or an hour */
+  var hh = null, mm = 0, m;
+  if((m = s.match(/(?:^|\s)(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m\.?(?=\s|$)/))){
+    hh = (+m[1]) % 12; if(m[3] === 'p') hh += 12; mm = +(m[2] || 0);
+    s = (s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length)).trim();
+  } else if((m = s.match(/(?:^|\s|t)(\d{1,2}):(\d{2})(?!\d)/))){
+    hh = +m[1]; mm = +m[2];
+    s = (s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length)).trim();
+  }
+  s = s.replace(/^(on|by|the)\s+/, '').replace(/\s+/g, ' ').trim();
+  var day = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  if(!s) return hh === null ? null : atTime(day, hh, mm);
+
+  /* the words people actually use */
+  if(/^(today|tonight)$/.test(s)) return atTime(day, hh, mm);
+  if(/^(tomorrow|tmrw|tmw)$/.test(s)){ day.setDate(day.getDate() + 1); return atTime(day, hh, mm); }
+  if(/^day after( tomorrow)?$/.test(s)){ day.setDate(day.getDate() + 2); return atTime(day, hh, mm); }
+
+  if((m = s.match(/^(?:end of (?:the )?(week|month|year|quarter)|(eow|eom|eoy))$/))){
+    var unit = m[1] || m[2];
+    if(unit === 'week' || unit === 'eow'){ day.setDate(day.getDate() + (7 - day.getDay()) % 7); }
+    else if(unit === 'month' || unit === 'eom'){ day = new Date(day.getFullYear(), day.getMonth() + 1, 0); }
+    else if(unit === 'quarter'){ day = new Date(day.getFullYear(), (Math.floor(day.getMonth() / 3) + 1) * 3, 0); }
+    else { day = new Date(day.getFullYear(), 11, 31); }
+    return atTime(day, hh, mm);
+  }
+
+  /* in 3 weeks · +10d · 6 months */
+  if((m = s.match(/^(?:in\s+|\+)?(\d+)\s*(d|w|mo?|y|day|days|week|weeks|month|months|year|years)$/))){
+    var k = +m[1], u = m[2].charAt(0);
+    if(u === 'd') day.setDate(day.getDate() + k);
+    else if(u === 'w') day.setDate(day.getDate() + k * 7);
+    else if(u === 'y') day.setFullYear(day.getFullYear() + k);
+    else day.setMonth(day.getMonth() + k);
+    return atTime(day, hh, mm);
+  }
+
+  /* friday · next fri */
+  if((m = s.match(/^(next\s+|this\s+)?([a-z]{3,9})$/))){
+    var ix = -1;
+    for(var i = 0; i < 7; i++) if(m[2].indexOf(DOW[i]) === 0) ix = i;
+    if(ix >= 0){
+      var ahead = (ix - day.getDay() + 7) % 7;
+      if(ahead === 0) ahead = 7;                      /* "friday" on a Friday means the next one */
+      if(/^next/.test(m[1] || '') && ahead < 7) ahead += 7;
+      day.setDate(day.getDate() + ahead);
+      return atTime(day, hh, mm);
+    }
+  }
+
+  /* 2027-03-31 */
+  if((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)))
+    return atTime(new Date(+m[1], +m[2] - 1, +m[3]), hh, mm);
+
+  /* 31/3/2027 · 31-3-27 · 31.3 — day first, which is what most of the world writes */
+  if((m = s.match(/^(\d{1,2})[\/.\-](\d{1,2})(?:[\/.\-](\d{2,4}))?$/))){
+    var yr = m[3] === undefined ? now.getFullYear() : (+m[3] < 100 ? 2000 + +m[3] : +m[3]);
+    var d1 = new Date(yr, +m[2] - 1, +m[1]);
+    if(d1.getMonth() !== +m[2] - 1) return null;      /* 31/2 is not a date */
+    if(m[3] === undefined && d1 < day) d1.setFullYear(yr + 1);
+    return atTime(d1, hh, mm);
+  }
+
+  /* 31 mar 2027 · march 31 · 31 march */
+  var mi = -1, num = null;
+  var parts = s.split(' ');
+  for(var p = 0; p < parts.length; p++){
+    var w = parts[p].replace(/(st|nd|rd|th)$/, '');
+    for(var q = 0; q < 12; q++) if(w.length >= 3 && MON[q] === w.slice(0, 3)) mi = q;
+    if(/^\d{1,2}$/.test(w) && num === null) num = +w;
+    else if(/^\d{4}$/.test(w)) var yy = +w;
+  }
+  if(mi >= 0 && num !== null){
+    var year = (typeof yy === 'number') ? yy : now.getFullYear();
+    var d2 = new Date(year, mi, num);
+    if(d2.getMonth() !== mi) return null;
+    if(typeof yy !== 'number' && d2 < day) d2.setFullYear(year + 1);
+    return atTime(d2, hh, mm);
+  }
+  return null;
+}
+/* what it understood, said back, so nothing is a guess */
+function whenLabel(d){
+  /* composed rather than asked for in one go: most locales put a comma
+     before the year too, and "Wed, 31 Mar, 2027" reads like a stutter */
+  var s = d.toLocaleDateString(undefined, { weekday:'short' }) + ', ' +
+          d.toLocaleDateString(undefined, { day:'numeric', month:'short' }) + ' ' + d.getFullYear();
+  return s + (isEod(d) ? ' · end of day'
+                       : ' · ' + d.toLocaleTimeString(undefined, { hour:'numeric', minute:'2-digit' }));
+}
 
 /* ---------- state ---------- */
 var S = { goals:[], edit:false };
@@ -477,6 +621,20 @@ function humanSpan(now, target){
   /* under a month the hero already says the days, so say nothing */
   return P.join(' ');
 }
+/* How early, or how late. This is the only part of Done that is not
+   derivable from the clock, so it is the part worth saying out loud. */
+function deltaLabel(target, done){
+  var ms = target - done, late = ms < 0, abs = Math.abs(ms);
+  if(abs < 90 * 1000) return 'to the minute';
+  var word = late ? 'late' : 'early';
+  if(abs < HOUR)  return Math.round(abs / MIN) + ' min ' + word;
+  if(abs < DAY)   return Math.round(abs / HOUR) + ' hr ' + word;
+  var d = Math.round(abs / DAY);
+  if(d < 45)      return d + (d === 1 ? ' day ' : ' days ') + word;
+  var mo = Math.round(d / 30.44);
+  if(mo < 18)     return mo + ' mo ' + word;
+  return (Math.round(d / 36.5) / 10) + ' yr ' + word;
+}
 function dateLabel(d){
   var s = d.toLocaleDateString(undefined, {day:'numeric', month:'short', year:'numeric'});
   return isEod(d) ? s : s + ', ' + d.toLocaleTimeString(undefined, {hour:'numeric', minute:'2-digit'});
@@ -484,8 +642,14 @@ function dateLabel(d){
 
 /* ---------- gradient: colour carries the distance ----------
    A deadline cools from indigo to hot red, then goes grey when
-   missed. Something good warms from violet to gold and stays
-   radiant once it arrives. Same curve, opposite feeling.
+   missed. Something good climbs from violet to hot pink and stays
+   radiant once it arrives. Same curve, opposite feeling - and two
+   hues far enough apart to tell from across a room, which gold and
+   red were not.
+
+   Which end of the spectrum any of it sits at is taste, not
+   information, so hueShift() below hands that part to whoever is
+   looking at the screen.
 ------------------------------------------------------------ */
 var RAMP = {
   deadline: {
@@ -503,17 +667,30 @@ var RAMP = {
   event: {
     dark: [
       [3650,'#0c0a1a','#20183e'],[730,'#0e0b1e','#281c4e'],[365,'#110c24','#372270'],
-      [180,'#160d28','#4d2680'],[90,'#1d0f26','#6b2f78'],[30,'#28131a','#9a4746'],
-      [7,'#32200d','#bd7a1c'],[1,'#3a2a08','#d9a417'],[0,'#40320c','#f0c419']
+      [180,'#160d28','#4d2680'],[90,'#1d0f26','#6b2f78'],[30,'#26112a','#93338c'],
+      [7,'#2f0f2c','#b52f96'],[1,'#380f2a','#d42d8f'],[0,'#3d0f27','#f0357f']
     ],
     light: [
       [3650,'#f2eefb','#d6cbef'],[730,'#f1edfb','#d0c4f0'],[365,'#f0ecfc','#c8b8f2'],
-      [180,'#f2ebfb','#c9aeef'],[90,'#f6ebf7','#dcaee2'],[30,'#fbeeea','#f2b6a6'],
-      [7,'#fdf3e0','#f7d79b'],[1,'#fdf8de','#f6e08c'],[0,'#fefadf','#f5e06a']
+      [180,'#f2ebfb','#c9aeef'],[90,'#f6ebf7','#dcaee2'],[30,'#fbebf5','#efaad9'],
+      [7,'#fdeaf2','#f7a3cd'],[1,'#fde9ef','#fa9bc0'],[0,'#fde8ec','#fb92b2']
     ]
   }
 };
 var OVER = { dark:['#17171a','#37373e'], light:['#f1f1f3','#d8d8de'] };
+
+/* Done is not one state, it is three, and they should not look alike.
+   Early keeps the full arrival colour; on time is the same colour with
+   the volume down; late fades most of the way to the grey that overdue
+   already uses. Generated by mixing, never stored. */
+var DONE_MIX = { early: 0, ontime: 0.45, late: 0.85 };
+function doneGrad(tier, light){
+  var full = gradFor(0, light, true);
+  var grey = OVER[light ? 'light' : 'dark'];
+  var t = DONE_MIX[tier === undefined || tier === null ? 'ontime' : tier];
+  if(t === undefined) t = DONE_MIX.ontime;
+  return [mix(full[0], grey[0], t), mix(full[1], grey[1], t)];
+}
 
 function mix(a, b, t){
   function part(h, i){ return parseInt(h.slice(1+i*2, 3+i*2), 16); }
@@ -522,6 +699,35 @@ function mix(a, b, t){
     var v = Math.round(part(a,i) + (part(b,i) - part(a,i)) * t);
     out += pad(Math.max(0, Math.min(255, v)).toString(16));
   }
+  return out;
+}
+/* Rotating a hue means leaving RGB, which is why this is here rather
+   than a filter: a CSS hue-rotate matrix skews saturation and would
+   quietly undo the work the ramps do. Round trip through HSL instead. */
+function hueShift(hex, deg){
+  deg = deg % 360;
+  if(!deg) return hex;
+  var r = parseInt(hex.slice(1,3),16)/255, g = parseInt(hex.slice(3,5),16)/255, b = parseInt(hex.slice(5,7),16)/255;
+  var mx = Math.max(r,g,b), mn = Math.min(r,g,b), l = (mx+mn)/2, h = 0, sat = 0;
+  if(mx !== mn){
+    var d = mx - mn;
+    sat = l > 0.5 ? d/(2-mx-mn) : d/(mx+mn);
+    h = mx === r ? (g-b)/d + (g<b?6:0) : mx === g ? (b-r)/d + 2 : (r-g)/d + 4;
+    h /= 6;
+  }
+  if(!sat) return hex;                    /* grey has no hue to turn */
+  h = (h + deg/360) % 1;
+  if(h < 0) h += 1;
+  function ch(t){
+    if(t < 0) t += 1;
+    if(t > 1) t -= 1;
+    if(t < 1/6) return p + (q-p)*6*t;
+    if(t < 1/2) return q;
+    if(t < 2/3) return p + (q-p)*(2/3-t)*6;
+    return p;
+  }
+  var q = l < 0.5 ? l*(1+sat) : l+sat-l*sat, p = 2*l - q, out = '#', v = [h+1/3, h, h-1/3];
+  for(var i=0;i<3;i++) out += pad(Math.round(ch(v[i])*255).toString(16));
   return out;
 }
 function gradFor(days, light, event){
@@ -604,15 +810,23 @@ function render(force){
   root.style.setProperty('--ang', (155 + 10 * Math.sin((Date.now() - t0) / 90000)).toFixed(2) + 'deg');
 
   if(!S.goals.length){
-    el.name.textContent = 'Baaki';
-    el.num.textContent = '—'; el.unit.textContent = '';
-    el.sub.textContent = ''; el.tag.textContent = 'set a goal';
-    el.others.innerHTML = ''; el.snark.textContent = ''; el.done.hidden = true;
-    document.title = 'Baaki';
-    var g0 = gradFor(3650, light, false);
+    var yr = now.getFullYear(), eoy = new Date(yr, 11, 31, 23, 59, 59, 999);
+    var left = Math.max(0, dayDiff(now, eoy));
+    el.name.innerHTML = '<span></span>';
+    el.name.firstChild.textContent = 'बाकी';
+    if(prev.n !== String(left)){ setNum(String(left)); prev.n = String(left); }
+    el.unit.textContent = 'days left in ' + yr;
+    el.sub.innerHTML = '<span></span>';
+    el.sub.firstChild.textContent = dateLabel(eoy);
+    el.tag.textContent = 'an example';
+    el.others.innerHTML = '';
+    el.snark.textContent = 'Press G, or Goals below, to count something of your own.';
+    el.done.hidden = true;
+    document.title = 'Baaki · ' + left + ' days left in ' + yr;
+    var g0 = paint(gradFor(left, light, false), null);
     root.style.setProperty('--g1', g0[0]);
     root.style.setProperty('--g2', g0[1]);
-    prev = {};
+    setIcon(String(left), g0[1]);
     return;
   }
 
@@ -631,15 +845,17 @@ function render(force){
   var sub = (span ? '<b>' + span + '</b>' : '') + '<span>' + dateLabel(g.target) + '</span>';
   if(prev.s !== sub){ el.sub.innerHTML = sub; prev.s = sub; }
 
-  var tag = v.m === 'done' ? ('completed ' + dateLabel(g.done))
+  var tag = v.m === 'done' ? (deltaLabel(g.target, g.done) + ' · ' + dateLabel(g.done))
           : v.m === 'arrived' ? 'it is here'
           : (v.m.indexOf('over') === 0 ? 'past due' : '');
   if(prev.t !== tag){ el.tag.textContent = tag; prev.t = tag; }
 
   /* continuous day value, so the colour drifts and never jumps */
-  var cd = (g.done || v.m === 'arrived') ? 0
-         : (v.m.indexOf('over') === 0 ? -1 : (g.target - now) / DAY);
-  var c = gradFor(cd, light, g.event);
+  var c;
+  if(v.m === 'done') c = doneGrad(v.tier, light);
+  else if(v.m === 'arrived') c = gradFor(0, light, true);
+  else c = gradFor(v.m.indexOf('over') === 0 ? -1 : (g.target - now) / DAY, light, g.event);
+  c = paint(c, v);
   root.style.setProperty('--g1', c[0]);
   root.style.setProperty('--g2', c[1]);
   var meta = document.querySelector('meta[name=theme-color]');
@@ -678,26 +894,55 @@ function render(force){
     el.snark.textContent = S.goals.length >= 10 ? snarkPick : '';
   }
 
-  el.done.hidden = !(S.edit && !g.done && v.m !== 'arrived');
-  if(v.m === 'fine' || v.m === 'overFine') fineStart();
+  /* Something good has nothing to complete - it arrives, and that is
+     the end of it. A Done button there is a button with no meaning. */
+  el.done.hidden = !(S.edit && !g.done && !g.event);
+  if(v.m === 'fine' || v.m === 'overFine'){ fineMode = v.m; fineStart(); }
+  else fineMode = v.m;
   soundTick(v);
   maybeCelebrate(g, v);
 }
 /* The fast path. Runs only inside the last ten minutes, writes only
    the hero, and stops itself the moment the goal leaves that window.
    Everything else - gradient, chips, tab, favicon - stays at 1 Hz. */
-var fineRaf = 0;
+var fineRaf = 0, fineMode = '';
 function fineTick(){
   fineRaf = 0;
   if(!S.goals.length) return;
   var g = S.goals[0], v = view(g, new Date());
-  if(v.m !== 'fine' && v.m !== 'overFine') return;
+  if(v.m !== fineMode){
+    /* The rung changed under us. Repaint everything on this frame, so
+       the colour, the tag, the title and the celebration all land on
+       zero instead of up to a second after it. */
+    fineMode = v.m;
+    prev = {};
+    render(true);
+    return;
+  }
   var n = heroOf(v, g).n;
   if(prev.n !== n){ setNum(n); prev.n = n; }
   soundTick(v);
   fineRaf = requestAnimationFrame(fineTick);
 }
 function fineStart(){ if(!fineRaf) fineRaf = requestAnimationFrame(fineTick); }
+/* The chosen offset, plus whatever the drift is doing this second.
+   A full slow turn once something good has arrived - that state is
+   terminal and has no distance left to encode, so the colour is free
+   to be purely celebratory. Everywhere else the drift stays under the
+   threshold of noticing, like the angle already does. */
+function paint(pair, v){
+  /* Overdue is deliberately hueless - urgency is over, what is left is
+     a fact. Turning a hue there would be inventing a signal. */
+  if(v && v.m.indexOf('over') === 0) return pair;
+  var deg = hueOff;
+  if(hueDrift){
+    deg += (v && v.m === 'arrived')
+      ? (Date.now() - t0) / 240000 * 360
+      : 10 * Math.sin((Date.now() - t0) / 90000 + 1.7);
+  }
+  return [hueShift(pair[0], deg), hueShift(pair[1], deg)];
+}
+
 /* Focus is a rotation, not a promotion. Pulling one goal to the
    front would scramble the order, and then "previous" could not
    undo "next". Rotating keeps the ring intact, so the arrows are
@@ -717,7 +962,7 @@ function cycleFocus(dir){ rotate(dir > 0 ? 1 : -1); }
 /* ---------- done + celebration ---------- */
 function markDone(){
   var g = S.goals[0];
-  if(!g || g.done) return;
+  if(!g || g.done || g.event) return;
   g.done = new Date();
   prev = {};
   commit(false);
@@ -732,16 +977,19 @@ function maybeCelebrate(g, v){
   if(v.m === 'done'){ celebrated[k] = 1; fire(v.tier); return; }
   if(v.m === 'arrived'){ celebrated[k] = 1; fire('arrived'); return; }
   if((v.m === 'overFine' || v.m === 'overMs') && v.ms < 3 * MIN){
-    /* crossed zero with the page open. Every clock agrees on the
-       deadline, so this fires at the same moment on every copy. */
-    celebrated[k] = 1; fire('ontime');
+    /* Crossed zero with the page open, and nobody pressed Done. That
+       is a miss, not a finish - the whole reason Done exists is that
+       the clock cannot know whether you got there. So: no confetti.
+       One low note marks the moment, and the board goes grey. */
+    celebrated[k] = 1;
+    if(soundOn) beep(180, 0.7, 0.13);
   }
 }
 var PAL = {
   early:   ['#ffd76e','#ff8fb1','#6ee7ff','#a4f78a','#ffffff','#c9a3ff'],
   ontime:  ['#ffd76e','#7fd8ff','#ffffff','#9ef0b0'],
   late:    ['#9aa3b8','#c3cad8','#7f8aa0','#e2e6ee'],
-  arrived: ['#ffd76e','#f5e06a','#fff2b0','#ffb347','#ffffff','#ffe9a8']
+  arrived: ['#ff6ec7','#ffa8de','#ffffff','#c98bff','#ff90b0','#ffe0f2']
 };
 function fire(tier){
   if(!tier) tier = 'ontime';
@@ -851,6 +1099,7 @@ function outsideClick(dialog, e){
 
 /* ---------- goals dialog: add, edit, reorder, remove ---------- */
 function openDlg(){
+  drawQuick();
   resetForm();
   drawRows();
   if(!el.dlg.open) el.dlg.showModal();
@@ -861,9 +1110,32 @@ function setFormKind(isEvent){
   $('#kDeadline').setAttribute('aria-pressed', String(!formKindEvent));
   $('#kEvent').setAttribute('aria-pressed', String(formKindEvent));
 }
+var QUICK = [
+  ['Today', 'today'], ['Tomorrow', 'tomorrow'], ['Friday', 'friday'],
+  ['In a week', 'in 1 week'], ['In a month', 'in 1 month'], ['End of year', 'end of year']
+];
+function drawQuick(){
+  var q = $('#fQuick');
+  if(q.childNodes.length) return;
+  QUICK.forEach(function(row){
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = row[0];
+    b.onclick = function(){ $('#fWhen').value = row[1]; showParsed(); $('#fWhen').focus(); };
+    q.appendChild(b);
+  });
+}
+function showParsed(){
+  var raw = $('#fWhen').value.trim(), out = $('#fParsed');
+  if(!raw){ out.textContent = ''; out.className = 'parsed'; return; }
+  var d = parseWhen(raw);
+  if(d){ out.innerHTML = '<b></b>'; out.firstChild.textContent = whenLabel(d); out.className = 'parsed'; }
+  else { out.textContent = 'Not a date yet — try "31 mar 2027", "friday", or "in 3 weeks".'; out.className = 'parsed no'; }
+}
 function resetForm(){
   editingIndex = -1;
-  $('#fName').value = ''; $('#fDate').value = ''; $('#fTime').value = '';
+  $('#fName').value = ''; $('#fWhen').value = ''; $('#fDate').value = '';
+  showParsed();
   setFormKind(false);
   $('#bSubmit').textContent = 'Add goal';
   $('#bCancelEdit').hidden = true;
@@ -873,8 +1145,8 @@ function startEdit(i){
   var g = S.goals[i];
   editingIndex = i;
   $('#fName').value = g.name;
-  $('#fDate').value = fmtLocal(g.target, false);
-  $('#fTime').value = isEod(g.target) ? '' : pad(g.target.getHours()) + ':' + pad(g.target.getMinutes());
+  $('#fWhen').value = fmtLocal(g.target, !isEod(g.target));
+  showParsed();
   setFormKind(g.event);
   $('#bSubmit').textContent = 'Save changes';
   $('#bCancelEdit').hidden = false;
@@ -1203,21 +1475,22 @@ function wireShare(){
 }
 function openShare(){
   if(!S.goals.length){ toast('Add a goal first.'); return; }
-  if(S.goals.length === 1){ doShare(false); return; }
+  /* The one you are looking at, straight to the clipboard, every time.
+     Everything else is an alternative you can reach for afterwards. */
+  doShare(false);
+  if(S.goals.length === 1) return;
   var b = $('#bShare');
   var wrap = document.createElement('span');
   wrap.id = 'shareWrap';
   wrap.style.display = 'flex';
   wrap.style.gap = '6px';
-  wrap.innerHTML = '<button class="b" id="shOne">This one</button>' +
-                   '<button class="b" id="shAll">All ' + S.goals.length + '</button>' +
+  wrap.innerHTML = '<button class="b" id="shAll">Copy all ' + S.goals.length + ' instead</button>' +
                    '<button class="b" id="shQr">Code</button>';
   b.parentNode.replaceChild(wrap, b);
   shareOpen = true;
-  $('#shOne').onclick = function(){ doShare(false); closeShare(); };
   $('#shAll').onclick = function(){ doShare(true); closeShare(); };
   $('#shQr').onclick = function(){ closeShare(); openQr(); };
-  $('#shOne').focus();
+  $('#shAll').focus();
   setTimeout(function(){ document.addEventListener('click', onDocClickShare, true); }, 0);
 }
 function onDocClickShare(e){
@@ -1230,7 +1503,7 @@ function onDocClickShare(e){
 function doShare(all){
   var link = baseUrl() + (all ? buildHash(S.goals, false) : '#' + goalToken(S.goals[0]));
   copy(link).then(function(ok){
-    toast(ok ? (all ? 'All ' + S.goals.length + ' copied.' : 'This one copied.')
+    toast(ok ? (all ? 'All ' + S.goals.length + ' copied.' : 'Link copied.')
              : 'Copy the address bar to share.');
   });
 }
@@ -1312,19 +1585,27 @@ function setWake(on){
 }
 document.addEventListener('visibilitychange', function(){ if(!document.hidden) acquireWake(); });
 
-/* --- a sound at zero, if you ask for it ---
-   Off until somebody switches it on, per device, never in the link.
-   A board that makes a noise in a room it was not invited into is a
-   different and much worse product - which is what the old blanket
-   "no sound" rule was really protecting against.
+/* --- a sound at zero ---
+   On by default, and safe to be, because of the rule below: a page
+   nobody has touched never makes a sound. A link somebody sent you,
+   left open on a second monitor, cannot go off in a meeting. Once you
+   have clicked or typed on it you are using it, and that is when a
+   deadline crossing zero is worth hearing.
 
-   Unlike keep-awake, this one *is* remembered. The risk it carries is
-   noise in the wrong room, and that only happens inside the last ten
-   seconds of a deadline; the risk keep-awake carries is a flat battery
-   next Tuesday, which happens whether you are looking or not.
+   That guarantee is written down here rather than left to the browser
+   autoplay policy, which is not the same on every browser and is off
+   entirely in automation.
+
+   Per device, never in the link - a board you share must not be able
+   to arm somebody else's speakers. Remembered, unlike keep-awake: the
+   risk here is noise in the wrong room in the last ten seconds of a
+   deadline, where the other risk is a flat battery next Tuesday.
 
    Ten ticks and a chime, which is the moment the tenths rung exists for. */
-var soundOn = false, actx = null, lastTick = -1;
+var soundOn = true, actx = null, lastTick = -1, touched = false;
+['pointerdown','keydown','touchstart'].forEach(function(ev){
+  document.addEventListener(ev, function(){ touched = true; }, true);
+});
 function audio(){
   if(!actx){
     var A = window.AudioContext || window.webkitAudioContext;
@@ -1337,6 +1618,7 @@ function audio(){
 /* a raw oscillator switched on and off clicks; the envelope is the
    difference between a note and a fault */
 function beep(freq, len, vol, at){
+  if(!touched) return;          /* nobody is here; do not make a noise */
   var a = audio();
   if(!a) return;
   var t = a.currentTime + (at || 0);
@@ -1392,6 +1674,25 @@ function setRot(on){
     try { screen.orientation.unlock(); } catch(e){}
     rotLock = false; toast('Rotation free again.'); drawOpts();
   }
+}
+
+/* --- hue ---
+   Everything else about the colour encodes distance and is not
+   negotiable. Which end of the spectrum it sits at is not information,
+   so it belongs to whoever is looking at the screen. Per device. */
+var hueOff = 0, hueDrift = true;
+function setHue(deg, say){
+  hueOff = ((deg % 360) + 360) % 360;
+  if(hueOff > 180) hueOff -= 360;
+  lsSet('hue', hueOff);
+  prev = {}; render(true); drawOpts();
+  if(say) toast('Hue ' + (hueOff > 0 ? '+' : '') + hueOff + '\u00b0');
+}
+function setDrift(on){
+  hueDrift = !!on;
+  lsSet('drift', hueDrift ? '1' : '');
+  toast(hueDrift ? 'Hue drifts.' : 'Hue holds still.');
+  prev = {}; render(true); drawOpts();
 }
 
 /* --- size of the number ---
@@ -1494,6 +1795,20 @@ function drawOpts(){
     optBtn(r, rotLock ? 'Locked' : 'Free', rotLock, function(){ setRot(!rotLock); });
     o.appendChild(r);
   }
+  r = optRow('Hue');
+  optBtn(r, '\u2212', null, function(){ setHue(hueOff - 15, true); });
+  var hv = document.createElement('span');
+  hv.className = 'val';
+  hv.textContent = (hueOff > 0 ? '+' : '') + hueOff + '\u00b0';
+  r.appendChild(hv);
+  optBtn(r, '+', null, function(){ setHue(hueOff + 15, true); });
+  optBtn(r, 'Reset', null, function(){ setHue(0, true); });
+  o.appendChild(r);
+
+  r = optRow('Hue drifts');
+  optBtn(r, hueDrift ? 'On' : 'Off', hueDrift, function(){ setDrift(!hueDrift); });
+  o.appendChild(r);
+
   r = optRow('Size of the number');
   optBtn(r, '−', null, function(){ bumpSize(-1); });
   var val = document.createElement('span');
@@ -1531,6 +1846,7 @@ var KEYS = [
   ['F', 'fullscreen'],
   ['W', 'keep the screen awake'],
   ['M', 'sound at zero'],
+  ['H', 'shift the hue, Shift+H back'],
   ['+ −', 'bigger / smaller number'],
   ['0', 'reset the size'],
   ['?', 'this panel'],
@@ -1577,6 +1893,7 @@ document.addEventListener('keydown', function(e){
     case 'q': e.preventDefault(); openQr(); break;
     case 'w': setWake(!wakeWant); break;
     case 'm': setSound(!soundOn); break;
+    case 'h': e.preventDefault(); setHue(hueOff + (e.shiftKey ? -15 : 15), true); break;
     case '?': case '/': e.preventDefault(); openAbout(); break;
   }
 });
@@ -1610,6 +1927,15 @@ $('#bAbout').onclick = openAbout;
 $('#bAboutClose').onclick = function(){ el.about.close(); };
 $('#bQrClose').onclick = function(){ el.qr.close(); };
 el.qr.addEventListener('click', function(e){ if(outsideClick(el.qr, e)) el.qr.close(); });
+$('#fWhen').addEventListener('input', showParsed);
+/* the calendar is a shortcut into the same text field, not a second
+   source of truth - everything still goes through parseWhen */
+$('#fDate').addEventListener('change', function(){
+  if(!this.value) return;
+  $('#fWhen').value = this.value;
+  showParsed();
+  this.value = '';
+});
 $('#kDeadline').onclick = function(){ setFormKind(false); };
 $('#kEvent').onclick = function(){ setFormKind(true); };
 wireShare();
@@ -1629,9 +1955,10 @@ $('#bTheme').onclick = function(){
 };
 $('#addForm').onsubmit = function(e){
   e.preventDefault();
-  var name = $('#fName').value.trim(), date = $('#fDate').value, time = $('#fTime').value;
-  var target = parseLocal(date + (time ? 'T' + time : ''));
-  if(!name || !target){ toast('Need a name and a date.'); return; }
+  var name = $('#fName').value.trim();
+  var target = parseWhen($('#fWhen').value);
+  if(!name){ toast('Give it a name.'); return; }
+  if(!target){ toast('I could not read that date.'); $('#fWhen').focus(); return; }
   if(editingIndex >= 0){
     var g = S.goals[editingIndex];
     g.name = name; g.target = target; g.event = formKindEvent;
@@ -1661,7 +1988,9 @@ try {
 
 /* size is remembered per device; a screen nobody has sized yet gets
    the guess from defaultSize() */
-soundOn = !!lsGet('sound');
+soundOn = lsGet('sound') === null ? true : !!lsGet('sound');
+hueOff = parseInt(lsGet('hue'), 10) || 0;
+hueDrift = lsGet('drift') === null ? true : !!lsGet('drift');
 var savedSize = lsGet('size');
 sizeIx = savedSize === null ? defaultSize() : Math.max(0, Math.min(STEPS.length - 1, parseInt(savedSize, 10) || 0));
 applySize();
@@ -1672,7 +2001,8 @@ load();
 if(S.goals.length && location.hash !== buildHash(S.goals, S.edit)) commit(false);
 render(true);
 setInterval(function(){ render(false); }, 1000);
-if(!S.goals.length) setTimeout(openDlg, 350);
+/* no dialog opens itself at you: the empty board is a working example
+   that says what to press, which is a better welcome than a form */
 syncPull();
 checkUpdate();
 

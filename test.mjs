@@ -125,7 +125,8 @@ r = await open('#Ship~2026-09-30!2026-09-01T14:00');
 ok('done early: check mark', r.num, '✓');
 ok('done early: tier word', r.unit, 'early');
 ok('done early: celebration fires', await page.locator('#hero').getAttribute('class'), 'pop');
-ok('done early: completed date', /^completed 1 Sept 2026/.test(r.tag), true);
+ok('done early: says how early', r.tag.indexOf('early') >= 0, true);
+ok('done early: and when', r.tag.indexOf('1 Sept 2026') >= 0, true);
 
 r = await open('#Ship~2026-09-02T12:00!2026-09-02T09:00');
 ok('done same day: on time', r.unit, 'on time');
@@ -202,9 +203,18 @@ await page.evaluate(() => localStorage.removeItem('baaki.hash'));
 await page.goto('about:blank');
 await page.goto(FILE);                       // no hash, no saved goals
 await page.waitForTimeout(600);
-ok('empty state opens the dialog', await page.locator('#dlg').isVisible(), true);
+// an empty board is a live example, not a blank form, and it does not
+// open a modal at somebody who has only just arrived
+ok('empty board counts the rest of the year', /^\d{1,3}$/.test((await page.locator('#num').textContent()).trim()), true);
+ok('and says what it is', (await page.locator('#unit').textContent()).trim(), 'days left in 2026');
+ok('and says it is an example', (await page.locator('#tag').textContent()).trim(), 'an example');
+ok('and what to press', (await page.locator('#snark').textContent()).includes('Press G'), true);
+ok('no dialog opens itself', await page.locator('#dlg').isVisible(), false);
+await page.keyboard.press('g');
+await page.waitForTimeout(250);
+ok('g opens it', await page.locator('#dlg').isVisible(), true);
 await page.fill('#fName', 'Phase 3 tender');
-await page.fill('#fDate', '2026-12-25');
+await page.fill('#fWhen', '2026-12-25');
 await page.click('#addForm button[type=submit]');
 await page.waitForTimeout(200);
 await page.click('#bClose');
@@ -285,10 +295,10 @@ await page.waitForTimeout(200);
 await page.locator('.row').first().locator('button[title=Edit]').click();
 await page.waitForTimeout(150);
 ok('edit loads the goal into the form', await page.inputValue('#fName'), 'Tender');
-ok('edit loads its date', await page.inputValue('#fDate'), '2026-10-15');
+ok('edit loads its date', await page.inputValue('#fWhen'), '2026-10-15');
 ok('submit becomes save', (await page.locator('#bSubmit').textContent()).trim(), 'Save changes');
 await page.fill('#fName', 'Tender, revised');
-await page.fill('#fDate', '2026-11-30');
+await page.fill('#fWhen', '2026-11-30');
 await page.click('#kEvent');
 await page.click('#bSubmit');
 await page.waitForTimeout(200);
@@ -305,19 +315,24 @@ await page.waitForTimeout(220);
 await page.evaluate(() => { window.__copied = null; navigator.clipboard.writeText = t => { window.__copied = t; return Promise.resolve(); }; });
 await page.click('#bShare');
 await page.waitForTimeout(150);
-ok('share offers a choice', await page.locator('#shOne').isVisible(), true);
-ok('the choice names the count', (await page.locator('#shAll').textContent()).trim(), 'All 3');
-await page.click('#shOne');
-await page.waitForTimeout(150);
 let copied = decodeURIComponent(await page.evaluate(() => window.__copied));
-ok('this-one link carries only the big goal', copied.endsWith('#One~2027-01-01'), true);
-await page.click('#bShare');
-await page.waitForTimeout(150);
+ok('share copies this one without being asked', copied.endsWith('#One~2027-01-01'), true);
+ok('all is offered as the alternative', (await page.locator('#shAll').textContent()).trim(), 'Copy all 3 instead');
 await page.click('#shAll');
 await page.waitForTimeout(150);
 copied = decodeURIComponent(await page.evaluate(() => window.__copied));
 ok('all link carries every goal', copied.includes('One~2027-01-01+Two~2027-02-01+Three~2027-03-01'), true);
 ok('neither leaks !edit', copied.includes('!edit'), false);
+
+// one goal has no alternative worth offering
+await page.goto('about:blank');
+await page.goto(FILE + '#Only~2027-01-01');
+await page.waitForTimeout(220);
+await page.evaluate(() => { window.__copied = null; navigator.clipboard.writeText = t => { window.__copied = t; return Promise.resolve(); }; });
+await page.click('#bShare');
+await page.waitForTimeout(200);
+ok('one goal: copied, no popover', decodeURIComponent(await page.evaluate(() => window.__copied)).endsWith('#Only~2027-01-01'), true);
+ok('one goal: nothing to choose between', await page.locator('#shAll').count(), 0);
 
 console.log('\n--- a board with too many numbers on it ---');
 const many = Array.from({length: 11}, (_, i) => `Goal${i + 1}~2027-0${(i % 9) + 1}-15`).join('+');
@@ -364,9 +379,15 @@ ok('5 min over: unit', r.unit, 'minutes over');
 r = await open('#Ship~2026-09-02T09:49');
 ok('11 min over: back to whole seconds', r.num, '+11:00');
 
-// the zero-hour celebration used to live entirely inside the old rung
+// A deadline crossing zero unmarked is a miss, not a finish. The clock
+// cannot know whether you got there - that is the whole reason Done
+// exists - so there is nothing to throw confetti about.
 r = await open('#Ship~2026-09-02T09:59');
-ok('1 min over: still celebrates at zero', await page.locator('#hero').getAttribute('class'), 'pop');
+ok('a missed deadline does not celebrate', await page.locator('#hero').getAttribute('class'), null);
+ok('it says what it is', r.tag, 'past due');
+// something good arriving is the opposite case, and still does
+r = await open('#Diwali~2026-09-02T09:59*');
+ok('something good arriving still celebrates', await page.locator('#hero').getAttribute('class'), 'pop');
 
 // a request for less motion turns the rung off rather than slowing it down
 {
@@ -501,16 +522,27 @@ ok('too long: and draws nothing', await page.evaluate(() => document.querySelect
 await page.keyboard.press('Escape');
 await page.waitForTimeout(120);
 
-console.log('\n--- sound: off until you ask ---');
+console.log('\n--- sound: on, but it cannot surprise you ---');
 
 await page.evaluate(() => localStorage.removeItem('baaki.sound'));
 r = await open('#Ship~2027-01-01');
 await page.keyboard.press('?');
 await page.waitForTimeout(150);
 let soundBtn = page.locator('#opts .opt', { hasText: 'Sound at zero' }).locator('button');
-ok('a board is silent until somebody switches it on', await soundBtn.textContent(), 'Off');
+ok('sound is on out of the box', await soundBtn.textContent(), 'On');
 await page.keyboard.press('Escape');
 await page.waitForTimeout(120);
+
+// the safety net is not a setting: a page nobody has touched cannot
+// make a noise, because the browser will not start audio without a gesture
+await page.addInitScript(() => {
+  window.__audioMade = 0;
+  const A = window.AudioContext;
+  window.AudioContext = function(){ window.__audioMade++; return new A(); };
+});
+r = await open('#Ship~2026-09-02T10:00:05');
+await page.waitForTimeout(500);
+ok('an untouched page never even starts audio', await page.evaluate(() => window.__audioMade), 0);
 
 const hashPre = await page.evaluate(() => location.hash);
 await page.keyboard.press('m');
@@ -518,19 +550,20 @@ await page.waitForTimeout(150);
 await page.keyboard.press('?');
 await page.waitForTimeout(150);
 soundBtn = page.locator('#opts .opt', { hasText: 'Sound at zero' }).locator('button');
-ok('m turns it on', await soundBtn.textContent(), 'On');
+ok('m turns it off', await soundBtn.textContent(), 'Off');
 await page.keyboard.press('Escape');
 await page.waitForTimeout(120);
 ok('sound never touches the link', await page.evaluate(() => location.hash), hashPre);
 
-// unlike keep-awake, this one is a preference and is remembered
+// remembered, unlike keep-awake
 r = await open('#Ship~2027-01-01');
 await page.keyboard.press('?');
 await page.waitForTimeout(150);
 soundBtn = page.locator('#opts .opt', { hasText: 'Sound at zero' }).locator('button');
-ok('and it is remembered on this device', await soundBtn.textContent(), 'On');
+ok('and off is remembered on this device', await soundBtn.textContent(), 'Off');
 await page.keyboard.press('Escape');
 await page.waitForTimeout(120);
+await page.evaluate(() => localStorage.removeItem('baaki.sound'));
 
 // the last ten seconds are where it earns its place, and it must not throw there
 const errs = [];
@@ -541,6 +574,60 @@ ok('ticking through the last ten seconds is quiet code', errs.length, 0);
 ok('and the number is where it should be', r.num, '0:08.0');
 
 await page.evaluate(() => localStorage.removeItem('baaki.sound'));
+
+console.log('\n--- saying when, out loud ---');
+// frozen clock: Wednesday 2 September 2026, 10:00 IST
+
+r = await open('#Seed~2027-01-01');
+await page.keyboard.press('g');
+await page.waitForTimeout(250);
+
+const reads = async (typed) => {
+  await page.fill('#fWhen', typed);
+  await page.waitForTimeout(90);
+  return (await page.locator('#fParsed').textContent()).trim();
+};
+
+ok('a plain ISO date',        await reads('2027-03-31'),   'Wed, 31 Mar 2027 · end of day');
+ok('day first, slashes',      await reads('31/3/2027'),    'Wed, 31 Mar 2027 · end of day');
+ok('two-digit year',          await reads('31-3-27'),      'Wed, 31 Mar 2027 · end of day');
+ok('day and month, spoken',   await reads('31 mar 2027'),  'Wed, 31 Mar 2027 · end of day');
+ok('month first, spoken',     await reads('march 31 2027'),'Wed, 31 Mar 2027 · end of day');
+ok('ordinals are fine',       await reads('31st march 2027'), 'Wed, 31 Mar 2027 · end of day');
+
+ok('today',                   await reads('today'),        'Wed, 2 Sept 2026 · end of day');
+ok('tomorrow',                await reads('tomorrow'),     'Thu, 3 Sept 2026 · end of day');
+ok('a weekday means the next one', await reads('friday'),  'Fri, 4 Sept 2026 · end of day');
+ok('next friday skips one',   await reads('next friday'),  'Fri, 11 Sept 2026 · end of day');
+ok('in 3 weeks',              await reads('in 3 weeks'),   'Wed, 23 Sept 2026 · end of day');
+ok('shorthand',               await reads('+10d'),         'Sat, 12 Sept 2026 · end of day');
+ok('in 6 months',             await reads('in 6 months'),  'Tue, 2 Mar 2027 · end of day');
+ok('end of month',            await reads('end of month'), 'Wed, 30 Sept 2026 · end of day');
+ok('end of year',             await reads('end of year'),  'Thu, 31 Dec 2026 · end of day');
+
+// a time turns off the end-of-day rule, exactly like the link format
+ok('a time, spoken',          await reads('friday 6pm'),   'Fri, 4 Sept 2026 · 6:00 pm');
+ok('a time, 24 hour',         await reads('31 mar 2027 18:30'), 'Wed, 31 Mar 2027 · 6:30 pm');
+ok('half past, spoken',       await reads('tomorrow 6:30pm'), 'Thu, 3 Sept 2026 · 6:30 pm');
+ok('a bare time means today', await reads('9pm'),          'Wed, 2 Sept 2026 · 9:00 pm');
+
+// a date already gone is next year, because nobody sets a deadline in the past
+ok('a bare day-month rolls forward', await reads('1 jan'), 'Fri, 1 Jan 2027 · end of day');
+
+// and it says so rather than guessing
+ok('nonsense is refused',     (await reads('somewhen')).indexOf('Not a date') === 0, true);
+ok('31 february is refused',  (await reads('31/2/2027')).indexOf('Not a date') === 0, true);
+
+// the whole point: it goes in as a real goal
+await page.fill('#fName', 'Board review');
+await page.fill('#fWhen', 'friday 6pm');
+await page.waitForTimeout(90);
+await page.click('#bSubmit');
+await page.waitForTimeout(200);
+ok('typed in plain words, stored exactly',
+   decodeURIComponent(await page.evaluate(() => location.hash)).indexOf('Board review~2026-09-04T18:00') >= 0, true);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(150);
 
 console.log('\n--- screenshots ---');
 const shots = [

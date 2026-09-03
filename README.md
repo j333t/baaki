@@ -18,7 +18,7 @@ baaki.html#Metro%20Phase%202~2027-11-03
 
 | | What it is | Gets you |
 |---|---|---|
-| **baaki.html** | One file, 69 KB, no install | Every OS, every phone, works with the wifi off. Pin the tab — the title reads `D-427 · Metro Phase 2` even when you're not looking. |
+| **baaki.html** | One file, 85 KB, no install | Every OS, every phone, works with the wifi off. Pin the tab — the title reads `D-427 · Metro Phase 2` even when you're not looking. |
 | **desktop wrapper** | A small app around the same file | Floats above your other windows, starts with the machine, comes back where you left it. Desktop only. |
 
 Start with the file. Add the wrapper for whoever wants a window that won't get buried.
@@ -62,7 +62,9 @@ It only ever gets finer, never coarser. Seconds appear in the last hour and nowh
 
 **The tenths are the exception, and they are deliberate.** Nobody makes a decision in a tenth of a second. They are there because the ramp went flat at the end: `3:00` and `0:03` ticked with exactly the same texture, so the last minutes felt no different from the first. Now the board visibly accelerates into zero. The tenths are drawn small and dim, so the seconds stay the number you read — and if your system asks for reduced motion, the rung never opens at all. The tab title and the favicon stay on whole seconds regardless; a title flickering ten times a second is unreadable.
 
-**Two kinds of goal.** A **deadline** cools from indigo to hot red as it nears, then greys out and keeps counting once you've missed it. **Something good** (`*`) warms from violet to gold, celebrates when it arrives, and *stops* — because "3 days since Diwali" is not a thing anyone wants.
+**Two kinds of goal.** A **deadline** cools from indigo to hot red as it nears, then greys out and keeps counting once you've missed it. **Something good** (`*`) climbs from violet to hot pink, celebrates when it arrives, and *stops* — because "3 days since Diwali" is not a thing anyone wants. The two hues are far enough apart to tell at a glance from across a room.
+
+**A missed deadline does not celebrate.** Crossing zero unmarked is a *miss* — the clock can't know whether you finished, which is the whole reason the Done button exists. It goes grey and says "past due". Press Done and you get one of three: early, on time, or late, each its own colour, each saying **how** early or late.
 
 **Colour carries the distance.** It drifts so slowly you never catch it moving, but one glance tells you where you stand before you read the number. The angle drifts too, ±10° over 90 seconds — alive, never distracting.
 
@@ -72,7 +74,21 @@ Days are **calendar days**. No workday or holiday rules: those need a country-sp
 
 ## Keys
 
-`← →` or `Tab` cycle goals · `1`–`9` jump · `G` goals · `S` share · `Q` a code to scan · `D` done · `T` light/dark · `F` fullscreen · `W` keep the screen awake · `M` sound at zero · `+` `−` size of the number · `0` reset it · `?` about · `Esc` close. Swipe left/right on touch.
+`← →` or `Tab` cycle goals · `1`–`9` jump · `G` goals · `S` share · `Q` a code to scan · `D` done · `T` light/dark · `F` fullscreen · `W` keep the screen awake · `M` sound · `H` shift the hue · `+` `−` size of the number · `0` reset it · `?` about · `Esc` close. Swipe left/right on touch.
+
+---
+
+## Saying when
+
+One field, and it takes what you'd say out loud.
+
+```
+friday 6pm        31 mar 2027       in 3 weeks
+tomorrow          end of year       +10d
+31/3/27           march 31          9pm
+```
+
+It says back what it understood — *Fri, 4 Sept 2026 · 6:00 pm* — so nothing is a guess, and it refuses rather than inventing: `31/2/2027` is not a date. A bare date still means the end of that day, so typing and pasting a link agree. The calendar picker is still one click away for the times you genuinely want to look at a month.
 
 ---
 
@@ -95,7 +111,8 @@ Four things about the screen you're standing at, not about the goal — so **non
 | **Fullscreen** (`F`) | One key turns any old laptop into a wall board. |
 | **Keep the screen awake** (`W`) | For a phone propped on a desk. Deliberately **not** remembered between visits — a setting that outlives the sitting is how a battery dies next week and nobody knows why. |
 | **Size of the number** (`+` `−` `0`) | Scales the hero only; the supporting lines stay put. Remembered per device. A big screen with nothing to point at is a wall, not a desk, so it starts bigger there on its own. |
-| **Sound at zero** (`M`) | Ten ticks and a chime. **Off until you switch it on** — a board that makes a noise in a room it wasn't invited into is a different and much worse product. Remembered, unlike keep-awake: the risk here is noise in the wrong room and only in the last ten seconds of a deadline, where the other risk is a flat battery next Tuesday.  |
+| **Sound** (`M`) | Ten ticks and a chime for the last ten seconds. **On by default, and safe to be:** a page nobody has touched never makes a sound, so a link someone sent you can't go off in a meeting. Once you've clicked or typed on it, you're using it. |
+| **Hue** (`H`, `Shift+H` back) | Everything else about the colour encodes distance and isn't negotiable. Which end of the spectrum it sits at isn't information, so it's yours. **Hue drifts** turns the slow wander on or off. |
 | **Lock rotation** | Phones. The browser API only works fullscreen or installed, so the control only appears when it can actually do something — a dead toggle is worse than no toggle. |
 
 ---
@@ -162,7 +179,7 @@ The wrapper injects its own drag strip and pin/close buttons, so `baaki.html` is
 
 ```bash
 npm install && npx playwright install chromium --only-shell
-npm test          # 152 checks in a real browser, frozen clock
+npm test          # 185 checks in a real browser, frozen clock
 npm run test:qr   #   9 codes rendered and read back with a real decoder
 npm run test:live #   8 checks against the hosted copy, including offline
 ```
