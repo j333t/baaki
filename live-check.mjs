@@ -2,6 +2,7 @@
 // offline-after-one-visit, and that version.json is reachable from the
 // page. Needs the network and a deployed site; not part of npm test.
 import { chromium } from 'playwright';
+import fs from 'fs';
 import jsQR from 'jsqr';
 
 const URL = 'https://j333t.github.io/baaki/';
@@ -31,7 +32,10 @@ ok('service worker registers', await page.evaluate(() => navigator.serviceWorker
 // version.json is reachable from the page, which is the whole update path
 const check = await page.evaluate(() =>
   fetch('https://j333t.github.io/baaki/version.json', { cache: 'no-store' }).then(r => r.json()).catch(e => ({ err: String(e) })));
-ok('version.json is fetchable from the page', check.version, '1.2.0');
+// checked against baaki.html's own VERSION rather than a hardcoded
+// string, so this stops going stale every time we ship
+const localVer = fs.readFileSync('baaki.html', 'utf8').match(/VERSION\s*=\s*'([^']+)'/)[1];
+ok('version.json matches this release', check.version, localVer);
 
 // a QR of a real https link, decoded for real
 await page.keyboard.press('q');
