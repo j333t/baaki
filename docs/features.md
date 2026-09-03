@@ -84,7 +84,10 @@ Legend: **★** = load-bearing, removing it changes what Baaki is.
 | Swipe on touch | Same idea, thumbs. |
 | Share copies this one, immediately | The common case should not need a choice. "Copy all n instead" is the alternative, offered after the fact; one goal gets no popover at all. |
 | Edit goals in place | Obvious in hindsight. Retyping a goal to fix a typo is the kind of thing that makes people stop using a tool. |
-| One field for *when*, in plain words | Two native pickers is three interactions to say "friday". `friday 6pm`, `in 3 weeks`, `end of year`, `31/3/27` all work. |
+| A calendar you tap, that zooms out | Choosing a date is not the same act as reciting one. Days → months → years puts any date three taps away, however far off. |
+| Typing still works, and steers the calendar | Fast for "friday", useless for "some Tuesday in March". Both doors, one room — the calendar is the truth and typing writes to it. |
+| `10m` is minutes, `mo` is months | It is what it means to anyone who has ever set a timer. Minutes and hours count from now, because "in 10 minutes" has an exact meaning. |
+| A date already gone is flagged, not refused | Usually a slip, occasionally the point — you are logging something you missed. Say so; do not decide for them. |
 | It says back what it understood | A parser that guesses silently is worse than no parser. It shows "Fri, 4 Sept 2026 · 6:00 pm", and refuses `31/2` rather than inventing a date. |
 | The calendar is still one click away | Typing wins for "friday"; a month grid wins for "some Tuesday in March". The picker sits invisibly on its own icon, which is the only way to open it that every browser agrees on. |
 | The empty board counts the rest of the year | A dash and "set a goal" is a form with its fields missing. This is a working demonstration, and it is true — which a placeholder never is. |
@@ -110,6 +113,25 @@ Per-device, never in the link. Sharing a board must never reach across and chang
 | A sound at zero, off by default | The old blanket "no sound" was protecting against a board that makes noise *at* you. A sound you deliberately switch on for the last ten seconds of a launch is the opposite of that. |
 | Sound is remembered, keep-awake is not | Different risks. Sound goes wrong as noise in the wrong room, and only inside the last ten seconds of a deadline. Keep-awake goes wrong as a flat battery next Tuesday, whether or not you are looking. |
 
+## The look of it
+
+Themes are data, and this is the whole extension surface. All of it per device.
+
+| Feature | Why it exists |
+|---|---|
+| Every measurement comes off the screen | One unit from `vmin`/`vmax`, everything else a power of phi from it. A phone and a television were getting the same pixels instead of the same design. |
+| Panels are sized in ems, not pixels | So they grow with the type, which grows with the screen. A 4K monitor should get a bigger panel, not the same one further away. |
+| Two columns where there is room | The About panel and the goal form both outgrew one column. A dialog should take the screen's shape, not ignore it. |
+| Pure black and pure white surfaces | The colour moves off the background and into the number. On OLED that is most of the panel switched off, and the ramp still works — it has only changed which surface it lives on. |
+| Five typefaces, no webfont | A file whose whole promise is that it needs nothing must not open a network connection to look like itself. System stacks only. |
+| Themes do **not** travel in the link | Sending somebody a date must not restyle their screen. Same rule as hue, size and sound. It is the one piece of the original theme design deliberately not built. |
+| The number beats like a heart under an hour | Two quick thumps and a long relaxation, shortening to zero. A rhythm you already know reads as urgency without a single word. |
+| Reduced motion kills the beat outright | The blanket rule that crushes animations to `.01ms` turns an *infinite* one into a strobe. That needed its own exception. |
+| The whole board wanders a few pixels | It is meant to be left on for weeks. Nothing should sit in the same pixels that long. Two coprime periods, so the path never repeats. |
+| One height for every button in the bar | It read as scattered because nothing shared a measurement. |
+| Anything switched on is lit in the bar | A setting you cannot see is a setting you forget you left on — and that is also the place to turn it off. |
+| Keep-awake appears in the bar only while on | It is the only time you would go looking for it. |
+
 ## Distribution
 
 | Feature | Why it exists |
@@ -125,5 +147,8 @@ Per-device, never in the link. Sharing a board must never reach across and chang
 | A QR code on `Q` | A board on a projector is useless until the link is in somebody's hand, and nobody types a URL off a wall. This is the only path from a screen to a pocket. |
 | The code is always dark on light | It is not decoration. A themed code that half-scans has cost somebody more time than it saved. |
 | It refuses rather than degrades | Past about 270 characters it says the board is too long instead of drawing something a camera cannot read. A code that does not scan is worse than no code. |
+| The panel says what a code is for | Somebody has to be told once. Copy and Download sit next to it; the download is drawn at twelve pixels a module for printing. |
+| Share can hand over the tool alone | Sometimes you want to give somebody Baaki, not your deadline. |
+| `USAGE.md` states the grammar | A link *is* the API. Writing the grammar down means a script or a model can generate a board without guessing, which is the cheapest distribution there is. |
 | The encoder is checked by a real decoder | `npm run test:qr` reads its own output back with `jsqr`. Eyeballing a QR tells you nothing — v1 to v6 looked perfect while every code from v7 up was unreadable. |
 | Two candidate URLs, tried in order | A host that will not send CORS headers is invisible to a file opened from a disk, and you find that out only in the field. |

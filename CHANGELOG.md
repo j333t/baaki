@@ -20,6 +20,51 @@ Anything that changes the **link format** is a breaking change and needs a major
 
 ---
 
+## 1.4.0 — unreleased
+
+The release where the design became a system rather than a pile of
+pixel values, and the theme system finally landed.
+
+### Measurements come off the screen now
+- **One unit, and everything is a power of phi from it.** `--u` is a clamped function of `vmin` and `vmax`, and every space in the file is `.382`, `.618`, `1`, `1.618`, `2.618` or `4.236` of it. Type is a major third from a base derived the same way. A phone and a television were getting the same *pixels*; now they get the same *design*.
+- **Panels grow with the type, which grows with the screen.** The About panel was narrow because it was capped at 440 fixed pixels. It is now sized in ems, and on any landscape screen with room it runs in **two columns** — story on the left, keys and settings on the right — taking the screen's own shape instead of ignoring it.
+
+### The theme system
+- **Four surfaces**: dark, light, and **pure black** and **pure white**. The flat modes move the colour off the background and into the number itself, so on OLED most of the panel is switched off and the distance signal still works — it has only changed which surface it lives on.
+- **Five typefaces**: neutral, grotesk, serif, mono, display, each with its own hero weight and tracking. **No webfont**, deliberately: a file whose whole promise is that it needs nothing should not open a network connection to look like itself.
+- `T` cycles surfaces, `Y` cycles faces, both per device.
+- **Themes deliberately do not travel in the link.** A theme string was in the original design, and it is the one part not built: sending somebody a date must not restyle their screen. That is the same rule that keeps hue, size and sound out of the link.
+
+### Choosing a date
+- **A real calendar you tap**, because choosing a date is not the same act as reciting one. The title zooms out — days to months to years — so any date at all is three taps however far away it is. Quick row above it for the answers people usually want, time chips below.
+- **Typing still works** and now steers the calendar rather than living beside it. `10m` is ten minutes, not ten months; months need `mo`. Minutes and hours count from now rather than landing at end of day, because "in 10 minutes" has an exact meaning.
+- **It tells you when you have picked something already gone** — "already gone, so it will open as overdue" — rather than silently accepting it or refusing. Sometimes logging a missed deadline is exactly the point.
+
+### Rhythm
+- **The number beats like a heart** inside the last hour: two quick thumps and a long relaxation, the rhythm you already know, and the period shortens all the way to zero. Nothing above an hour, because a board four hundred days out has nothing to be tense about.
+- **The ticks got the same shape** — a thump and an answering thump, climbing in pitch as it runs out.
+- **Reduced motion turns the beat off** rather than speeding it up. The blanket rule that crushes every animation to `.01ms` turns an *infinite* animation into a strobe; that needed its own exception.
+- **The whole board wanders a few pixels** over several minutes, on two coprime periods so the path never repeats. This thing is meant to be left on a screen for weeks and nothing should sit in the same pixels that long.
+
+### Smaller, and mostly things that were wrong
+- **The bottom bar is one measurement.** Everything is the same height, icons are square, and it is three groups instead of five loose buttons. It read as scattered because nothing shared a number.
+- **Anything switched on is lit in that bar, and that is where you switch it off.** Sound, fullscreen, and keep-awake — which appears *only* while it is holding the screen open, since that is the only time you would look for it.
+- **Sound has its own button** rather than being buried under `?`.
+- **Auto colour change** — the old "hue drifts" — is off by default and says what it does. Hue steps by 5° rather than 15°.
+- **The example board is clickable.** An example nobody can act on is a poster.
+- **The QR panel says what a QR is for**, and has Copy link and Download — the download is drawn at twelve pixels a module with a real quiet zone, for printing.
+- **Share offers "just the tool"**, a link with no goals on it, for handing somebody the thing rather than your deadline.
+- **Done says three different things**, not one thing in three colours: on time needs one date, early and late need both, because the gap between them is the whole story. And late says *late*, not "delivered".
+- **A CSS bug hid nothing.** `button.b{display:inline-flex}` silently overrode the browser's own `[hidden]{display:none}`, so the Done button stayed on screen when it was meant to be gone. Three tests caught it.
+- **Tall panels open at the top.** `autofocus` on a button near the bottom scrolls a long panel to it.
+- **`USAGE.md`** — a short guide, written so an LLM can generate a valid board link with no guessing: the grammar, the rules, worked examples, and the mistakes to avoid.
+- The word "email" is gone. It is 2026.
+
+### Under it
+- 185 browser checks. **85 KB → 107 KB**, and that number now needs a plan rather than a note.
+
+---
+
 ## 1.3.0 — unreleased
 
 Mostly a bug release wearing a feature release's clothes. Several of

@@ -18,12 +18,22 @@ Kept for a moment so the reasoning is traceable, then they move to `features.md`
 **1.1.0** — update check · fullscreen · keep the screen awake · size of the number · TV default · rotation lock · tenths in the last ten minutes.
 **1.2.0** — QR code · a sound at zero.
 **1.3.0** — plain-words date field · hue control · three-tier Done colour · Done delta · live empty board · share-this-one-first · About panel legibility, and six behaviour bugs.
+**1.4.0** — viewport-derived geometric scale · theme system (4 surfaces, 5 faces) · tactile calendar · heartbeat rhythm · burn-in wander · rebuilt tool bar with live indicators · USAGE.md.
+
+## Deliberately not built, from the theme design
+
+**A theme that travels in the link.** The original sketch had a compact theme string in
+the fragment. It is not built, and the reason is a rule the rest of the file already
+follows: sending somebody a date must not restyle their screen. Hue, size, sound,
+surface and typeface are all per device for the same reason. If this is ever revisited
+it needs to be opt-in on the *receiving* side, which is a different feature.
 
 ## Asked for, not built yet
 
 | Idea | Note |
 |---|---|
-| **Choose the sound** | A short list of tones rather than the one built in, per device. Cheap, and the kind of thing somebody fiddles with once and then loves. Blocked on nothing; just after the theme system, which it should share a settings surface with. |
+| **Choose the sound** | A short list of tones rather than the one built in, per device. Cheap, and the kind of thing somebody fiddles with once and then loves. The settings surface it belongs in now exists. |
+| **Weight budget** | 107 KB. Every feature so far has been argued for one at a time and every one won. The next question is not "does this earn 2 KB" but "what is the ceiling, and what comes out when we hit it". |
 
 ## Measured and rejected
 

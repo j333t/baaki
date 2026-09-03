@@ -27,6 +27,7 @@ manifest.webmanifest  add-to-home-screen
 sync-worker.js      optional Cloudflare worker for online "Done"
 desktop/            Tauri wrapper. wraps baaki.html unmodified.
 test.mjs            185 browser checks, frozen clock
+USAGE.md            the link grammar, written for a script or an LLM to follow
 qr-check.mjs        renders each QR version and reads it back with a real decoder
 live-check.mjs      the hosted copy: redirect, service worker, offline, update path
 version.json        200 bytes, so an emailed copy can learn it is old
@@ -40,6 +41,9 @@ docs/               rubric, feature ledger, backlog, easter eggs
 - **Vanilla, ES5-flavoured JS.** No framework, no transpiler, no dependency. It has to run off a USB stick in 2031.
 - **The wrapper never edits the page.** Desktop-only chrome is injected from `main.rs`. If you find yourself adding `if (isTauri)` to `baaki.html`, stop.
 - **Every colour is generated, not stored.** Ramps interpolate between anchors. Do not paste 36 hex values anywhere.
+- **No fixed pixel measurements.** Everything comes off `--u` and `--ft`, which come off the viewport, and every step is a power of phi (spacing) or 1.25 (type). A raw `px` in a new rule is a bug unless it is a hairline.
+- **No webfonts, ever.** Five faces, all system stacks. The file must look like itself on a plane.
+- **Nothing about the look travels in the link.** Surface, typeface, hue, size, sound: `localStorage` or nothing. Sending somebody a date must not restyle their screen.
 - **Tests are the spec.** `node test.mjs` uses a frozen clock and a real browser. Add a case for anything with a date boundary in it — that is where every bug so far has lived.
 - **Dates are local, always.** `new Date('2027-01-01')` parses as UTC and is a trap. Use `parseLocal`.
 - **Per-device settings never touch the link.** Size, fullscreen, keep-awake, rotation: `localStorage` or nothing. If a setting can ride in a shared link it can change somebody else's screen, and that is a different product.
@@ -48,6 +52,8 @@ docs/               rubric, feature ledger, backlog, easter eggs
 - **Nothing makes a sound until the page has been touched.** Sound is on by default and that is only safe because of this rule; it is enforced in `beep()`, not left to browser autoplay policy. Per device, never in the link.
 - **Confetti is for finishing, never for the clock running out.** A deadline crossing zero unmarked is a miss. Only Done, and something good arriving, may celebrate.
 - **The fast path repaints everything when the rung changes**, or the colour and the tag land a second after the number does.
+- **Watch out for `display` beating `[hidden]`.** `button.b` sets `display:inline-flex`, which silently overrides the browser's `[hidden]{display:none}`. Any new rule that sets `display` on something hideable needs `[hidden]{display:none}` alongside it.
+- **A media query does not outrank a later plain rule.** Equal specificity, later wins. Scope responsive overrides with an ID.
 - **No magic colour assertions in tests.** Compare behaviour (deadline vs event) rather than an interpolated hex, or the test breaks every time a ramp is nudged.
 
 ## The link format

@@ -2,9 +2,11 @@
 
 *What's remaining.*
 
-**[Open it](https://j333t.github.io/baaki/)** · [download the file](https://github.com/j333t/baaki/releases/latest) · [desktop wrappers](https://github.com/j333t/baaki/releases/latest)
+**[Open it](https://j333t.github.io/baaki/)** · [how to use it](USAGE.md) · [download](https://github.com/j333t/baaki/releases/latest)
 
-A deadline board you can email. One number, big, in the spirit of E. Sreedharan's site boards on the Delhi Metro — a board in every office showing the days left, that everyone walked past.
+One number, big, in the spirit of E. Sreedharan's site boards on the Delhi Metro — a board in every office showing the days left, that everyone walked past.
+
+A date you keep *not* looking at is a date you miss. Put one number where you already look, and you stop needing to be reminded.
 
 **The goal lives in the link.** Send the link, and the countdown goes with it. No server, no accounts, no sync — because a deadline has no state. It is just *target date minus now*.
 
@@ -18,7 +20,7 @@ baaki.html#Metro%20Phase%202~2027-11-03
 
 | | What it is | Gets you |
 |---|---|---|
-| **baaki.html** | One file, 85 KB, no install | Every OS, every phone, works with the wifi off. Pin the tab — the title reads `D-427 · Metro Phase 2` even when you're not looking. |
+| **baaki.html** | One file, 107 KB, no install | Every OS, every phone, works with the wifi off. Pin the tab — the title reads `D-427 · Metro Phase 2` even when you're not looking. |
 | **desktop wrapper** | A small app around the same file | Floats above your other windows, starts with the machine, comes back where you left it. Desktop only. |
 
 Start with the file. Add the wrapper for whoever wants a window that won't get buried.
@@ -74,21 +76,25 @@ Days are **calendar days**. No workday or holiday rules: those need a country-sp
 
 ## Keys
 
-`← →` or `Tab` cycle goals · `1`–`9` jump · `G` goals · `S` share · `Q` a code to scan · `D` done · `T` light/dark · `F` fullscreen · `W` keep the screen awake · `M` sound · `H` shift the hue · `+` `−` size of the number · `0` reset it · `?` about · `Esc` close. Swipe left/right on touch.
+`← →` or `Tab` cycle goals · `1`–`9` jump · `G` goals · `S` share · `Q` a code to scan · `D` done · `T` surface · `Y` typeface · `F` fullscreen · `W` keep the screen awake · `M` sound · `H` shift the hue · `+` `−` `0` size of the number · `?` about · `Esc` close. Swipe left/right on touch.
+
+Full guide, including how to generate a board link from a script or an LLM: **[USAGE.md](USAGE.md)**.
 
 ---
 
-## Saying when
+## Choosing when
 
-One field, and it takes what you'd say out loud.
+**A calendar you tap.** The title zooms out — days → months → years — so any date, however far away, is three taps. A quick row above it for the answers you usually want; time chips below.
+
+**Typing works too**, and steers the calendar rather than living beside it:
 
 ```
 friday 6pm        31 mar 2027       in 3 weeks
 tomorrow          end of year       +10d
-31/3/27           march 31          9pm
+31/3/27           march 31          10m   ← ten minutes; months need "mo"
 ```
 
-It says back what it understood — *Fri, 4 Sept 2026 · 6:00 pm* — so nothing is a guess, and it refuses rather than inventing: `31/2/2027` is not a date. A bare date still means the end of that day, so typing and pasting a link agree. The calendar picker is still one click away for the times you genuinely want to look at a month.
+It says back what it understood — *Fri, 4 Sept 2026 · 6:00 pm* — so nothing is a guess, and refuses rather than inventing: `31/2/2027` is not a date. Pick something already gone and it tells you it'll open as overdue, rather than silently accepting it. A bare date means the end of that day, so typing and pasting a link agree.
 
 ---
 
@@ -112,7 +118,11 @@ Four things about the screen you're standing at, not about the goal — so **non
 | **Keep the screen awake** (`W`) | For a phone propped on a desk. Deliberately **not** remembered between visits — a setting that outlives the sitting is how a battery dies next week and nobody knows why. |
 | **Size of the number** (`+` `−` `0`) | Scales the hero only; the supporting lines stay put. Remembered per device. A big screen with nothing to point at is a wall, not a desk, so it starts bigger there on its own. |
 | **Sound** (`M`) | Ten ticks and a chime for the last ten seconds. **On by default, and safe to be:** a page nobody has touched never makes a sound, so a link someone sent you can't go off in a meeting. Once you've clicked or typed on it, you're using it. |
-| **Hue** (`H`, `Shift+H` back) | Everything else about the colour encodes distance and isn't negotiable. Which end of the spectrum it sits at isn't information, so it's yours. **Hue drifts** turns the slow wander on or off. |
+| **Hue** (`H`, `Shift+H` back) | Everything else about the colour encodes distance and isn't negotiable. Which end of the spectrum it sits at isn't information, so it's yours, in 5° steps. **Auto colour change** turns the slow wander on. |
+| **Surface** (`T`) | Dark, light, **pure black**, **pure white**. The flat ones move the colour off the background and into the number — most of an OLED panel switched off, and the distance signal intact. |
+| **Typeface** (`Y`) | Neutral, grotesk, serif, mono, display. All from fonts your machine already has: a webfont would be a network dependency in a file whose whole promise is that it needs nothing. |
+
+Anything switched on is **lit in the bottom bar**, and that's where you switch it off. Keep-awake only appears there while it's actually holding the screen open.
 | **Lock rotation** | Phones. The browser API only works fullscreen or installed, so the control only appears when it can actually do something — a dead toggle is worse than no toggle. |
 
 ---

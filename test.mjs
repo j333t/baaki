@@ -133,7 +133,7 @@ ok('done same day: on time', r.unit, 'on time');
 ok('done on time: celebration fires', await page.locator('#hero').getAttribute('class'), 'pop');
 
 r = await open('#Ship~2026-08-20!2026-09-01T09:00');
-ok('done after target: delivered', r.unit, 'delivered');
+ok('done after target: says late, not a euphemism', r.unit, 'late');
 ok('done late: celebration fires', await page.locator('#hero').getAttribute('class'), 'pop');
 
 console.log('\n--- multiple goals ---');
