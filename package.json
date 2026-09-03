@@ -5,6 +5,7 @@
   "scripts": {
     "test": "node test.mjs",
     "test:qr": "node qr-check.mjs",
+    "test:live": "node live-check.mjs",
     "build:desktop": "cd desktop && npx tauri build",
     "dev:desktop": "cd desktop && npx tauri dev"
   },

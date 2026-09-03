@@ -28,6 +28,7 @@ sync-worker.js      optional Cloudflare worker for online "Done"
 desktop/            Tauri wrapper. wraps baaki.html unmodified.
 test.mjs            152 browser checks, frozen clock
 qr-check.mjs        renders each QR version and reads it back with a real decoder
+live-check.mjs      the hosted copy: redirect, service worker, offline, update path
 version.json        200 bytes, so an emailed copy can learn it is old
 docs/               rubric, feature ledger, backlog, easter eggs
 ```

@@ -1,4 +1,6 @@
-// The one thing file:// cannot prove: that the hosted copy works.
+// The things file:// cannot prove: the redirect, the service worker,
+// offline-after-one-visit, and that version.json is reachable from the
+// page. Needs the network and a deployed site; not part of npm test.
 import { chromium } from 'playwright';
 import jsQR from 'jsqr';
 

@@ -164,6 +164,7 @@ The wrapper injects its own drag strip and pin/close buttons, so `baaki.html` is
 npm install && npx playwright install chromium --only-shell
 npm test          # 152 checks in a real browser, frozen clock
 npm run test:qr   #   9 codes rendered and read back with a real decoder
+npm run test:live #   8 checks against the hosted copy, including offline
 ```
 
 `test.mjs` runs against a frozen clock: every rung of the ladder in both directions and its boundaries, both goal kinds, pressing Done for real, editing and adding goals, keyboard navigation, share-one-vs-all, dialog centring and outside-click, chip capping and snark, link round-tripping with `+ ~ ! %` in names, junk hashes, the per-device controls staying out of the link, the update check in all three states (newer / same / dead host), reduced motion, the QR dialog refusing a board that's too long, sound staying off until asked, and the whole thing with the network off. Screenshots land in `shots/`.
