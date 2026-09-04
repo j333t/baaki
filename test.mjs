@@ -41,8 +41,7 @@ console.log('--- the ladder ---');
 
 // 1. far out: years
 let r = await open('#Metro%20Phase%202~2027-11-03');
-ok('far: number is calendar days', r.num, '427');
-ok('far: unit', r.unit, 'days');
+ok('far: number is calendar days, unit rides on the digit as a superscript', r.num, '427d');
 ok('far: human span shown', r.sub.includes('1 yr 2 mo'), true);
 ok('far: date shown', r.sub.includes('3 Nov 2027'), true);
 ok('far: dark under a dark OS', parseInt(r.g2.slice(1),16) < 0x404040, true);
@@ -51,65 +50,58 @@ const farG2 = r.g2;
 
 // 2. inside a month
 r = await open('#Beta~2026-09-20');
-ok('20 days: number', r.num, '18');
+ok('20 days: number', r.num, '18d');
 ok('under a month: no span, hero already says it', r.sub, '20 Sept 2026');
 const nearG2 = r.g2;
 ok('gradient warms as it nears', farG2 !== nearG2, true);
 
 // 3. tomorrow -> still days
 r = await open('#Ship~2026-09-03');
-ok('tomorrow: number', r.num, '1');
-ok('tomorrow: singular unit', r.unit, 'day');
+ok('tomorrow: number', r.num, '1d');
 
 // 4. the target day itself, more than an hour left -> H:MM
 r = await open('#Ship~2026-09-02T18:30');
-ok('today 8.5h out: H:MM', r.num, '8:30');
-ok('today: unit', r.unit, 'hours · today');
+ok('today 8.5h out: H:MM, hour and minute each carry their own letter', r.num, '8h 30m');
 ok('today: title', r.title, '8:30 · Ship');
 
 // 4b. bare date on the target day = end of that day
 r = await open('#Ship~2026-09-02');
-ok('today, no time given: H:MM to midnight', r.num, '13:59');
+ok('today, no time given: H:MM to midnight', r.num, '13h 59m');
 
 // 5. last hour -> M:SS
 r = await open('#Ship~2026-09-02T10:40');
-ok('40 min out: M:SS', r.num, '40:00');
-ok('last hour: unit', r.unit, 'minutes');
+ok('40 min out: M:SS', r.num, '40m 00s');
 
 // 5b. boundary: exactly over an hour stays on H:MM
 r = await open('#Ship~2026-09-02T11:01');
-ok('61 min out: still H:MM', r.num, '1:01');
+ok('61 min out: still H:MM', r.num, '1h 01m');
 
 // 6. overdue - the ladder mirrors, so the ramp is smooth both ways
 r = await open('#Ship~2026-08-27');
-ok('over by days: number', r.num, '+6');
-ok('over by days: unit', r.unit, 'days over');
+ok('over by days: number', r.num, '+6d');
 ok('over by days: tag', r.tag, 'past due');
 ok('over by days: grey gradient', r.g2, '#37373e');
 
 r = await open('#Ship~2026-09-02T02:00');
-ok('over by hours: +H:MM', r.num, '+8:00');
-ok('over by hours: unit', r.unit, 'hours over');
+ok('over by hours: +H:MM', r.num, '+8h 00m');
 ok('over by hours: still grey', r.g2, '#37373e');
 
 r = await open('#Ship~2026-09-02T09:20');
-ok('over by minutes: +M:SS', r.num, '+40:00');
-ok('over by minutes: unit', r.unit, 'minutes over');
+ok('over by minutes: +M:SS', r.num, '+40m 00s');
 
 r = await open('#Ship~2026-09-02T09:59');
-ok('just over: seconds tick', r.num, '+1:00');
+ok('just over: seconds tick', r.num, '+1m 00s');
 
 console.log('\n--- something good, not a deadline ---');
 
 const deadlineHue = (await open('#Diwali~2027-11-03')).g2;
 r = await open('#Diwali~2027-11-03*');
-ok('event counts down the same', r.num, '427');
+ok('event counts down the same', r.num, '427d');
 ok('event gradient differs from a deadline', r.g2 !== deadlineHue, true);
 ok('event is starred in the name', r.name.startsWith('★'), true);
 
 r = await open('#Diwali~2026-08-27*');
 ok('event does not run over, it arrives', r.num, '★');
-ok('arrived: unit', r.unit, 'here');
 ok('arrived: tag', r.tag, 'it is here');
 ok('arrived: celebrates', await page.locator('#hero').getAttribute('class'), 'pop');
 ok('arrived: never greys out', r.g2 !== '#37373e', true);
@@ -139,14 +131,14 @@ ok('done late: celebration fires', await page.locator('#hero').getAttribute('cla
 console.log('\n--- multiple goals ---');
 
 r = await open('#Launch~2027-03-31+Beta~2026-11-15+Hiring~2026-10-01');
-ok('big one is first in link', r.num, '210');
+ok('big one is first in link', r.num, '210d');
 ok('two chips shown', r.chips.length, 2);
 ok('chip 1 label', r.chips[0], 'Beta74d');
 ok('chip 2 label', r.chips[1], 'Hiring29d');
 
 await page.locator('.chip').nth(1).click();
 await page.waitForTimeout(200);
-ok('click promotes to big', (await page.locator('#num').textContent()).trim(), '29');
+ok('click promotes to big', (await page.locator('#num').textContent()).trim(), '29d');
 ok('link rewrites to match the view', decodeURIComponent(await page.evaluate(() => location.hash)).startsWith('#Hiring~2026-10-01'), true);
 
 console.log('\n--- edit flag ---');
@@ -174,7 +166,7 @@ ok('round-trips a name with + ~ ! %', r.title, 'D-90 · Q3 "big+bet" ~ 50%!');
 console.log('\n--- offline ---');
 await ctx.setOffline(true);
 r = await open('#Launch~2027-03-31');
-ok('works with the network off', r.num, '210');
+ok('works with the network off', r.num, '210d');
 await ctx.setOffline(false);
 
 console.log('\n--- pressing Done for real ---');
@@ -205,8 +197,8 @@ await page.goto(FILE);                       // no hash, no saved goals
 await page.waitForTimeout(600);
 // an empty board is a live example, not a blank form, and it does not
 // open a modal at somebody who has only just arrived
-ok('empty board counts the rest of the year', /^\d{1,3}$/.test((await page.locator('#num').textContent()).trim()), true);
-ok('and says what it is', (await page.locator('#unit').textContent()).trim(), 'days left in 2026');
+ok('empty board counts the rest of the year, "d" riding on the digits',
+   /^\d{1,3}d$/.test((await page.locator('#num').textContent()).trim()), true);
 ok('and says it is an example', (await page.locator('#tag').textContent()).trim(), 'an example');
 ok('and what to press', (await page.locator('#snark').textContent()).includes('press G'), true);
 ok('no dialog opens itself', await page.locator('#dlg').isVisible(), false);
@@ -224,18 +216,18 @@ await page.fill('#fWhen', '2026-12-25');
 await page.click('#addForm button[type=submit]');
 await page.waitForTimeout(250);
 ok('adding a goal closes the dialog by itself', await page.locator('#dlg').isVisible(), false);
-ok('added goal shows', (await page.locator('#num').textContent()).trim(), '114');
+ok('added goal shows', (await page.locator('#num').textContent()).trim(), '114d');
 ok('added goal lands in the link',
    decodeURIComponent(await page.evaluate(() => location.hash)).includes('Phase 3 tender~2026-12-25'), true);
 ok('creator keeps the Done button', await page.locator('#bDone').isVisible(), true);
 await page.reload();
 await page.waitForTimeout(250);
-ok('survives a reload', (await page.locator('#num').textContent()).trim(), '114');
+ok('survives a reload', (await page.locator('#num').textContent()).trim(), '114d');
 
 console.log('\n--- junk input ---');
 await page.evaluate(() => localStorage.removeItem('baaki.hash'));
 r = await open('#not-a-goal+~~~+Real~2026-10-01+Broken~99-99-99');
-ok('junk tokens dropped, the good one kept', r.num, '29');
+ok('junk tokens dropped, the good one kept', r.num, '29d');
 ok('junk leaves no stray chips', r.chips.length, 0);
 ok('junk is scrubbed from the link',
    decodeURIComponent(await page.evaluate(() => location.hash)), '#Real~2026-10-01');
@@ -316,40 +308,50 @@ ok('edit did not add a second goal', await page.locator('.row').count(), 2);
 ok('the form was reset on the way out', (await page.locator('#bSubmit').textContent()).trim(), 'Add goal');
 await page.click('#bClose');
 
-console.log('\n--- share: one press, and a family of siblings ---');
+console.log('\n--- share: one press, and a family that unfolds then folds ---');
 await page.goto('about:blank');
 await page.goto(FILE + '#One~2027-01-01+Two~2027-02-01+Three~2027-03-01');
 await page.waitForTimeout(220);
 await page.evaluate(() => { window.__copied = null; navigator.clipboard.writeText = t => { window.__copied = t; return Promise.resolve(); }; });
+ok('siblings are not shown until Share is pressed',
+   await page.locator('#shareGrp button').count(), 1);
 await page.click('#bShare');
 await page.waitForTimeout(150);
 let copied = decodeURIComponent(await page.evaluate(() => window.__copied));
 ok('share copies this one, immediately', copied.endsWith('#One~2027-01-01'), true);
 ok('the button never changes identity', await page.locator('#bShare').textContent(), 'Share');
-ok('siblings sit inside the same family, not a popover',
-   await page.locator('#shareGrp button').count(), 4);  // Share itself, plus All / Code / No goal
-ok('all three are the same visual family', await page.evaluate(() =>
+ok('pressing Share unfolds the rest of the family',
+   await page.locator('#shareGrp button').count(), 4);  // Share itself, plus All / QR / Tool
+ok('all of them are the same visual family', await page.evaluate(() =>
    document.querySelector('#bShare').parentElement === document.querySelector('#shareGrp')), true);
 
 const seg = (text) => page.locator('#shareGrp button', { hasText: text });
+const segByTitle = (t) => page.locator(`#shareGrp button[title*="${t}"]`);
 await seg('All 3').click();
 await page.waitForTimeout(150);
 copied = decodeURIComponent(await page.evaluate(() => window.__copied));
 ok('all link carries every goal', copied.includes('One~2027-01-01+Two~2027-02-01+Three~2027-03-01'), true);
 ok('neither leaks !edit', copied.includes('!edit'), false);
 
-await seg('No goal').click();
+await seg('Tool').click();
 await page.waitForTimeout(150);
 ok('the bare tool link has no hash', decodeURIComponent(await page.evaluate(() => window.__copied)).endsWith('/baaki.html'), true);
 
-await seg('Code').click();
+await segByTitle('QR code').click();
 await page.waitForTimeout(250);
-ok('Code opens the same QR dialog Q does', await page.locator('#qr').isVisible(), true);
+ok('the QR segment opens the same dialog Q does', await page.locator('#qr').isVisible(), true);
 await page.keyboard.press('Escape');
 await page.waitForTimeout(150);
 
-// one goal still gets the whole family - Code and "no goal" do not
-// depend on there being more than one goal to choose from
+// still expanded after all that clicking about - each click on a
+// sibling should have kept resetting the fold-away timer
+ok('still unfolded right after use', await page.locator('#shareGrp button').count(), 4);
+await page.waitForTimeout(4300);
+ok('folds itself back up once nobody has touched it for a few seconds',
+   await page.locator('#shareGrp button').count(), 1);
+
+// one goal still gets the whole family - QR and Tool do not depend
+// on there being more than one goal to choose from
 await page.goto('about:blank');
 await page.goto(FILE + '#Only~2027-01-01');
 await page.waitForTimeout(220);
@@ -358,18 +360,22 @@ await page.click('#bShare');
 await page.waitForTimeout(200);
 ok('one goal: copied, no fuss', decodeURIComponent(await page.evaluate(() => window.__copied)).endsWith('#Only~2027-01-01'), true);
 ok('one goal: "All" makes no sense and is not offered', await seg('All').count(), 0);
-ok('one goal: Code is still offered', await seg('Code').count(), 1);
-ok('one goal: so is the bare tool', await seg('No goal').count(), 1);
+ok('one goal: QR is still offered', await segByTitle('QR code').count(), 1);
+ok('one goal: so is the bare tool', await seg('Tool').count(), 1);
 
-// an empty board has nothing to share and nothing to offer
+// an empty board has no goal, but the tool itself is still worth sharing
 await page.evaluate(() => localStorage.removeItem('baaki.hash'));
 await page.goto('about:blank');
 await page.goto(FILE);
 await page.waitForTimeout(400);
-ok('empty board: Share refuses', (() => true)(), true);
+await page.evaluate(() => { window.__copied = null; navigator.clipboard.writeText = t => { window.__copied = t; return Promise.resolve(); }; });
 await page.click('#bShare');
 await page.waitForTimeout(150);
-ok('empty board: only Share itself, no siblings', await page.locator('#shareGrp button').count(), 1);
+ok('empty board: Share falls back to the bare tool',
+   decodeURIComponent(await page.evaluate(() => window.__copied)).endsWith('/baaki.html'), true);
+ok('empty board: QR is offered, All and Tool are not (Share already is Tool)',
+   await page.locator('#shareGrp button').count(), 2);
+ok('empty board: the second segment is QR', await segByTitle('QR code').count(), 1);
 
 console.log('\n--- a board with too many numbers on it ---');
 const many = Array.from({length: 11}, (_, i) => `Goal${i + 1}~2027-0${(i % 9) + 1}-15`).join('+');
@@ -388,7 +394,7 @@ console.log('\n--- seconds in a link, and the missed-deadline restraint ---');
 // tenths display, e.g. a deadline set to an exact second
 r = await open('#New%20Year~2027-01-01T00:00:00');
 ok('seconds in a target still parse', r.name, 'New Year');
-ok('seconds: the number is right', r.num, '121');
+ok('seconds: the number is right', r.num, '121d');
 r = await open('#Ship~2026-09-02T10:07:30');
 ok('seconds survive the round trip', r.hash, '#Ship~2026-09-02T10:07:30');
 r = await open('#Ship~2026-09-02T10:07:00');
@@ -482,7 +488,7 @@ await page.route('**/version.json', route => route.abort());
 r = await open('#Ship~2027-01-01');
 await page.waitForTimeout(500);
 ok('a dead host is silent', await page.locator('#bAbout').evaluate(b => b.classList.contains('dot')), false);
-ok('and the board is unharmed', r.num, '121');
+ok('and the board is unharmed', r.num, '121d');
 await page.unroute('**/version.json');
 
 // leave the device clean, or every screenshot below inherits a size
@@ -574,7 +580,7 @@ page.on('pageerror', e => errs.push(e.message));
 r = await open('#Ship~2026-09-02T10:00:08');
 await page.waitForTimeout(400);
 ok('ticking through the last ten seconds is quiet code', errs.length, 0);
-ok('and the number is where it should be', r.num, '0:08');
+ok('and the number is where it should be', r.num, '0m 08s');
 
 await page.evaluate(() => localStorage.removeItem('baaki.sound'));
 
@@ -621,6 +627,12 @@ ok('a bare day-month rolls forward', await reads('1 jan'), 'Fri, 1 Jan 2027 · e
 ok('nonsense is refused',     (await reads('somewhen')).indexOf('Not a date') === 0, true);
 ok('31 february is refused',  (await reads('31/2/2027')).indexOf('Not a date') === 0, true);
 
+// this file's own output, fed back in - a quick-pick "in N minutes"
+// writes exactly this into the field, and it used to leave ":23"
+// dangling with nothing to parse it, refusing a date this file wrote
+ok('a value with seconds reads back, not refused',
+   (await reads('2026-09-04T13:47:23')).indexOf('Not a date') === 0, false);
+
 // the whole point: it goes in as a real goal
 await page.fill('#fName', 'Board review');
 await page.fill('#fWhen', 'friday 6pm');
@@ -637,6 +649,8 @@ console.log('\n--- choosing a date: past is discouraged, not offered ---');
 r = await open('#Seed~2027-01-01');
 await page.keyboard.press('g');
 await page.waitForTimeout(250);
+await page.click('#pkToggle');
+await page.waitForTimeout(150);
 
 const dayCell = async (n) => page.locator('#pkGrid button').filter({ hasText: new RegExp('^' + n + '$') }).first();
 ok('yesterday in the grid is disabled', await (await dayCell(1)).isDisabled(), true);
@@ -670,6 +684,36 @@ ok('a typed time lands in the field', await page.inputValue('#fWhen'), '2026-09-
 ok('and reads back the same way it was typed', await page.inputValue('.otherTime'), '8:30pm');
 await page.keyboard.press('Escape');
 await page.waitForTimeout(150);
+
+console.log('\n--- the calendar stays out of the way until asked for ---');
+// a scroll region nested inside the dialog's own was tried and rejected;
+// collapsing the grid by default is what keeps Add goal in reach instead
+r = await open('#Seed~2027-01-01');
+await page.keyboard.press('g');
+await page.waitForTimeout(250);
+ok('the day grid is not shown by default', await page.locator('#pick').isVisible(), false);
+await page.click('#pkToggle');
+await page.waitForTimeout(150);
+ok('the toggle opens it', await page.locator('#pick').isVisible(), true);
+await page.click('#pkToggle');
+await page.waitForTimeout(150);
+ok('and closes it again', await page.locator('#pick').isVisible(), false);
+await page.locator('.row button[title="Edit"]').first().click();
+await page.waitForTimeout(150);
+ok('editing an existing goal opens it automatically', await page.locator('#pick').isVisible(), true);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(150);
+
+console.log('\n--- a preset is a whole answer, not a suggestion ---');
+r = await open('');
+await page.keyboard.press('g');
+await page.waitForTimeout(250);
+await page.fill('#fName', 'Standup');
+await page.locator('#fQuick button', { hasText: '15m' }).click();
+await page.waitForTimeout(200);
+ok('a preset adds the goal immediately',
+   decodeURIComponent(await page.evaluate(() => location.hash)).includes('Standup~'), true);
+ok('and closes the dialog on its own', await page.locator('#dlg').isVisible(), false);
 
 console.log('\n--- locking the board against an accidental tap ---');
 await page.evaluate(() => localStorage.removeItem('baaki.locked'));
@@ -764,6 +808,8 @@ console.log('\n--- the calendar does not let you wander into the past ---');
 r = await open('#Seed~2027-01-01');
 await page.keyboard.press('g');
 await page.waitForTimeout(250);
+await page.click('#pkToggle');
+await page.waitForTimeout(150);
 ok('back is off while viewing the current month', await page.locator('#pkPrev').isDisabled(), true);
 await page.click('#pkNext');
 await page.waitForTimeout(120);
@@ -812,34 +858,6 @@ const hints = await page.locator('#opts .opt').evaluateAll(els => els.map(e => e
 ok('every row in This Screen has something to say on hover', hints.every(h => h && h.length > 0), true);
 await page.keyboard.press('Escape');
 await page.waitForTimeout(150);
-
-console.log('\n--- screenshots ---');
-const shots = [
-  ['far-dark',   '#Metro%20Phase%202~2027-11-03', 'dark'],
-  ['near-dark',  '#Launch%20day~2026-09-14',      'dark'],
-  ['today-dark', '#Ship~2026-09-02T18:30',        'dark'],
-  ['over-dark',  '#Ship~2026-09-02T02:00',        'dark'],
-  ['event-dark', '#Diwali~2026-11-08*',           'dark'],
-  ['multi-dark', '#Metro%20Phase%202~2027-11-03+Tender~2026-10-15+Trials~2026-12-01+Handover~2027-06-30', 'dark'],
-  ['crowded-dark', '#' + Array.from({length: 11}, (_, i) => `Goal ${i + 1}~2027-0${(i % 9) + 1}-15`).map(encodeURIComponent).join('+'), 'dark'],
-  ['far-light',  '#Metro%20Phase%202~2027-11-03', 'light'],
-  ['event-light','#Diwali~2026-11-08*',           'light'],
-  ['multi-light','#Metro%20Phase%202~2027-11-03+Tender~2026-10-15+Trials~2026-12-01+Handover~2027-06-30', 'light'],
-];
-for (const [name, hash, theme] of shots) {
-  await page.goto('about:blank');
-  await page.goto(FILE + hash);
-  await page.evaluate(t => { localStorage.setItem('baaki.theme', t); document.documentElement.dataset.theme = t; }, theme);
-  await page.waitForTimeout(300);
-  await page.screenshot({ path: `shots/${name}.png` });
-}
-// mobile
-const m = await ctx.newPage();
-await m.clock.setFixedTime(new Date(NOW));
-await m.setViewportSize({ width: 390, height: 780 });
-await m.goto(FILE + '#Metro%20Phase%202~2027-11-03+Tender~2026-10-15+Trials~2026-12-01');
-await m.waitForTimeout(300);
-await m.screenshot({ path: 'shots/mobile-dark.png' });
 
 console.log(`\n${pass} passed, ${fail} failed`);
 await browser.close();

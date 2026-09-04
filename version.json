@@ -1,5 +1,5 @@
 {
-  "version": "1.6.0",
+  "version": "1.7.0",
   "url": "https://j333t.github.io/baaki/",
-  "notes": "a correction pass: tenths and the pulse removed, single-column dialogs, a segmented share family"
+  "notes": "the unit rides on the number now, a calendar you open instead of scroll, presets for every one-click ask, share that folds itself away"
 }

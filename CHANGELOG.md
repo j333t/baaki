@@ -20,6 +20,47 @@ Anything that changes the **link format** is a breaking change and needs a major
 
 ---
 
+## 1.7.0 — unreleased
+
+Two passes, because the first one shipped a real bug and a real
+overcorrection alongside its fixes, and both got caught before either
+went out the door.
+
+### The bug behind "everything in the dialogs looks too big"
+- **Four CSS rules were silently dropping their own font size.** `.quick button`, `.kind button`, `.opt button` and the main text `input` all wrote `font:… inherit` as a shorthand - and `inherit` cannot sit mid-shorthand next to explicit values, so the whole declaration was invalid and the browser threw it away. Each one fell back to the *root* 15px type scale instead of the dialog's calmer ~12px one. Not a scale that needed rethinking - a bug that had been making the preset chips, the Deadline/Something good toggle, and every "This screen" button render half again too large since the day they were written.
+- **A second, quieter bug in the same family:** the free-text field's own value could fail to parse itself. A quick-pick preset like "in 5 min" writes a timestamp with real seconds on it into the field; re-submitting without retyping fed that straight back through the typed-text parser, which only knew how to strip `HH:MM` and left a dangling `:SS` nothing downstream could read - "I could not read that date," on a date this file had just written. The same gap affected re-saving an edit on any goal whose target carried seconds. Fixed at the parser, not by avoiding seconds.
+
+### The Goals form, made to fit
+- **The calendar is collapsed by default, not scrolled.** The first fix for "too much space" wrapped the quick row, the calendar and the typed field in their own scrolling strip, capped independently of the dialog - which solved "Add goal stays reachable" and immediately broke a harder rule: a scroll region inside another is not a fix, it's a second problem wearing the first one's clothes. The grid is a plain disclosure now - "Pick a day on the calendar," collapsed until pressed, opening on its own when editing a goal so the existing date is there to see. Collapsed, the whole form fits with room to spare, no scrolling of any kind, on a screen as small as 375×667.
+- **A preset is a whole answer, not a half-filled form.** Clicking a quick-pick chip used to fill in the date and wait for a separate press of "Add goal." Now it adds the goal and closes the dialog in the same motion - name the goal first if it wants one, the field's current value rides along with the date.
+- **Fifteen quick-pick presets, not six.** 5m/15m/30m/1h/2h for "starting right now", end of week/month/year and +3/+6 months for "sometime out there" - short labels, the full phrase on hover, no new parsing needed since `parseWhen` already understood every one of these. Deliberately not a chip per minute value (1, 2, 3, 5, 10…) - the typed field already covers an exact ask in two words.
+- **Clear all, and clear completed**, above the goal list. Clear completed disables itself with nothing done to clear.
+
+### The number carries its own unit now
+- **The unit moved off the number's side and onto its digits.** "8:30 hours · today" made you read a caption to know what the digits meant; now it's `8ʰ 30ᵐ` - the hour group and the minute group each carry their own small superscript letter, sized to stay legible at a distance rather than shrunk to the browser's cramped default. Every counting rung gets this treatment: days (`427ᵈ`), the overdue mirror (`+8ʰ 00ᵐ`), the empty board's example (`118ᵈ`). Done and arrived keep a plain word beside the checkmark or star, since neither is a count with digits to attach a letter to.
+
+### Share, unfolding instead of sitting there
+- **The segmented family is hidden until Share is actually pressed.** A first pass made it permanently visible; unfolding on press and folding away a few seconds after the last touch turned out to be the actual point. Press Share, it copies the current goal exactly as before, and All *n* / a QR icon / Tool appear beside it, on their own.
+- **An empty board shares the tool itself, instead of refusing.** Share used to just say "add a goal first." Now it falls back to the bare link - still a working share, still one press - with a QR code offered as the one extra segment.
+- The bare-tool segment is called **Tool** now, not "No goal". The QR segment is an icon, matching the QR bar glyph, not the word "Code".
+
+### Small things, each reported once and fixed once
+- **Confetti no longer hangs at the centre for a beat before it bursts.** The slowest third of the original speed spread barely moved in the first few frames; the floor is higher now and the burst reads as instant.
+- **The clock shows seconds and the timezone name.** Still one `setInterval`, still no sub-second loop - it was already re-rendering every second, it just wasn't using it.
+- **Alt+H jumps to a random hue**; `H` still steps it five degrees at a time. A matching Random button sits next to Reset in Settings.
+- **`kbd` reads as a code wrap now, not a key-cap.** A plain monospace tint, no border, no hover state - different enough from a real button on sight, and nothing pretending to be pressable.
+- **Tips only show what's actually true right now**, and are written to stand alone. No fullscreen tip without the API, no "press 1-9" tip with one goal on the board; every remaining one says "press X" explicitly instead of assuming the reader already knows the board.
+- **Every row under "This screen" has a dotted underline and a help cursor** on hover, so the tooltip that was already there is now visibly there.
+- **The help-text line under Settings can be turned off.** On by default; a familiar panel doesn't need the reminder reread every time.
+- **The About panel says less.** Three paragraphs of "why one number" are one now - the Sreedharan story and बाकी's meaning both survive, the rest didn't earn its length.
+
+### Under it
+- 224 browser checks. Several were rewritten rather than added: the unit moving onto the number changed what almost every ladder-rung assertion should expect, so those got updated in place instead of piling a second check on top of the old one.
+- 112.8 KB → 125.0 KB. Real surface added (nine more presets, the share-fold state machine, the calendar disclosure, superscript rendering) outweighed what was trimmed (the About text, the screenshot-capture tail in `test.mjs`).
+- Screenshots stayed part of verification this round - the first one taken caught the `inherit` bug above, which no amount of reading the CSS had. A later one caught the nested-scroll regression before it shipped.
+
+---
+
 ## 1.6.0 — unreleased
 
 A second correction pass on top of the first one. Several 1.5.0 ideas

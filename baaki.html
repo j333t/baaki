@@ -93,7 +93,13 @@ main{display:flex;flex-direction:column;align-items:center;gap:var(--s2);min-wid
   margin:calc(var(--s2) * -1) 0 var(--s1)}
 #num{font-size:calc(clamp(4.5rem,21vw,15rem) * var(--hero-k));font-weight:var(--hero-w);
   letter-spacing:var(--hero-track);line-height:.94;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+/* The unit rides on the digits now, not beside them - a real size, not
+   the browser's cramped default <sup>, so it survives being read from
+   across a room. */
+#num sup{font-size:.26em;font-weight:500;vertical-align:.62em;color:var(--dim);
+  letter-spacing:0;margin-left:.03em}
 #unit{font-size:var(--f2);font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+#unit[hidden]{display:none}
 #sub{font-size:var(--f1);color:var(--dim);letter-spacing:.04em;display:flex;gap:var(--s2);
   flex-wrap:wrap;justify-content:center}
 #sub b{font-weight:500;color:var(--ink);opacity:.8}
@@ -144,7 +150,9 @@ button.b.i{width:var(--h);padding:0}
   border:1px solid transparent;border-radius:99px;overflow:hidden}
 .seg button{background:none;border:none;height:100%;padding:0 var(--s3);
   color:var(--dim);font:500 var(--f1)/1 var(--face);cursor:pointer;white-space:nowrap;
-  transition:background .2s,color .2s}
+  display:inline-flex;align-items:center;justify-content:center;
+  transition:background .2s,color .2s,opacity .22s ease}
+.seg button svg{display:block}
 .seg button:hover,.seg button:focus-visible{background:var(--panel2);color:var(--ink);outline:none}
 .seg button+button{border-left:1px solid var(--line)}
 /* display:inline-flex above beats the browser's own [hidden]{display:none},
@@ -198,6 +206,12 @@ dialog::-webkit-scrollbar-thumb:hover,.rows::-webkit-scrollbar-thumb:hover{backg
 .dlg h2{font-size:var(--f2);font-weight:600;letter-spacing:-.01em;display:flex;
   justify-content:space-between;align-items:baseline;gap:var(--s2)}
 .dlg h2 span{font-size:var(--f0);font-weight:400;color:var(--faint);letter-spacing:.1em;text-transform:uppercase}
+.listActs{display:flex;gap:var(--s3);justify-content:flex-end}
+.listActs[hidden]{display:none}
+.listActs button{font:400 var(--f0)/1 var(--face);color:var(--faint);background:none;border:none;
+  cursor:pointer;text-decoration:underline;text-underline-offset:2px;padding:2px 0}
+.listActs button:hover,.listActs button:focus-visible{color:var(--dim);outline:none}
+.listActs button:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
 .rows{display:flex;flex-direction:column;gap:var(--s1);max-height:34vh;overflow:auto}
 .row{display:flex;gap:var(--s2);align-items:center;background:var(--panel);border-radius:10px;padding:var(--s2)}
 .row.editing{outline:1px solid var(--line)}
@@ -208,28 +222,39 @@ dialog::-webkit-scrollbar-thumb:hover,.rows::-webkit-scrollbar-thumb:hover{backg
 .row button:hover,.row button:focus-visible{color:var(--ink);background:var(--panel2);outline:none}
 form.add{display:flex;flex-direction:column;gap:var(--s3)}
 .quick{display:flex;flex-wrap:wrap;gap:var(--s1)}
+/* Collapsed by default - a second scroll region nested inside the
+   dialog's own was worse than the thing it fixed. The grid only takes
+   space once somebody actually asks to browse it; everyone else never
+   pays for it. */
+.pkToggle{display:flex;align-items:center;justify-content:space-between;gap:var(--s2);
+  font:500 var(--f0)/1 var(--face);color:var(--dim);background:var(--panel);
+  border:1px solid transparent;border-radius:10px;padding:var(--s2) var(--s3);cursor:pointer}
+.pkToggle:hover,.pkToggle:focus-visible{background:var(--panel2);color:var(--ink);outline:none;border-color:var(--line)}
+.pkToggle .chev{transition:transform .2s}
+.pkToggle[aria-expanded=true] .chev{transform:rotate(90deg)}
 /* A calendar you tap, because choosing a date is not the same act as
    reciting one. The title zooms out - days to months to years - so
    anywhere at all is three taps, however far away it is. */
-.pick{background:var(--panel);border:1px solid var(--line);border-radius:calc(var(--u) * .7);
-  padding:var(--s2);display:flex;flex-direction:column;gap:var(--s2)}
+.pick{padding:var(--s2) 0 0;display:flex;flex-direction:column;gap:var(--s2);
+  border-top:1px solid var(--line)}
+.pick[hidden]{display:none}
 .pkhead{display:flex;align-items:center;gap:var(--s1)}
 .pktitle{flex:1;font:500 var(--f1)/1 var(--face);color:var(--ink);background:none;border:1px solid transparent;
   border-radius:8px;padding:var(--s2);cursor:pointer;letter-spacing:.01em}
 .pktitle:hover,.pktitle:focus-visible{background:var(--panel2);outline:none;border-color:var(--line)}
-.pknav{width:max(30px, calc(var(--u) * 1.9));height:max(30px, calc(var(--u) * 1.9));flex:none;
+.pknav{width:max(26px, calc(var(--u) * 1.7));height:max(26px, calc(var(--u) * 1.7));flex:none;
   font:400 var(--f2)/1 var(--face);
   color:var(--dim);background:none;border:1px solid transparent;border-radius:8px;cursor:pointer}
 .pknav:disabled{opacity:.3;cursor:not-allowed;pointer-events:none}
 .pknav:hover,.pknav:focus-visible{background:var(--panel2);color:var(--ink);outline:none;border-color:var(--line)}
-.pkgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.pkgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px}
 .pkgrid.wide{grid-template-columns:repeat(4,1fr);gap:var(--s1)}
 .pkgrid .dow{display:flex;align-items:center;justify-content:center;font-size:var(--f0);
-  color:var(--faint);height:calc(var(--u) * 1.4);letter-spacing:.06em}
+  color:var(--faint);height:calc(var(--u) * 1.1);letter-spacing:.06em}
 .pkgrid button{font:400 var(--f1)/1 var(--face);color:var(--dim);background:none;
   border:1px solid transparent;border-radius:7px;cursor:pointer;
-  height:max(30px, calc(var(--u) * 1.9));display:flex;align-items:center;justify-content:center;padding:0}
-.pkgrid.wide button{height:max(34px, calc(var(--u) * 2.2))}
+  height:max(25px, calc(var(--u) * 1.6));display:flex;align-items:center;justify-content:center;padding:0}
+.pkgrid.wide button{height:max(30px, calc(var(--u) * 2))}
 .pkgrid button:hover,.pkgrid button:focus-visible{background:var(--panel2);color:var(--ink);outline:none}
 .pkgrid button.off{color:var(--faint);opacity:.55}
 .pkgrid button.now{border-color:var(--line);color:var(--ink)}
@@ -248,7 +273,7 @@ form.add{display:flex;flex-direction:column;gap:var(--s3)}
 .times button.gone{opacity:.4}
 input.typed{font-size:var(--f0);padding:9px var(--s3);color:var(--dim)}
 input.typed:focus{color:var(--ink)}
-.quick button{font:500 var(--f0)/1 inherit;font-family:inherit;color:var(--dim);background:var(--panel);
+.quick button{font:500 var(--f0)/1 var(--face);color:var(--dim);background:var(--panel);
   border:1px solid transparent;border-radius:99px;padding:7px 11px;cursor:pointer}
 .quick button:hover,.quick button:focus-visible{background:var(--panel2);color:var(--ink);outline:none;border-color:var(--line)}
 .parsed{font-size:var(--f0);color:var(--dim);min-height:1.3em;letter-spacing:.02em}
@@ -256,13 +281,13 @@ input.typed:focus{color:var(--ink)}
 .parsed b{color:var(--ink);font-weight:500}
 .parsed i{font-style:normal;color:var(--faint)}
 .parsed.past i{color:var(--dim)}
-input{font:400 var(--f1) inherit;font-family:inherit;color:var(--ink);background:var(--panel);
+input{font:400 var(--f1) var(--face);color:var(--ink);background:var(--panel);
   border:1px solid var(--line);border-radius:10px;padding:11px var(--s3);width:100%}
 input:focus{outline:none;border-color:var(--ink)}
 input::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.5;cursor:pointer}
 html[data-theme=light] input::-webkit-calendar-picker-indicator{filter:none}
 .kind{display:flex;gap:var(--s1)}
-.kind button{flex:1;font:500 var(--f1)/1 inherit;font-family:inherit;color:var(--dim);
+.kind button{flex:1;font:500 var(--f1)/1 var(--face);color:var(--dim);
   background:var(--panel);border:1px solid transparent;border-radius:10px;padding:11px;cursor:pointer}
 .kind button[aria-pressed=true]{color:var(--ink);background:var(--panel2);border-color:var(--line)}
 .hint{font-size:var(--f0);color:var(--faint);line-height:1.55}
@@ -275,12 +300,13 @@ html[data-theme=light] input::-webkit-calendar-picker-indicator{filter:none}
 .hint a{color:var(--dim)}
 .hint a:hover{color:var(--ink)}
 .acts{display:flex;gap:var(--s2);justify-content:flex-end;flex-wrap:wrap}
-/* A key-cap, not a button: no fill, just an inset border, so it never
-   competes with something you can actually press. button.b owns the
-   pill-and-fill look on this screen; kbd must not borrow it. */
-kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;background:none;
-  border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--dim);
-  box-shadow:inset 0 -1px 0 var(--line)}
+/* A code wrap, not a button - the monospace face and a plain tint do
+   the whole job of reading as "this is a key", with no hover state and
+   no cursor to confuse it with something pressable. */
+kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;
+  background:var(--panel);border:none;border-radius:5px;color:var(--dim);line-height:1;
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:calc(var(--u) * 1.7);padding:calc(var(--u) * .3) calc(var(--u) * .5)}
 /* sized to its content, not stretched across the panel - two short
    columns side by side, not the full dialog width */
 .keys{display:inline-grid;grid-template-columns:auto 1fr auto 1fr;gap:var(--s1) var(--s3);
@@ -289,8 +315,9 @@ kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;background:none;
 .screen{border-top:1px solid var(--line);padding-top:var(--s3);display:flex;flex-direction:column;gap:var(--s2)}
 .opts{display:flex;flex-direction:column;gap:var(--s1)}
 .opt{display:flex;align-items:center;gap:var(--s1);font-size:var(--f1);color:var(--dim)}
-.opt .lbl{flex:1;min-width:0}
-.opt button{font:500 var(--f0)/1 inherit;font-family:inherit;color:var(--dim);background:var(--panel);
+.opt .lbl{flex:1;min-width:0;cursor:help;text-decoration:underline dotted var(--faint);
+  text-underline-offset:3px}
+.opt button{font:500 var(--f0)/1 var(--face);color:var(--dim);background:var(--panel);
   border:1px solid transparent;border-radius:7px;padding:7px 10px;cursor:pointer;min-width:32px}
 .opt button:hover,.opt button:focus-visible{background:var(--panel2);color:var(--ink);outline:none;border-color:var(--line)}
 .opt button[aria-pressed=true]{color:var(--ink);background:var(--panel2);border-color:var(--line)}
@@ -375,15 +402,18 @@ body.locked #bAdd{opacity:.45}
       minutes; months need <b>mo</b>.
     </div>
     <div class="quick" id="fQuick"></div>
-    <div class="pick">
+    <button type="button" class="pkToggle" id="pkToggle" aria-expanded="false" aria-controls="pick">
+      <span id="pkToggleLabel">Pick a day on the calendar</span><span class="chev">&#8250;</span>
+    </button>
+    <div class="pick" id="pick" hidden>
       <div class="pkhead">
         <button type="button" class="pknav" id="pkPrev" aria-label="Back a month">&#8249;</button>
         <button type="button" class="pktitle" id="pkTitle" aria-label="Zoom out to months, then years"></button>
         <button type="button" class="pknav" id="pkNext" aria-label="Forward a month">&#8250;</button>
       </div>
       <div class="pkgrid" id="pkGrid"></div>
-      <div class="times" id="fTimes"></div>
     </div>
+    <div class="times" id="fTimes"></div>
     <input id="fWhen" class="typed" placeholder="or type it &mdash; friday 6pm, in 3 weeks, 31 mar 2027" autocomplete="off">
     <div class="parsed" id="fParsed"></div>
     <div class="acts">
@@ -392,6 +422,10 @@ body.locked #bAdd{opacity:.45}
       <button type="submit" class="b primary" id="bSubmit">Add goal</button>
     </div>
   </form>
+  <div class="listActs" id="listActs" hidden>
+    <button type="button" id="bClearDone">Clear completed</button>
+    <button type="button" id="bClearAll">Clear all</button>
+  </div>
   <div class="rows" id="rows"></div>
   <div class="hist" id="hist" hidden></div>
 </div></dialog>
@@ -418,26 +452,18 @@ body.locked #bAdd{opacity:.45}
   <h3 class="sec">How</h3>
   <ol class="how">
     <li><b>Add a goal.</b> Press <kbd>G</kbd> and type when — <i>friday 6pm</i>, <i>31 mar 2027</i>, <i>in 3 weeks</i>.</li>
-    <li><b>Leave it somewhere you pass.</b> A pinned tab, a spare monitor, a phone on a desk. Press <kbd>F</kbd> and any old laptop is a wall board.</li>
-    <li><b>Send it.</b> The whole countdown is in the link, so paste it into any chat and it arrives working. <kbd>Q</kbd> puts it on somebody's phone from across a room.</li>
+    <li><b>Leave it somewhere you pass.</b> A pinned tab, a spare monitor, a phone on a desk. Press <kbd>F</kbd> for fullscreen — any old laptop becomes a wall board.</li>
+    <li><b>Send it.</b> The link is the whole countdown, so pasting it into a chat sends it working. <kbd>Q</kbd> puts it on a phone from across the room.</li>
   </ol>
 
-  <h3 class="sec">Why it is only one number</h3>
+  <h3 class="sec">Why one number</h3>
   <p class="story">
-    A chart asks to be studied. A list asks to be triaged. A single number asks
-    nothing, which is why you can put it somewhere you walk past and it still works
-    on the four-hundredth day.
-  </p>
-  <p class="story">
-    In the offices of the Delhi Metro, <b>E. Sreedharan</b> hung a board in every
-    room showing the days left. Not a plan. Not a chart. One number that everybody
-    walked past — and the Metro finished early and under budget, which almost never
-    happens anywhere.
-    <a href="https://en.wikipedia.org/wiki/E._Sreedharan" target="_blank" rel="noopener">He is worth ten minutes of reading.</a>
-  </p>
-  <p class="story">
-    <b>बाकी</b> is Hindi for <i>what's remaining</i>. There is no server and no
-    account: a deadline has no state, it is just target minus now.
+    A number asks nothing of you, so you can walk past it every day and it
+    still works on the four-hundredth. <b>E. Sreedharan</b> ran the Delhi Metro
+    this way — a board in every room showing days left, nothing else — and it
+    finished early.
+    <a href="https://en.wikipedia.org/wiki/E._Sreedharan" target="_blank" rel="noopener">Worth ten minutes.</a>
+    <b>बाकी</b> is Hindi for <i>what's remaining</i>: no server, no account, just target minus now.
   </p>
 
   <h3 class="sec">Keys</h3>
@@ -447,7 +473,7 @@ body.locked #bAdd{opacity:.45}
     <h3 class="sec">This screen</h3>
     <div class="opts" id="opts"></div>
     <div id="upd" hidden></div>
-    <div class="hint">Kept on this device, never in the link. How the board looks
+    <div class="hint" id="helpHint">Kept on this device, never in the link. How the board looks
       depends on the room you are standing in, not on the goal. Hover any of the
       above for what it does.</div>
   </div>
@@ -472,7 +498,7 @@ body.locked #bAdd{opacity:.45}
               Empty = fully offline; the link carries the done stamp.
    GA_ID    : GA4 measurement id, e.g. 'G-ABC1234XYZ'. Online only.
    ============================================================ */
-var VERSION  = '1.6.0';
+var VERSION  = '1.7.0';
 var SYNC_URL = '';
 var GA_ID    = '';
 /* UPDATE : a 200-byte {"version","url"} somewhere online. Two candidates,
@@ -597,7 +623,13 @@ function parseWhen(str, now){
   if((m = s.match(/(?:^|\s)(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m\.?(?=\s|$)/))){
     hh = (+m[1]) % 12; if(m[3] === 'p') hh += 12; mm = +(m[2] || 0);
     s = (s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length)).trim();
-  } else if((m = s.match(/(?:^|\s|t)(\d{1,2}):(\d{2})(?!\d)/))){
+  } else if((m = s.match(/(?:^|\s|t)(\d{1,2}):(\d{2})(?::(\d{2}))?(?!\d)/))){
+    /* :SS is consumed here too, even though nothing downstream keeps
+       it - without this, round-tripping a value this file itself
+       wrote (a quick-pick "in N min", or re-saving an edit on a goal
+       whose target carries seconds) left ":SS" dangling in the
+       remainder, which matched nothing and made a perfectly good date
+       read as unreadable. */
     hh = +m[1]; mm = +m[2];
     s = (s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length)).trim();
   }
@@ -789,17 +821,31 @@ function view(g, now){
 }
 function hm(ms){ return Math.floor(ms/HOUR) + ':' + pad(Math.floor(ms%HOUR/MIN)); }
 function ms2(ms){ return Math.floor(ms/MIN) + ':' + pad(Math.floor(ms%MIN/1000)); }
+/* The unit used to sit beside the number as a whole word - "hours",
+   "minutes over" - which meant reading English to know what a colon
+   pair meant. A superscript letter right on the digits it belongs to
+   reads the same way regardless of language, and it is the number
+   that stays glanceable, not a caption next to it. Single letters
+   only (d/h/m/s) - a superscript is the wrong place for a plural. */
+function sup1(numStr, u){ return numStr + '<sup>' + u + '</sup>'; }
+function sup2(pair, u1, u2){
+  var p = pair.split(':');
+  return p[0] + '<sup>' + u1 + '</sup> ' + p[1] + '<sup>' + u2 + '</sup>';
+}
 
 function heroOf(v, g){
   switch(v.m){
-    case 'done':    return { n:'✓', u: v.tier==='early' ? 'early' : (v.tier==='late' ? 'late' : 'on time') };
-    case 'arrived': return { n:'★', u:'here' };
-    case 'overD':   return { n:'+'+v.days, u: v.days===1 ? 'day over' : 'days over' };
-    case 'overHm':  return { n:'+'+hm(v.ms), u:'hours over' };
-    case 'overMs':  return { n:'+'+ms2(v.ms), u:'minutes over' };
-    case 'days':    return { n:String(v.days), u: v.days===1 ? 'day' : 'days' };
-    case 'hm':      return { n:hm(v.ms), u: g.event ? 'hours · today' : 'hours · today' };
-    default:        return { n:ms2(v.ms), u:'minutes' };
+    /* Done and arrived have no digit group to hang a letter off - a
+       checkmark or a star isn't a count - so they keep the plain word
+       beside them, same as before. */
+    case 'done':    return { n:'✓', u: v.tier==='early' ? 'early' : (v.tier==='late' ? 'late' : 'on time'), html:'✓' };
+    case 'arrived': return { n:'★', u:'here', html:'★' };
+    case 'overD':   return { n:'+'+v.days, u:'', html:sup1('+'+v.days, 'd') };
+    case 'overHm':  return { n:'+'+hm(v.ms), u:'', html:'+'+sup2(hm(v.ms), 'h', 'm') };
+    case 'overMs':  return { n:'+'+ms2(v.ms), u:'', html:'+'+sup2(ms2(v.ms), 'm', 's') };
+    case 'days':    return { n:String(v.days), u:'', html:sup1(String(v.days), 'd') };
+    case 'hm':      return { n:hm(v.ms), u:'', html:sup2(hm(v.ms), 'h', 'm') };
+    default:        return { n:ms2(v.ms), u:'', html:sup2(ms2(v.ms), 'm', 's') };
   }
 }
 function shortOf(g, now){
@@ -999,20 +1045,41 @@ var snarkPick = SNARK[(Math.random() * SNARK.length) | 0];
    for the odd thing worth knowing, picked once per load and left
    alone, the same way the snark above is. Not instructions; just the
    occasional nudge toward a key most people never try. */
+/* Each one has to stand alone - read by someone who has never pressed
+   a key on this board - so every key gets an explicit "press X", not
+   just a metaphor. "ok" narrows the pool to what is actually true
+   right now: no fullscreen tip on a browser without the API, no
+   "jump to a goal" tip with only one goal to jump to. */
 var TIPS = [
-  'Type "friday 6pm" instead of clicking through a calendar.',
-  'Q draws a code - point a phone at the screen from across the room.',
-  'F turns this into a wall board. Any old laptop will do.',
-  'Pin the tab. The title counts down too.',
-  'H turns the colour. It is yours, not the goal\'s.',
-  'This whole board is the address bar. Copy it, and you have copied it.',
-  'D only shows up once there is a Done to press.',
-  'Numbers 1 through 9 jump straight to a goal.',
-  '+ and \u2212 change how big the number is, not what it says.',
-  'Swipe on a phone; arrow keys everywhere else.'
+  { t:'Type "friday 6pm" in the box instead of clicking through the calendar.' },
+  { t:'Press Q to draw a QR code \u2014 point a phone at the screen from across the room.' },
+  { t:'Press F for fullscreen. Any old laptop becomes a wall board this way.',
+    ok:function(){ return canFull(); } },
+  { t:'Pin this tab \u2014 the browser tab title counts down too, even unpinned elsewhere.' },
+  { t:'Press H to shift the colour. It only changes on this screen, never in a shared link.' },
+  { t:'The whole countdown lives in the address bar \u2014 copy it from there and you have shared everything.' },
+  { t:'A Done button appears once you are on time or early \u2014 press D, or click it.',
+    ok:function(){ return S.goals[0] && !S.goals[0].event; } },
+  { t:'Press 1 through 9 to jump straight to a goal.',
+    ok:function(){ return S.goals.length > 1; } },
+  { t:'Press + or \u2212 to change how big the number is \u2014 not what it says.' },
+  { t:'Swipe left or right to switch goals on a phone; arrow keys do the same elsewhere.',
+    ok:function(){ return S.goals.length > 1; } }
 ];
-var tipIx = (Math.random() * TIPS.length) | 0;
-var tipPick = TIPS[tipIx];
+function tipPool(){
+  var out = [];
+  for(var i = 0; i < TIPS.length; i++) if(!TIPS[i].ok || TIPS[i].ok()) out.push(i);
+  return out;
+}
+function pickTip(excludeIx){
+  var pool = tipPool();
+  if(!pool.length) return -1;
+  if(pool.length === 1) return pool[0];
+  var ix;
+  do { ix = pool[(Math.random() * pool.length) | 0]; } while(ix === excludeIx);
+  return ix;
+}
+var tipIx = -1, tipPick = '';
 /* Lazily, on their own - a slow, uneven interval so it never feels
    mechanical. Only when a tip is actually what's showing: not on an
    empty board, not once the snark at ten-plus goals has taken over
@@ -1020,15 +1087,16 @@ var tipPick = TIPS[tipIx];
    already crushes that transition to nothing via the blanket rule. */
 function rotateTip(){
   if(S.goals.length >= 1 && S.goals.length < 10){
-    var next = tipIx;
-    while(next === tipIx) next = (Math.random() * TIPS.length) | 0;
-    tipIx = next;
-    tipPick = TIPS[tipIx];
-    el.snark.classList.add('fade');
-    setTimeout(function(){
-      if(S.goals.length >= 1 && S.goals.length < 10) el.snark.textContent = tipPick;
-      el.snark.classList.remove('fade');
-    }, 500);
+    var next = pickTip(tipIx);
+    if(next >= 0){
+      tipIx = next;
+      tipPick = TIPS[tipIx].t;
+      el.snark.classList.add('fade');
+      setTimeout(function(){
+        if(S.goals.length >= 1 && S.goals.length < 10) el.snark.textContent = tipPick;
+        el.snark.classList.remove('fade');
+      }, 500);
+    }
   }
   setTimeout(rotateTip, 22000 + Math.random() * 14000);
 }
@@ -1053,7 +1121,8 @@ function render(force){
 
   /* always on, goal or none - a wall board earns its wall space partly
      by also being a clock */
-  var clockNow = now.toLocaleTimeString(undefined, { hour:'numeric', minute:'2-digit' });
+  var clockNow = now.toLocaleTimeString(undefined,
+    { hour:'numeric', minute:'2-digit', second:'2-digit', timeZoneName:'short' });
   if(prev.clock !== clockNow){ el.clock.textContent = clockNow; prev.clock = clockNow; }
 
   if(!S.goals.length){
@@ -1061,8 +1130,8 @@ function render(force){
     var left = Math.max(0, dayDiff(now, eoy));
     el.name.innerHTML = '<span></span>';
     el.name.firstChild.textContent = 'बाकी';
-    if(prev.n !== String(left)){ el.num.textContent = String(left); prev.n = String(left); }
-    el.unit.textContent = 'days left in ' + yr;
+    if(prev.n !== String(left)){ el.num.innerHTML = sup1(String(left), 'd'); prev.n = String(left); }
+    el.unit.hidden = true;
     el.sub.innerHTML = '<span></span>';
     el.sub.firstChild.textContent = dateLabel(eoy);
     el.tag.textContent = 'an example';
@@ -1070,6 +1139,7 @@ function render(force){
     el.snark.textContent = 'Click anywhere, or press G, to count something of your own.';
     document.body.classList.add('empty');
     el.done.hidden = true;
+    drawShareGroup();
     document.title = 'Baaki · ' + left + ' days left in ' + yr;
     var g0 = paint(gradFor(left, light, false), null);
     root.style.setProperty('--g1', g0[0]);
@@ -1087,8 +1157,12 @@ function render(force){
     el.name.lastChild.textContent = g.name;
     prev.nm = g.name + g.event;
   }
-  if(prev.n !== h.n){ el.num.textContent = h.n; prev.n = h.n; }
-  if(prev.u !== h.u){ el.unit.textContent = h.u; prev.u = h.u; }
+  if(prev.n !== h.n){
+    el.num.innerHTML = h.html;
+    el.unit.textContent = h.u;
+    el.unit.hidden = !h.u;
+    prev.n = h.n;
+  }
 
   var sub;
   if(v.m === 'done'){
@@ -1264,8 +1338,12 @@ function confetti(spec, pal){
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   var P = [], cx = W / 2, cy = H * 0.52;
   for(var i=0;i<spec.n;i++){
-    var a = Math.random() * Math.PI * 2, s = spec.v * (0.35 + Math.random());
-    P.push({ x:cx, y:cy, vx:Math.cos(a)*s*1.5, vy:Math.sin(a)*s - spec.v*0.5,
+    /* A floor of 0.75 on the speed, not 0.35 - the slowest third of a
+       0.35 spread barely moves in the first few frames, which reads as
+       the burst hanging at the centre before it "catches". Nothing
+       should still look stationary a frame after it fired. */
+    var a = Math.random() * Math.PI * 2, s = spec.v * (0.75 + Math.random() * 0.6);
+    P.push({ x:cx + Math.cos(a)*3, y:cy + Math.sin(a)*3, vx:Math.cos(a)*s*1.5, vy:Math.sin(a)*s - spec.v*0.5,
              r:2 + Math.random()*4, c:pal[(Math.random()*pal.length)|0],
              rot:Math.random()*6.3, vr:(Math.random()-.5)*.3, life:1 });
   }
@@ -1362,9 +1440,21 @@ function setFormKind(isEvent){
    usually want, the calendar for browsing, and typing for speed. All
    three write to the same place, so none of them is a second truth.
 ------------------------------------------------------------ */
+/* Short labels, real words in the title - so the row covers every
+   obvious one-click ask (a demo needs minutes, a deadline needs
+   further out) without turning into a wall of long pills. Deliberately
+   not one chip per minute value (1,2,3,5,10...): nobody needs both "1
+   min" and "2 min" as separate taps, and the typed field already
+   covers an exact ask in two words. */
 var QUICK = [
+  ['5m', 'in 5 min', 'In 5 minutes'], ['15m', 'in 15 min', 'In 15 minutes'],
+  ['30m', 'in 30 min', 'In 30 minutes'], ['1h', 'in 1 hour', 'In 1 hour'],
+  ['2h', 'in 2 hours', 'In 2 hours'],
   ['Today', 'today'], ['Tomorrow', 'tomorrow'], ['Friday', 'friday'],
-  ['In a week', 'in 1 week'], ['In a month', 'in 1 month'], ['End of year', 'end of year']
+  ['End of week', 'end of week'], ['In a week', 'in 1 week'],
+  ['End of month', 'end of month'], ['In a month', 'in 1 month'],
+  ['3 months', 'in 3 months'], ['6 months', 'in 6 months'],
+  ['End of year', 'end of year']
 ];
 var TIMES = [['End of day', null], ['9 am', 9], ['Noon', 12], ['6 pm', 18], ['9 pm', 21]];
 var pkSel = null;          /* the chosen Date, or null */
@@ -1378,7 +1468,11 @@ function drawQuick(){
     var b = document.createElement('button');
     b.type = 'button';
     b.textContent = row[0];
-    b.onclick = function(){ pickDate(parseWhen(row[1]), true); };
+    if(row[2]) b.title = row[2];
+    /* A preset is a whole answer, not a suggestion to keep editing -
+       press it and the goal exists. Name the goal first if it wants
+       one; the field's current value still goes along with the date. */
+    b.onclick = function(){ submitGoal(parseWhen(row[1])); };
     q.appendChild(b);
   });
 }
@@ -1530,6 +1624,14 @@ function showParsed(){
     : '';
   out.className = 'parsed' + ((d - new Date() < 0) ? ' past' : '');
 }
+/* Collapsed by default so the common case - a quick chip, or a typed
+   date - never pays for the calendar's height. Opens itself for an
+   edit, since seeing the existing date in context is the point there. */
+function setPickOpen(on){
+  $('#pick').hidden = !on;
+  $('#pkToggle').setAttribute('aria-expanded', on ? 'true' : 'false');
+  $('#pkToggleLabel').textContent = on ? 'Hide the calendar' : 'Pick a day on the calendar';
+}
 function resetForm(){
   editingIndex = -1;
   $('#fName').value = ''; $('#fWhen').value = '';
@@ -1537,6 +1639,7 @@ function resetForm(){
   drawPicker();
   showParsed();
   setFormKind(false);
+  setPickOpen(false);
   $('#bSubmit').textContent = 'Add goal';
   $('#bCancelEdit').hidden = true;
   drawRows();
@@ -1547,6 +1650,7 @@ function startEdit(i){
   $('#fName').value = g.name;
   pickDate(new Date(g.target.getTime()), true);
   setFormKind(g.event);
+  setPickOpen(true);
   $('#bSubmit').textContent = 'Save changes';
   $('#bCancelEdit').hidden = false;
   drawRows();
@@ -1556,6 +1660,9 @@ function startEdit(i){
 function drawRows(){
   $('#gCount').textContent = S.goals.length ? S.goals.length + (S.goals.length === 1 ? ' goal' : ' goals') : '';
   drawHistory();
+  $('#listActs').hidden = !S.goals.length;
+  var bClearDone = $('#bClearDone');
+  bClearDone.disabled = !S.goals.some(function(g){ return g.done; });
   el.rows.innerHTML = '';
   if(!S.goals.length){
     var d = document.createElement('div');
@@ -1584,6 +1691,23 @@ function drawRows(){
     };
     el.rows.appendChild(r);
   });
+}
+function clearAllGoals(){
+  if(!S.goals.length) return;
+  logEvent('remove', 'all ' + S.goals.length + ' goals', '');
+  S.goals = [];
+  resetForm();
+  prev = {}; commit(false);
+  toast('Cleared all goals.');
+}
+function clearDoneGoals(){
+  var n = S.goals.filter(function(g){ return g.done; }).length;
+  if(!n) return;
+  logEvent('remove', n + ' completed ' + (n === 1 ? 'goal' : 'goals'), '');
+  S.goals = S.goals.filter(function(g){ return !g.done; });
+  if(editingIndex >= 0 && (!S.goals.length || editingIndex >= S.goals.length)) resetForm();
+  prev = {}; commit(false); drawRows();
+  toast('Cleared ' + n + (n === 1 ? ' completed goal.' : ' completed goals.'));
 }
 
 /* ---------- QR: getting the board off the wall -------------
@@ -1864,15 +1988,20 @@ function qrMatrix(text){
 /* ---------- share: one press, one family -----------------------
    Pressing Share always copies the goal you are looking at - that
    covers the common case in one motion, no menu in the way. The rarer
-   moves (every goal, the bare tool, the QR code) sit beside it as
-   segments of the same pill, so they read as one control that grew a
-   few extra buttons, not as Share breaking into pieces. #bShare never
-   leaves the DOM and never changes identity; siblings are added and
-   removed around it as the goal count changes.
+   moves (every goal, the QR code, the bare tool) stay out of sight
+   until Share is actually pressed, then unfold beside it as segments
+   of the same pill - a family that grew a few extra buttons for a few
+   seconds, not a row of options sitting there permanently. #bShare
+   never leaves the DOM and never changes identity; siblings are added
+   and removed around it, and it folds itself back up on its own.
 ------------------------------------------------------------ */
+var shareOpen = false, shareTimer = null;
 function openShare(){
-  if(!S.goals.length){ toast('Add a goal first.'); return; }
-  doShare(false);
+  /* Nothing to point Share at yet, but the tool itself is still worth
+     handing over - an empty board is a working example, not a dead
+     end, so Share falls back to it instead of refusing. */
+  if(S.goals.length) doShare(false); else shareBare();
+  expandShare();
 }
 function doShare(all){
   var link = baseUrl() + (all ? buildHash(S.goals, false) : '#' + goalToken(S.goals[0]));
@@ -1884,23 +2013,48 @@ function doShare(all){
 function shareBare(){
   copy(baseUrl()).then(function(ok){ toast(ok ? 'Empty board link copied.' : 'Copy the address bar.'); });
 }
+function expandShare(){
+  shareOpen = true;
+  drawShareGroup();
+  clearTimeout(shareTimer);
+  shareTimer = setTimeout(collapseShare, 4000);
+}
+function collapseShare(){
+  shareOpen = false;
+  clearTimeout(shareTimer);
+  drawShareGroup();
+}
 function drawShareGroup(){
   var grp = $('#shareGrp');
   if(!grp) return;
+  $('#bShare').title = S.goals.length ? 'Share this one (s)' : 'Share the tool (s)';
+  var open = shareOpen;
+  if(!open){
+    if(grp.children.length < 2) return;
+    var leaving = Array.prototype.slice.call(grp.children, 1);
+    leaving.forEach(function(b){ b.style.opacity = '0'; b.disabled = true; });
+    setTimeout(function(){
+      if(!shareOpen) while(grp.children.length > 1) grp.removeChild(grp.lastChild);
+    }, 240);
+    return;
+  }
   /* keep #bShare, drop everything after it, rebuild the rest */
   while(grp.children.length > 1) grp.removeChild(grp.lastChild);
-  if(!S.goals.length) return;
-  var seg = function(label, title, fn){
+  var seg = function(label, title, fn, html){
     var b = document.createElement('button');
     b.type = 'button';
-    b.textContent = label;
+    if(html) b.innerHTML = html; else b.textContent = label;
     b.title = title;
-    b.onclick = fn;
+    b.style.opacity = '0';
+    b.onclick = function(){ fn(); expandShare(); };
     grp.appendChild(b);
+    requestAnimationFrame(function(){ b.style.opacity = '1'; });
   };
   if(S.goals.length > 1) seg('All ' + S.goals.length, 'Copy every goal as one link', function(){ doShare(true); });
-  seg('Code', 'Draw a QR code of this link (Q)', openQr);
-  seg('No goal', 'Copy the bare tool, nothing on it', shareBare);
+  seg('', 'Draw a QR code of this link (Q)', openQr, svg(ICON.qr));
+  /* On an empty board, Share itself already copied the tool - a second
+     segment saying the same thing would be noise. */
+  if(S.goals.length) seg('Tool', 'Copy the bare tool, nothing on it', shareBare);
 }
 
 /* ---------- the tool strip -----------------------------------
@@ -1956,8 +2110,7 @@ function drawTools(){
 /* ---------- the code on screen ---------- */
 var qrLink = '';
 function openQr(){
-  if(!S.goals.length){ toast('Add a goal first.'); return; }
-  var link = qrLink = baseUrl() + buildHash(S.goals, false);
+  var link = qrLink = S.goals.length ? baseUrl() + buildHash(S.goals, false) : baseUrl();
   var g = qrMatrix(link), cv = $('#qrCv'), note = $('#qrNote');
   if(!g){
     cv.width = cv.height = 1;
@@ -1972,7 +2125,8 @@ function openQr(){
     x.fillStyle = '#000';
     for(r = 0; r < g.length; r++) for(c = 0; c < g.length; c++) if(g[r][c]) x.fillRect(c + quiet, r + quiet, 1, 1);
     note.textContent =
-      (S.goals.length === 1 ? 'One goal. ' : 'All ' + S.goals.length + ' goals. ') +
+      (!S.goals.length ? 'The bare tool, nothing on it. ' :
+       S.goals.length === 1 ? 'One goal. ' : 'All ' + S.goals.length + ' goals. ') +
       (location.protocol === 'file:'
         ? 'This copy is a file on this computer, so the code points at a path only this machine has. Host it to make the code travel.'
         : 'Anyone who scans it gets the same board.');
@@ -2087,6 +2241,17 @@ function setLocked(on){
   document.body.classList.toggle('locked', locked);
   render(true);
   toast(locked ? 'Goals locked on this device.' : 'Goals unlocked.');
+  drawOpts();
+}
+
+/* On by default; some people find the reminder text noise once they
+   already know the panel by heart. Per device, never in the link. */
+var showHelpHint = true;
+function setHelpHint(on){
+  showHelpHint = !!on;
+  lsSet('helpHint', showHelpHint ? '1' : '');
+  var h = $('#helpHint');
+  if(h) h.hidden = !showHelpHint;
   drawOpts();
 }
 
@@ -2248,6 +2413,12 @@ function setHue(deg, say){
   prev = {}; render(true); drawOpts();
   if(say) toast('Hue ' + (hueOff > 0 ? '+' : '') + hueOff + '\u00b0');
 }
+/* Alt+H, not H - a jump to anywhere on the wheel, not one more step
+   along it. H stays a dial; this is a reroll. */
+function randomHue(){
+  setHue(Math.floor(Math.random() * 360), false);
+  toast('Hue ' + (hueOff > 0 ? '+' : '') + hueOff + '\u00b0 \u2014 random');
+}
 function setDrift(on){
   hueDrift = !!on;
   lsSet('drift', hueDrift ? '1' : '');
@@ -2380,6 +2551,7 @@ function drawOpts(){
   r.appendChild(hv);
   optBtn(r, '+', null, function(){ setHue(hueOff + 5, true); });
   optBtn(r, 'Reset', null, function(){ setHue(0, true); });
+  optBtn(r, 'Random', null, randomHue).title = 'Jump to anywhere on the wheel (Alt+H)';
   o.appendChild(r);
 
   r = optRow('Auto colour change', 'Lets the hue drift slowly on its own over time.');
@@ -2394,6 +2566,10 @@ function drawOpts(){
   r.appendChild(val);
   optBtn(r, '+', null, function(){ bumpSize(1); });
   optBtn(r, 'Reset', null, resetSize);
+  o.appendChild(r);
+
+  r = optRow('Help text', 'The reminder line under this list, explaining that none of it rides in the link.');
+  optBtn(r, showHelpHint ? 'On' : 'Off', showHelpHint, function(){ setHelpHint(!showHelpHint); });
   o.appendChild(r);
 
   drawHistory();
@@ -2426,6 +2602,7 @@ var KEYS = [
   ['W', 'keep the screen awake'],
   ['M', 'sound at zero'],
   ['H', 'shift the hue, Shift+H back'],
+  ['Alt+H', 'jump to a random hue'],
   ['+ −', 'bigger / smaller number'],
   ['0', 'reset the size'],
   ['?', 'this panel'],
@@ -2450,9 +2627,11 @@ document.addEventListener('keydown', function(e){
     return;
   }
   if(anyDialogOpen()) return;                 // let the form have the keyboard
-  if(e.metaKey || e.ctrlKey || e.altKey) return;
+  var isAltH = e.altKey && !e.metaKey && !e.ctrlKey && e.key.toLowerCase() === 'h';
+  if((e.metaKey || e.ctrlKey || e.altKey) && !isAltH) return;
   var t = e.target.tagName;
   if(t === 'INPUT' || t === 'TEXTAREA') return;
+  if(isAltH){ e.preventDefault(); randomHue(); return; }
 
   if(e.key === 'ArrowRight'){ e.preventDefault(); cycleFocus(1); return; }
   if(e.key === 'ArrowLeft'){ e.preventDefault(); cycleFocus(-1); return; }
@@ -2530,6 +2709,7 @@ $('#fWhen').addEventListener('input', function(){
   if(d){ pkSel = d; pkCursor = new Date(d.getFullYear(), d.getMonth(), 1); pkView = 'day'; drawPicker(); }
   showParsed();
 });
+$('#pkToggle').onclick = function(){ setPickOpen($('#pick').hidden); };
 $('#pkPrev').onclick = function(){ pkStep(-1); };
 $('#pkNext').onclick = function(){ pkStep(1); };
 $('#pkTitle').onclick = function(){
@@ -2538,6 +2718,8 @@ $('#pkTitle').onclick = function(){
 };
 $('#kDeadline').onclick = function(){ setFormKind(false); };
 $('#kEvent').onclick = function(){ setFormKind(true); };
+$('#bClearAll').onclick = clearAllGoals;
+$('#bClearDone').onclick = clearDoneGoals;
 $('#bShare').onclick = openShare;
 drawShareGroup();
 
@@ -2545,16 +2727,16 @@ el.dlg.addEventListener('click', function(e){ if(outsideClick(el.dlg, e)) el.dlg
 el.about.addEventListener('click', function(e){ if(outsideClick(el.about, e)) el.about.close(); });
 el.dlg.addEventListener('close', resetForm);
 
-$('#addForm').onsubmit = function(e){
-  e.preventDefault();
+/* The one place a goal actually gets written - the typed-and-submitted
+   form and a one-click preset both land here, so "add" and "save an
+   edit" only have one implementation each. */
+function submitGoal(target){
   /* The browser's own "please fill this out" popup used to fire before
      this handler ever ran, because the field was marked required - so
      the actual message here was unreachable. Removing required (in the
      markup) surfaces this one instead, and a name is not worth
      blocking on: a blank one becomes "Goal" rather than an error. */
   var name = $('#fName').value.trim() || 'Goal';
-  var typed = $('#fWhen').value.trim();
-  var target = typed ? parseWhen(typed) : pkSel;
   if(!target){ toast('I could not read that date.'); $('#fWhen').focus(); return; }
   if(editingIndex >= 0){
     var g = S.goals[editingIndex];
@@ -2570,6 +2752,11 @@ $('#addForm').onsubmit = function(e){
   prev = {};
   commit(false);
   el.dlg.close();
+}
+$('#addForm').onsubmit = function(e){
+  e.preventDefault();
+  var typed = $('#fWhen').value.trim();
+  submitGoal(typed ? parseWhen(typed) : pkSel);
 };
 
 window.addEventListener('hashchange', function(){
@@ -2591,6 +2778,8 @@ try {
    the guess from defaultSize() */
 soundOn = lsGet('sound') === null ? true : !!lsGet('sound');
 locked = !!lsGet('locked');
+showHelpHint = lsGet('helpHint') === null ? true : !!lsGet('helpHint');
+$('#helpHint').hidden = !showHelpHint;
 document.body.classList.toggle('locked', locked);
 hueOff = parseInt(lsGet('hue'), 10) || 0;
 hueDrift = !!lsGet('drift');
@@ -2603,6 +2792,8 @@ load();
 /* Normalise the address on arrival: drops junk tokens and settles
    encoding, so the next Share hands over a clean link. */
 if(S.goals.length && location.hash !== buildHash(S.goals, S.edit)) commit(false);
+tipIx = pickTip(-1);
+if(tipIx >= 0) tipPick = TIPS[tipIx].t;
 render(true);
 setInterval(function(){ render(false); }, 1000);
 /* no dialog opens itself at you: the empty board is a working example

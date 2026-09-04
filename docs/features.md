@@ -21,6 +21,7 @@ Legend: **★** = load-bearing, removing it changes what Baaki is.
 | Span hidden under a month | It would just repeat the hero number. Redundancy is noise. |
 | Tab title shows `D-427 · Name` | The cheapest "always visible" there is. Works on every OS, costs nothing, needs no install. |
 | Favicon draws the number | Same reason, for people who keep the tab pinned and narrow. |
+| The unit rides on the digits as a superscript (`8ʰ 30ᵐ`, `427ᵈ`) | A word beside the number ("hours · today") asked you to read English to know what a colon pair meant. A letter on the digit it belongs to doesn't. Sized well past the browser's cramped default `<sup>` so it survives being read from across a room - the whole reason this exists in the first place. Done and arrived keep a plain word beside their checkmark or star; neither is a count with a digit to attach a letter to. |
 
 ## Colour
 
@@ -78,8 +79,10 @@ Legend: **★** = load-bearing, removing it changes what Baaki is.
 | Keyboard map (arrows, digits, g/s/d/t/?) | It's a wall board — you should be able to drive it without aiming a mouse. |
 | Swipe on touch | Same idea, thumbs. |
 | Share always copies immediately, no menu first | Press it, the board you're looking at is on the clipboard. |
-| The rarer share moves are a segmented family, not a popover | All *n*, Code, and the bare tool sit beside Share as one connected pill with a hairline between segments. They were tried as text links in the Goals dialog first - disconnected from the button they were about - and moved back. |
-| The QR code is a Share segment, not a separate bar icon | It is fundamentally a way of sharing. `Q` still opens it directly. |
+| The rarer share moves unfold beside Share, then fold away on their own | All *n*, a QR icon, and Tool sat there permanently at first - always visible whether wanted or not. Now they only appear once Share is actually pressed, and fold back up a few seconds after the last touch. Still one connected pill, one hairline between segments, `#bShare` never changing identity - just not permanent furniture. |
+| The QR code is a Share segment, not a separate bar icon | It is fundamentally a way of sharing. `Q` still opens it directly, and the segment itself is the same glyph as the QR bar icon, not the word "Code". |
+| The bare-tool share segment is "Tool" | "No goal" described what it lacked, not what it was for. |
+| An empty board shares the tool, not a refusal | Share used to just say "add a goal first." An empty board is still a working example - the tool itself is worth handing over, with the QR segment offered alongside it. |
 | Edit goals in place | Obvious in hindsight. Retyping a goal to fix a typo is the kind of thing that makes people stop using a tool. |
 | A calendar you tap, that zooms out | Choosing a date is not the same act as reciting one. Days → months → years puts any date three taps away, however far off. |
 | Typing still works, and steers the calendar | Fast for "friday", useless for "some Tuesday in March". Both doors, one room — the calendar is the truth and typing writes to it. |
@@ -97,11 +100,18 @@ Legend: **★** = load-bearing, removing it changes what Baaki is.
 | The calendar's back arrow stops at today's period | Every day before today was already disabled, but "back" could still walk you into a month or a whole decade with nothing but disabled cells in it. |
 | Lock goals | Not a permission system — there's no server, so permission would be theatre. A guard against your own thumb on a kiosk or a wall display, switched back off by anyone, any time, on their own device. |
 | A private, per-device change log, in Goals | The link tells you what a goal *is*, not what happened to it. Lives under the list it's about now, not buried in a settings panel. Every add, edit, removal and Done gets a line, with a Clear button beside it. Never leaves the browser. |
-| Tips rotate lazily on their own | Picked once per load used to mean static for the whole visit. Now they cross-fade to a new one roughly every 25-35 seconds, only while a tip is what's showing. |
-| Every setting explains itself on hover | A plain-language `title` on each row under "This screen" - what it does, not just its name. |
-| A quiet clock, always on | Goal or none. The authentic Sreedharan pairing is a station clock next to a days-left board, and it says "this is live" now that the number itself never moves. |
+| Clear all, and clear completed, above the goal list | Removing goals one at a time was the only option once there were several to retire at once - after a launch, after a season of deadlines. Clear completed disables itself when there is nothing done to clear. |
+| Fifteen quick-pick presets, not six | 5m/15m/30m/1h/2h cover "start a timer right now"; end of week/month/year and +3/+6 months cover "sometime out there" - both ends of the range in one tap, short labels with the full phrase on hover. Deliberately not one chip per minute value someone might type (1, 2, 3, 5, 10...) - nobody needs both "1 min" and "2 min" as separate taps, and the typed field already covers an exact ask in two words. |
+| Pressing a preset adds the goal and closes the dialog | A preset is a whole answer, not a suggestion to keep editing. Name the goal first if it wants one - the field's current value rides along with the date either way. |
+| The calendar is a disclosure, closed by default | A scroll region nested inside the dialog's own was tried first and rejected - it kept Add goal in reach but at the cost of a second, less obvious scrollbar. Collapsed, the grid costs nothing until "Pick a day on the calendar" is actually pressed; it opens itself when editing a goal, since seeing the existing date in context is the point there. |
+| Tips rotate lazily on their own, and only through what's actually true | Picked once per load used to mean static for the whole visit; now they cross-fade every 25-35 seconds, only while a tip is what's showing. Each one also carries a check - no fullscreen tip without the API, no "press 1-9" tip with a single goal - and every tip is written to make sense to someone who has never pressed a key on this board, not just to someone who already knows it. |
+| Every setting explains itself on hover, and looks it | A plain-language `title` on each row under "This screen" - what it does, not just its name - now paired with a dotted underline and a help cursor, so the row visibly invites a hover instead of hiding it. |
+| Help text can be turned off | On by default. Once the panel is familiar, the reminder line under it is just a line of text nobody rereads. |
+| Alt+H jumps to a random hue, `H` still steps it | `H` is a dial, five degrees at a time. Alt+H is a reroll - anywhere on the wheel in one press, with a matching Random button in Settings for anyone not on a keyboard. |
+| A quiet clock, always on, with seconds and the timezone | Goal or none. The authentic Sreedharan pairing is a station clock next to a days-left board, and it says "this is live" now that the number itself never moves. Seconds and the zone name turn it from decoration into something you'd actually set a watch by. |
 | Dialog closes on outside click | Every other dialog on earth does. |
 | About panel with the Sreedharan story | The origin is the best thing about this tool and it was invisible. Also where the keyboard map lives, so the main screen stays clean. |
+| The About text says less | Three paragraphs of "why one number" were one idea repeated three ways. Down to one, the Sreedharan story and बाकी's meaning both still in it. |
 
 ## This screen
 
@@ -136,7 +146,7 @@ Themes are data, and this is the whole extension surface. All of it per device.
 | No moving glow, no moving digits | A pulsing background was tried, on the theory that urgency belonged behind the number rather than in it. Removed anyway - it still didn't read as organic, and tuning it further wasn't the fix. The number has never moved and nothing has replaced the pulse. |
 | Dialog content gets its own, tamer scale — buttons do not | `.dlg` re-declares a gentler `--u`/`--f0`/`--f1`/`--f2` for text and spacing. `--h`, the height every button uses, stays a single root-level variable instead, so a dialog's calmer content scale can never drag its buttons down to an untappable size. |
 | Calendar cells and nav arrows get their own floor | Denser than a lone CTA, so they float on a smaller minimum, scaled from the dialog's own content unit rather than jumping to room-scale. |
-| `kbd` looks like a key, not a button | It shared a background colour with a button's hover state, so a row of shortcuts read as a row of little pressed buttons. Now it is an inset border with no fill. |
+| `kbd` reads as a code wrap, not a key-cap | Tried as an inset-bordered key-cap first, close enough to a button's shape to still be mistaken for one. A plain monospace tint with no border and no hover state reads as text about a key, not as something to press. |
 | A styled scrollbar | The one thing left on this screen the OS was still drawing by default. |
 | The whole board wanders a few pixels | It is meant to be left on for weeks. Nothing should sit in the same pixels that long. Two coprime periods, so the path never repeats. |
 | One height for every button in the bar | It read as scattered because nothing shared a measurement. |
