@@ -1,5 +1,5 @@
 {
-  "version": "1.7.0",
+  "version": "1.8.0",
   "url": "https://j333t.github.io/baaki/",
-  "notes": "the unit rides on the number now, a calendar you open instead of scroll, presets for every one-click ask, share that folds itself away"
+  "notes": "the unit reads as a real superscript now, done says exactly how early or late, the year picker starts this year, a fresh board picks its own colour"
 }

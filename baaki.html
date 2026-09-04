@@ -96,7 +96,7 @@ main{display:flex;flex-direction:column;align-items:center;gap:var(--s2);min-wid
 /* The unit rides on the digits now, not beside them - a real size, not
    the browser's cramped default <sup>, so it survives being read from
    across a room. */
-#num sup{font-size:.26em;font-weight:500;vertical-align:.62em;color:var(--dim);
+#num sup{font-size:.26em;font-weight:500;vertical-align:.95em;color:var(--dim);
   letter-spacing:0;margin-left:.03em}
 #unit{font-size:var(--f2);font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
 #unit[hidden]{display:none}
@@ -457,14 +457,13 @@ body.locked #bAdd{opacity:.45}
   </ol>
 
   <h3 class="sec">Why one number</h3>
+  <p class="story">A number asks nothing of you. Walk past it every day, for months, and it still works.</p>
   <p class="story">
-    A number asks nothing of you, so you can walk past it every day and it
-    still works on the four-hundredth. <b>E. Sreedharan</b> ran the Delhi Metro
-    this way — a board in every room showing days left, nothing else — and it
-    finished early.
+    <b>Inspired by E. Sreedharan.</b> He ran the Delhi Metro on a board in
+    every room, showing days left and nothing else. It finished early.
     <a href="https://en.wikipedia.org/wiki/E._Sreedharan" target="_blank" rel="noopener">Worth ten minutes.</a>
-    <b>बाकी</b> is Hindi for <i>what's remaining</i>: no server, no account, just target minus now.
   </p>
+  <p class="story"><b>बाकी</b> is Hindi for <i>what's remaining</i>. No server, no account — just target minus now.</p>
 
   <h3 class="sec">Keys</h3>
   <div class="keys" id="keys"></div>
@@ -498,7 +497,7 @@ body.locked #bAdd{opacity:.45}
               Empty = fully offline; the link carries the done stamp.
    GA_ID    : GA4 measurement id, e.g. 'G-ABC1234XYZ'. Online only.
    ============================================================ */
-var VERSION  = '1.7.0';
+var VERSION  = '1.8.0';
 var SYNC_URL = '';
 var GA_ID    = '';
 /* UPDATE : a 200-byte {"version","url"} somewhere online. Two candidates,
@@ -830,15 +829,22 @@ function ms2(ms){ return Math.floor(ms/MIN) + ':' + pad(Math.floor(ms%MIN/1000))
 function sup1(numStr, u){ return numStr + '<sup>' + u + '</sup>'; }
 function sup2(pair, u1, u2){
   var p = pair.split(':');
-  return p[0] + '<sup>' + u1 + '</sup> ' + p[1] + '<sup>' + u2 + '</sup>';
+  /* The last sixty seconds do not need a "0" minutes group sitting
+     in front of them - a group that has gone to zero has nothing
+     left to say, so it drops rather than idling on screen. */
+  if(+p[0] === 0) return p[1] + '<sup>' + u2 + '</sup>';
+  return p[0] + '<sup>' + u1 + '</sup>:' + p[1] + '<sup>' + u2 + '</sup>';
 }
 
 function heroOf(v, g){
   switch(v.m){
     /* Done and arrived have no digit group to hang a letter off - a
-       checkmark or a star isn't a count - so they keep the plain word
-       beside them, same as before. */
-    case 'done':    return { n:'✓', u: v.tier==='early' ? 'early' : (v.tier==='late' ? 'late' : 'on time'), html:'✓' };
+       checkmark or a star isn't a count - so they keep a word beside
+       them, same as before. For done, that word is the exact delta,
+       not a coarse early/on time/late bucket - "on time" used to
+       cover anything up to a full day early, which is not what
+       "on time" means to whoever finished three hours ahead. */
+    case 'done':    return { n:'✓', u:deltaLabel(g.target, g.done), html:'✓' };
     case 'arrived': return { n:'★', u:'here', html:'★' };
     case 'overD':   return { n:'+'+v.days, u:'', html:sup1('+'+v.days, 'd') };
     case 'overHm':  return { n:'+'+hm(v.ms), u:'', html:'+'+sup2(hm(v.ms), 'h', 'm') };
@@ -1166,19 +1172,21 @@ function render(force){
 
   var sub;
   if(v.m === 'done'){
-    /* Done is three different facts, not one fact in three colours.
-       On time needs one date; early and late need both, because the
-       gap between them is the entire story. */
+    /* The exact delta is the word beside the checkmark now, not a
+       coarse early/on time/late bucket - so "due" only needs to
+       repeat here when it says something that word didn't already:
+       skip it for a finish close enough to call "to the minute". */
     sub = '<b>done ' + dateLabel(g.done) + '</b>' +
-          (v.tier === 'ontime' ? '' : '<span>due ' + dateLabel(g.target) + '</span>');
+          (deltaLabel(g.target, g.done) === 'to the minute' ? '' : '<span>due ' + dateLabel(g.target) + '</span>');
   } else {
     var span = (v.m === 'days') ? humanSpan(now, g.target) : '';
     sub = (span ? '<b>' + span + '</b>' : '') + '<span>' + dateLabel(g.target) + '</span>';
   }
   if(prev.s !== sub){ el.sub.innerHTML = sub; prev.s = sub; }
 
-  var tag = v.m === 'done' ? (deltaLabel(g.target, g.done) + ' · ' + dateLabel(g.done))
-          : v.m === 'arrived' ? 'it is here'
+  /* Done no longer needs its own tag line - the delta already sits
+     beside the checkmark, and the date is already in sub. */
+  var tag = v.m === 'arrived' ? 'it is here'
           : (v.m.indexOf('over') === 0 ? 'past due' : '');
   if(prev.t !== tag){ el.tag.textContent = tag; prev.t = tag; }
 
@@ -1552,7 +1560,13 @@ function drawPicker(){
     }
   } else {
     grid.className = 'pkgrid wide';
-    var base = pkCursor.getFullYear() - ((pkCursor.getFullYear() % 12) === 0 ? 0 : pkCursor.getFullYear() % 12);
+    /* Windows of 12 anchored on the current year, not on an absolute
+       mod-12 boundary - the old base+ (year % 12) math could land a
+       window mostly in the past, e.g. 2016-2027 from 2026, ten of
+       those disabled before you ever pressed Prev. Every year before
+       now is already off-limits, so the first window may as well
+       start where the grid actually becomes useful. */
+    var base = now.getFullYear() + 12 * Math.floor((pkCursor.getFullYear() - now.getFullYear()) / 12);
     title.textContent = base + ' – ' + (base + 11);
     for(i = 0; i < 12; i++){
       var yv = base + i;
@@ -2017,7 +2031,7 @@ function expandShare(){
   shareOpen = true;
   drawShareGroup();
   clearTimeout(shareTimer);
-  shareTimer = setTimeout(collapseShare, 4000);
+  shareTimer = setTimeout(collapseShare, 8000);
 }
 function collapseShare(){
   shareOpen = false;
@@ -2727,6 +2741,17 @@ el.dlg.addEventListener('click', function(e){ if(outsideClick(el.dlg, e)) el.dlg
 el.about.addEventListener('click', function(e){ if(outsideClick(el.about, e)) el.about.close(); });
 el.dlg.addEventListener('close', resetForm);
 
+/* "Goal" on every unnamed one made a board of three unnamed goals
+   read as the same thing three times. The smallest number nobody else
+   on this board is using is just as short and actually tells them
+   apart. */
+function defaultName(){
+  var used = {};
+  S.goals.forEach(function(g){ used[g.name] = true; });
+  var n = 1;
+  while(used[String(n)]) n++;
+  return String(n);
+}
 /* The one place a goal actually gets written - the typed-and-submitted
    form and a one-click preset both land here, so "add" and "save an
    edit" only have one implementation each. */
@@ -2735,8 +2760,8 @@ function submitGoal(target){
      this handler ever ran, because the field was marked required - so
      the actual message here was unreachable. Removing required (in the
      markup) surfaces this one instead, and a name is not worth
-     blocking on: a blank one becomes "Goal" rather than an error. */
-  var name = $('#fName').value.trim() || 'Goal';
+     blocking on. */
+  var name = $('#fName').value.trim() || defaultName();
   if(!target){ toast('I could not read that date.'); $('#fWhen').focus(); return; }
   if(editingIndex >= 0){
     var g = S.goals[editingIndex];
@@ -2744,6 +2769,13 @@ function submitGoal(target){
     logEvent('edit', name, dateLabel(target));
     toast('Saved.');
   } else {
+    /* A board's first goal is a fresh start - the colour should say
+       so too, instead of always landing on whatever hue was left
+       over (or the same default, on a device that has never touched
+       it). Only the first: adding a second goal to a board somebody
+       is already looking at should not pull the colour out from
+       under them. */
+    if(!S.goals.length) setHue(Math.floor(Math.random() * 360), false);
     S.goals.unshift({ name:name, target:target, event:formKindEvent, done:null });
     logEvent('add', name, dateLabel(target));
     toast('Added.');

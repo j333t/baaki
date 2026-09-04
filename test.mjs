@@ -61,20 +61,20 @@ ok('tomorrow: number', r.num, '1d');
 
 // 4. the target day itself, more than an hour left -> H:MM
 r = await open('#Ship~2026-09-02T18:30');
-ok('today 8.5h out: H:MM, hour and minute each carry their own letter', r.num, '8h 30m');
+ok('today 8.5h out: H:MM, colon kept, each group carries its own letter', r.num, '8h:30m');
 ok('today: title', r.title, '8:30 · Ship');
 
 // 4b. bare date on the target day = end of that day
 r = await open('#Ship~2026-09-02');
-ok('today, no time given: H:MM to midnight', r.num, '13h 59m');
+ok('today, no time given: H:MM to midnight', r.num, '13h:59m');
 
 // 5. last hour -> M:SS
 r = await open('#Ship~2026-09-02T10:40');
-ok('40 min out: M:SS', r.num, '40m 00s');
+ok('40 min out: M:SS', r.num, '40m:00s');
 
 // 5b. boundary: exactly over an hour stays on H:MM
 r = await open('#Ship~2026-09-02T11:01');
-ok('61 min out: still H:MM', r.num, '1h 01m');
+ok('61 min out: still H:MM', r.num, '1h:01m');
 
 // 6. overdue - the ladder mirrors, so the ramp is smooth both ways
 r = await open('#Ship~2026-08-27');
@@ -83,14 +83,14 @@ ok('over by days: tag', r.tag, 'past due');
 ok('over by days: grey gradient', r.g2, '#37373e');
 
 r = await open('#Ship~2026-09-02T02:00');
-ok('over by hours: +H:MM', r.num, '+8h 00m');
+ok('over by hours: +H:MM', r.num, '+8h:00m');
 ok('over by hours: still grey', r.g2, '#37373e');
 
 r = await open('#Ship~2026-09-02T09:20');
-ok('over by minutes: +M:SS', r.num, '+40m 00s');
+ok('over by minutes: +M:SS', r.num, '+40m:00s');
 
 r = await open('#Ship~2026-09-02T09:59');
-ok('just over: seconds tick', r.num, '+1m 00s');
+ok('just over: seconds tick', r.num, '+1m:00s');
 
 console.log('\n--- something good, not a deadline ---');
 
@@ -115,18 +115,24 @@ console.log('\n--- done + celebration tiers ---');
 
 r = await open('#Ship~2026-09-30!2026-09-01T14:00');
 ok('done early: check mark', r.num, '✓');
-ok('done early: tier word', r.unit, 'early');
+ok('done early: says exactly how early, not a coarse bucket', r.unit, '29 days early');
 ok('done early: celebration fires', await page.locator('#hero').getAttribute('class'), 'pop');
-ok('done early: says how early', r.tag.indexOf('early') >= 0, true);
-ok('done early: and when', r.tag.indexOf('1 Sept 2026') >= 0, true);
+ok('done early: and when it happened', r.sub.indexOf('1 Sept 2026') >= 0, true);
 
+// finishing a few hours ahead used to be lumped into "on time" -
+// which is not what "on time" means to someone who beat the deadline
 r = await open('#Ship~2026-09-02T12:00!2026-09-02T09:00');
-ok('done same day: on time', r.unit, 'on time');
+ok('done a few hours ahead: says how far ahead, not "on time"', r.unit, '3 hr early');
 ok('done on time: celebration fires', await page.locator('#hero').getAttribute('class'), 'pop');
 
 r = await open('#Ship~2026-08-20!2026-09-01T09:00');
-ok('done after target: says late, not a euphemism', r.unit, 'late');
+ok('done after target: says exactly how late, not a euphemism', r.unit, '11 days late');
 ok('done late: celebration fires', await page.locator('#hero').getAttribute('class'), 'pop');
+
+// the delta lives beside the checkmark now, not repeated in the tag line
+r = await open('#Ship~2026-09-02T09:00:00!2026-09-02T08:59:30');
+ok('a finish close enough is "to the minute", not a fake-precise delta', r.unit, 'to the minute');
+ok('done: tag line carries nothing the checkmark and sub do not already say', r.tag, '');
 
 console.log('\n--- multiple goals ---');
 
@@ -181,7 +187,7 @@ const doneLink = await page.evaluate(() => {
 });
 await page.waitForTimeout(150);
 ok('press Done: hero becomes a tick', (await page.locator('#num').textContent()).trim(), '✓');
-ok('press Done: tier is early', (await page.locator('#unit').textContent()).trim(), 'early');
+ok('press Done: says exactly how early', (await page.locator('#unit').textContent()).trim(), '29 days early');
 ok('press Done: celebration fires', await page.locator('#hero').getAttribute('class'), 'pop');
 ok('press Done: button disappears', await page.locator('#bDone').isVisible(), false);
 ok('press Done: link carries the stamp',
@@ -220,9 +226,25 @@ ok('added goal shows', (await page.locator('#num').textContent()).trim(), '114d'
 ok('added goal lands in the link',
    decodeURIComponent(await page.evaluate(() => location.hash)).includes('Phase 3 tender~2026-12-25'), true);
 ok('creator keeps the Done button', await page.locator('#bDone').isVisible(), true);
+ok('a board\'s first goal picks a hue, instead of leaving it at the default',
+   await page.evaluate(() => localStorage.getItem('baaki.hue') !== null), true);
 await page.reload();
 await page.waitForTimeout(250);
 ok('survives a reload', (await page.locator('#num').textContent()).trim(), '114d');
+
+// a second goal joining a board somebody is already looking at should
+// not pull the colour out from under them - only a board's first ever
+// goal gets to pick
+r = await open('#Existing~2027-01-01');
+const hueBefore = await page.evaluate(() => localStorage.getItem('baaki.hue'));
+await page.keyboard.press('g');
+await page.waitForTimeout(200);
+await page.fill('#fName', 'Second');
+await page.fill('#fWhen', '2027-02-01');
+await page.click('#addForm button[type=submit]');
+await page.waitForTimeout(200);
+ok('a second goal does not re-roll the hue',
+   await page.evaluate(() => localStorage.getItem('baaki.hue')), hueBefore);
 
 console.log('\n--- junk input ---');
 await page.evaluate(() => localStorage.removeItem('baaki.hash'));
@@ -346,7 +368,7 @@ await page.waitForTimeout(150);
 // still expanded after all that clicking about - each click on a
 // sibling should have kept resetting the fold-away timer
 ok('still unfolded right after use', await page.locator('#shareGrp button').count(), 4);
-await page.waitForTimeout(4300);
+await page.waitForTimeout(8300);
 ok('folds itself back up once nobody has touched it for a few seconds',
    await page.locator('#shareGrp button').count(), 1);
 
@@ -580,7 +602,7 @@ page.on('pageerror', e => errs.push(e.message));
 r = await open('#Ship~2026-09-02T10:00:08');
 await page.waitForTimeout(400);
 ok('ticking through the last ten seconds is quiet code', errs.length, 0);
-ok('and the number is where it should be', r.num, '0m 08s');
+ok('and the number is where it should be, no "0m" sitting in front of it', r.num, '08s');
 
 await page.evaluate(() => localStorage.removeItem('baaki.sound'));
 
@@ -824,6 +846,11 @@ ok('month view, same year: back is off', await page.locator('#pkPrev').isDisable
 await page.click('#pkTitle');
 await page.waitForTimeout(120);
 ok('year view, current decade: back is off', await page.locator('#pkPrev').isDisabled(), true);
+// the window used to snap to an absolute mod-12 boundary, which could
+// open mostly into the past (e.g. 2016-2027 from 2026); it starts at
+// the current year now, since nothing before it is even selectable
+ok('the year window starts this year, not an arbitrary decade boundary',
+   await page.locator('#pkTitle').textContent(), '2026 – 2037');
 await page.keyboard.press('Escape');
 await page.waitForTimeout(150);
 
@@ -836,8 +863,8 @@ await page.waitForTimeout(100);
 await page.click('#addForm button[type=submit]');
 await page.waitForTimeout(250);
 ok('an empty name does not block the form', await page.locator('#dlg').isVisible(), false);
-ok('it gets a plain default name',
-   decodeURIComponent(await page.evaluate(() => location.hash)).includes('Goal~2027-03-31'), true);
+ok('it gets a short, unique default name instead of the same word every time',
+   decodeURIComponent(await page.evaluate(() => location.hash)).includes('1~2027-03-31'), true);
 ok('and no native validation popup was in the way',
    await page.evaluate(() => document.querySelector('#fName').hasAttribute('required')), false);
 

@@ -20,6 +20,35 @@ Anything that changes the **link format** is a breaking change and needs a major
 
 ---
 
+## 1.8.0 — unreleased
+
+Live-site testing found the next layer down: things 1.7.0 got right in
+principle but not quite in execution, plus a couple of new asks.
+
+### The unit, actually reading as a superscript
+- **Positioned properly.** `vertical-align` was tuned too low, so the letter sat at the digit's mid-height instead of hanging off its top-right like a real superscript - "somewhere in the middle," not attached to anything. Fixed.
+- **The colon is back.** `8h 30m` briefly replaced `8:30` with a space; a space is not how anyone writes a clock. It's `8h:30m` now - the colon stays, each side just carries its own letter.
+- **A zeroed-out leading group drops instead of idling at "0".** The last sixty seconds used to read `0m 08s`; there is nothing left to say about the minutes once they have run out, so it is just `08s` now. Same rule for the overdue mirror.
+
+### Done says exactly how far off it was
+- **"On time" is gone.** It used to cover anything finished up to a full day ahead of the deadline, which is not what "on time" means to someone who beat it by three hours. The exact delta - `29 days early`, `3 hr early`, `11 days late`, or `to the minute` for a genuine bullseye - sits beside the checkmark instead. The tick mark itself is untouched; only the word beside it changed.
+- The tag line under Done is empty now rather than repeating the same delta a second time - it was already redundant with the word beside the checkmark and the date in the line below.
+
+### The calendar
+- **The year grid starts on the current year**, not on an arbitrary mod-12 boundary that could land mostly in the past - browsing from 2026 used to open on 2016-2027, ten of those twelve years already disabled before Prev was ever pressed.
+
+### Small things
+- **A board's first goal picks a random hue**, instead of every fresh board starting on the same default. Only the first: adding a second goal to a board somebody is already looking at leaves the colour alone.
+- **Unnamed goals get a short number instead of the word "Goal" every time** - three unnamed goals used to be three things called "Goal". The smallest number nobody else on the board is using now, so they're actually told apart.
+- **Share stays unfolded twice as long** before it folds itself away - 8 seconds now, not 4.
+- **The About panel gives E. Sreedharan his own line**, credited plainly as the inspiration, instead of being introduced mid-sentence next to the meaning of बाकी. Both ideas got shorter in the process.
+
+### Looked at, and left alone
+- Showing months and years persistently in the calendar instead of behind a tap: more room only exists on a desktop-sized dialog, and phones are most of where this gets used. The current three-taps-to-anywhere zoom stays.
+- Keeping two devices' clocks in sync to the second: this is a difference between the *devices'* clocks, not something a page in a browser can correct without calling out to a time server - which this file does not do, on purpose, offline included. A device more than a couple of seconds off its own NTP sync is the thing actually worth checking.
+
+---
+
 ## 1.7.0 — unreleased
 
 Two passes, because the first one shipped a real bug and a real

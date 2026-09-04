@@ -21,7 +21,8 @@ Legend: **★** = load-bearing, removing it changes what Baaki is.
 | Span hidden under a month | It would just repeat the hero number. Redundancy is noise. |
 | Tab title shows `D-427 · Name` | The cheapest "always visible" there is. Works on every OS, costs nothing, needs no install. |
 | Favicon draws the number | Same reason, for people who keep the tab pinned and narrow. |
-| The unit rides on the digits as a superscript (`8ʰ 30ᵐ`, `427ᵈ`) | A word beside the number ("hours · today") asked you to read English to know what a colon pair meant. A letter on the digit it belongs to doesn't. Sized well past the browser's cramped default `<sup>` so it survives being read from across a room - the whole reason this exists in the first place. Done and arrived keep a plain word beside their checkmark or star; neither is a count with a digit to attach a letter to. |
+| The unit rides on the digits as a superscript (`8ʰ:30ᵐ`, `427ᵈ`) | A word beside the number ("hours · today") asked you to read English to know what a colon pair meant. A letter on the digit it belongs to doesn't. Sized well past the browser's cramped default `<sup>` so it survives being read from across a room - the whole reason this exists in the first place. Tuned twice: the first `vertical-align` sat the letter at the digit's mid-height, reading as misplaced rather than as a superscript, before it moved up to sit properly on the shoulder. The colon between groups stayed - it's how a clock is written. Done and arrived keep a plain word beside their checkmark or star; neither is a count with a digit to attach a letter to. |
+| A leading zero group drops rather than idling on screen | The last sixty seconds used to read `0m 08s`. Once a group has gone to zero it has nothing left to say, so it's just `08s` - same rule going the other way past a missed deadline. |
 
 ## Colour
 
@@ -62,8 +63,8 @@ Legend: **★** = load-bearing, removing it changes what Baaki is.
 | ★ A Done button exists at all | A countdown cannot know you finished — it only knows time passed. Without a press there is no "early", only "not yet". |
 | A missed deadline does **not** celebrate | Zero on an unmarked deadline is a miss. Confetti there was celebrating exactly the case the Done button exists to distinguish. One low note, and grey. |
 | Something good has no Done button | Nothing to complete. It arrives, and that is the end of it. |
-| Done says how early or how late | "completed 14 Nov" is a fact with the interesting part removed. The delta is the only part a viewer cannot derive from the clock. |
-| Three tiers: early / on time / late | Early is the whole point of the Sreedharan story. Flattening them to "done" throws away the only interesting bit. |
+| Done says exactly how early or how late, beside the checkmark | "completed 14 Nov" is a fact with the interesting part removed. A coarse word tried first ("on time" for anything up to a day ahead) was still a fact with the interesting part removed - "3 hr early" was rounding itself down to a word that undersold it. The exact delta is what a viewer cannot derive from the clock, so that's what's there now. |
+| Colour still uses three coarse tiers | Early / on time / late as a colour needs to read at a glance, which a precise number does not do well. The word beside the checkmark went precise; the colour stayed a three-way split on purpose - they're answering different questions. |
 | Zero-hour celebration needs no server | Every clock already agrees on when the deadline arrives. That shared agreement is the one free sync channel in an offline tool. |
 | Done writes a stamp into a fresh link | Early and late can't be derived by a viewer, so a human carries the news. One paste is the price of no server. |
 | `!edit` hides Done from viewers | Not security — the file is on their machine. Tidiness: no button that does nothing. |
@@ -79,7 +80,7 @@ Legend: **★** = load-bearing, removing it changes what Baaki is.
 | Keyboard map (arrows, digits, g/s/d/t/?) | It's a wall board — you should be able to drive it without aiming a mouse. |
 | Swipe on touch | Same idea, thumbs. |
 | Share always copies immediately, no menu first | Press it, the board you're looking at is on the clipboard. |
-| The rarer share moves unfold beside Share, then fold away on their own | All *n*, a QR icon, and Tool sat there permanently at first - always visible whether wanted or not. Now they only appear once Share is actually pressed, and fold back up a few seconds after the last touch. Still one connected pill, one hairline between segments, `#bShare` never changing identity - just not permanent furniture. |
+| The rarer share moves unfold beside Share, then fold away on their own | All *n*, a QR icon, and Tool sat there permanently at first - always visible whether wanted or not. Now they only appear once Share is actually pressed, and fold back up 8 seconds after the last touch (doubled from the first pass, which folded before most people finished reading it). Still one connected pill, one hairline between segments, `#bShare` never changing identity - just not permanent furniture. |
 | The QR code is a Share segment, not a separate bar icon | It is fundamentally a way of sharing. `Q` still opens it directly, and the segment itself is the same glyph as the QR bar icon, not the word "Code". |
 | The bare-tool share segment is "Tool" | "No goal" described what it lacked, not what it was for. |
 | An empty board shares the tool, not a refusal | Share used to just say "add a goal first." An empty board is still a working example - the tool itself is worth handing over, with the QR segment offered alongside it. |
@@ -95,9 +96,12 @@ Legend: **★** = load-bearing, removing it changes what Baaki is.
 | The empty board counts the rest of the year | A dash and "set a goal" is a form with its fields missing. This is a working demonstration, and it is true — which a placeholder never is. |
 | Nothing opens a dialog at you on arrival | The board says what to press and the button is visible. A modal on arrival is a small hostility. |
 | Sound is on, but a page nobody touched is silent | Written down as a rule, not left to browser autoplay policy. A link on a second monitor cannot go off in a meeting; once you have clicked, you are using it. |
-| A name is optional | It carried `required`, so the browser's own popup fired before this file's code ever ran and the actual error was unreachable. Gone now; a blank name becomes "Goal". |
+| A name is optional | It carried `required`, so the browser's own popup fired before this file's code ever ran and the actual error was unreachable. Gone now. |
+| An unnamed goal gets the smallest free number, not the word "Goal" | Three unnamed goals used to all be called "Goal" - short, but not identifiable. A number nobody else on the board is using is just as short and actually tells them apart. |
 | Adding or editing a goal closes the dialog | It used to stay open, quietly inviting a second goal, then a third. One action, one result. |
 | The calendar's back arrow stops at today's period | Every day before today was already disabled, but "back" could still walk you into a month or a whole decade with nothing but disabled cells in it. |
+| The year grid starts on the current year | It used to snap to an absolute mod-12 boundary - 2016-2027 from 2026, ten of those years already in the past and disabled before Prev was ever needed. Nothing before now is selectable anyway, so the first window may as well start where it becomes useful. |
+| A board's first goal picks a random hue | Every fresh board used to start on the same default colour. Only the first goal rolls it - adding a second to a board somebody is already looking at leaves the colour where they left it. |
 | Lock goals | Not a permission system — there's no server, so permission would be theatre. A guard against your own thumb on a kiosk or a wall display, switched back off by anyone, any time, on their own device. |
 | A private, per-device change log, in Goals | The link tells you what a goal *is*, not what happened to it. Lives under the list it's about now, not buried in a settings panel. Every add, edit, removal and Done gets a line, with a Clear button beside it. Never leaves the browser. |
 | Clear all, and clear completed, above the goal list | Removing goals one at a time was the only option once there were several to retire at once - after a launch, after a season of deadlines. Clear completed disables itself when there is nothing done to clear. |
@@ -111,7 +115,8 @@ Legend: **★** = load-bearing, removing it changes what Baaki is.
 | A quiet clock, always on, with seconds and the timezone | Goal or none. The authentic Sreedharan pairing is a station clock next to a days-left board, and it says "this is live" now that the number itself never moves. Seconds and the zone name turn it from decoration into something you'd actually set a watch by. |
 | Dialog closes on outside click | Every other dialog on earth does. |
 | About panel with the Sreedharan story | The origin is the best thing about this tool and it was invisible. Also where the keyboard map lives, so the main screen stays clean. |
-| The About text says less | Three paragraphs of "why one number" were one idea repeated three ways. Down to one, the Sreedharan story and बाकी's meaning both still in it. |
+| The About text says less | Three paragraphs of "why one number" were one idea repeated three ways. Cut down once already; still read as three unrelated facts run together the second time. |
+| Sreedharan gets his own line, credited as the inspiration | He was introduced mid-sentence, next to the meaning of बाकी, which read as a name dropped in at random rather than the source of the whole idea. "Inspired by E. Sreedharan" is now its own sentence, and बाकी's meaning is its own line after it. |
 
 ## This screen
 
