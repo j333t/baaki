@@ -230,6 +230,7 @@ form.add{display:flex;flex-direction:column;gap:var(--s3)}
   font:500 var(--f0)/1 var(--face);color:var(--dim);background:var(--panel);
   border:1px solid transparent;border-radius:10px;padding:var(--s2) var(--s3);cursor:pointer}
 .pkToggle:hover,.pkToggle:focus-visible{background:var(--panel2);color:var(--ink);outline:none;border-color:var(--line)}
+.pkToggle[hidden]{display:none}
 .pkToggle .chev{transition:transform .2s}
 .pkToggle[aria-expanded=true] .chev{transform:rotate(90deg)}
 /* A calendar you tap, because choosing a date is not the same act as
@@ -394,8 +395,9 @@ body.locked #bAdd{opacity:.45}
     <div class="kind">
       <button type="button" id="kDeadline" aria-pressed="true">Deadline</button>
       <button type="button" id="kEvent" aria-pressed="false">Something good &#9733;</button>
+      <button type="button" id="kSince" aria-pressed="false">Since</button>
     </div>
-    <div class="hint">
+    <div class="hint" id="kindHint">
       A <b>deadline</b> heats up as it nears and keeps counting after you miss it.
       Something <b>good</b> glows as it nears, celebrates, and stops.
       No time given means the end of that day. Typing instead? <b>10m</b> is ten
@@ -498,7 +500,7 @@ body.locked #bAdd{opacity:.45}
               Empty = fully offline; the link carries the done stamp.
    GA_ID    : GA4 measurement id, e.g. 'G-ABC1234XYZ'. Online only.
    ============================================================ */
-var VERSION  = '1.9.0';
+var VERSION  = '2.0.0';
 var SYNC_URL = '';
 var GA_ID    = '';
 /* UPDATE : a 200-byte {"version","url"} somewhere online. Two candidates,
@@ -535,14 +537,59 @@ function enc(s){
 function dec(s){ try { return decodeURIComponent(s); } catch(e){ return s; } }
 function pad(n){ return String(n).padStart(2,'0'); }
 
-function parseLocal(s){
+/* --- cross-device timezone correctness --------------------------
+   A shared "6pm" only lands on the same instant everywhere if the
+   zone it was set in travels with it - otherwise the receiver's own
+   device quietly reinterprets the same digits in its own zone, which
+   can be hours off. A bare date (end of day) is left alone on
+   purpose: "submit by end of day" means the reader's day, not the
+   sender's, and that flexibility is worth keeping. A specific time
+   does not have it - it is one instant, everyone should see the
+   same one. */
+function deviceTZ(){
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; }
+  catch(e){ return ''; }
+}
+function tzOffsetMinutes(tz, utcMs){
+  var f = new Intl.DateTimeFormat('en-US', { timeZone:tz, hourCycle:'h23',
+    year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  var p = {};
+  f.formatToParts(new Date(utcMs)).forEach(function(x){ p[x.type] = x.value; });
+  var hh = +p.hour; if(hh === 24) hh = 0;
+  var asIfUTC = Date.UTC(+p.year, +p.month - 1, +p.day, hh, +p.minute, +p.second);
+  return (asIfUTC - utcMs) / 60000;
+}
+/* Wall-clock components in a named zone, as the UTC instant they
+   actually are. Two passes - the first guess ignores the zone
+   entirely, the second corrects for it - lands exact even right on
+   a DST edge, which one pass alone gets wrong by an hour. */
+function zonedToUTC(y, mo, d, hh, mi, se, tz){
+  try {
+    var guess = Date.UTC(y, mo, d, hh, mi, se);
+    var off1 = tzOffsetMinutes(tz, guess);
+    var off2 = tzOffsetMinutes(tz, guess - off1 * 60000);
+    return guess - off2 * 60000;
+  } catch(e){ return null; }
+}
+function parseLocal(s, tz){
   var m = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/.exec(String(s||'').trim());
   if(!m) return null;
   var t = m[4] !== undefined;
+  var y = +m[1], mo = +m[2] - 1, da = +m[3];
+  var hh = t ? +m[4] : 23, mi = t ? +m[5] : 59, se = t ? (+m[6] || 0) : 59;
   /* Seconds are optional and rare, but a link that carries them used to
      parse as nothing at all - the goal simply disappeared. A bare date
      still means the end of that day. */
-  var d = new Date(+m[1], +m[2]-1, +m[3], t?+m[4]:23, t?+m[5]:59, t?(+m[6]||0):59, t?0:999);
+  if(tz && t){
+    var utcMs = zonedToUTC(y, mo, da, hh, mi, se, tz);
+    if(utcMs !== null){
+      var zd = new Date(utcMs);
+      return isNaN(zd.getTime()) ? null : zd;
+    }
+    /* an unrecognised zone name degrades to plain local rather than
+       refusing the goal outright */
+  }
+  var d = new Date(y, mo, da, hh, mi, se, t ? 0 : 999);
   return isNaN(d.getTime()) ? null : d;
 }
 function fmtLocal(d, withTime){
@@ -560,6 +607,13 @@ function isLight(){
 }
 function isEod(d){ return d.getHours()===23 && d.getMinutes()===59 && d.getSeconds()===59; }
 
+/* An optional @zone rides after either date in a token - target or
+   done, independently, since they may have been set from different
+   places. Split off and decoded before the date regex ever sees it. */
+function splitTZ(s){
+  var i = s.indexOf('@');
+  return i === -1 ? { s:s, tz:null } : { s:s.slice(0, i), tz:dec(s.slice(i + 1)) };
+}
 function parseHash(h){
   var out = { goals:[], edit:false };
   String(h||'').replace(/^#/,'').split('+').forEach(function(tok){
@@ -573,20 +627,30 @@ function parseHash(h){
     var rest = tok.slice(i+1), doneS = null;
     var b = rest.indexOf('!');
     if(b !== -1){ doneS = rest.slice(b+1); rest = rest.slice(0,b); }
-    var event = false;
+    var event = false, since = false;
     if(rest.slice(-1) === '*'){ event = true; rest = rest.slice(0,-1); }
-    var target = parseLocal(rest);
+    else if(rest.slice(-1) === '^'){ since = true; rest = rest.slice(0,-1); }
+    var tp = splitTZ(rest);
+    var target = parseLocal(tp.s, tp.tz);
     if(!target) return;
+    var dp = doneS ? splitTZ(doneS) : null;
     out.goals.push({
-      name:name, target:target, event:event,
-      done: doneS ? parseLocal(doneS) : null
+      name:name, target:target, event:event, since:since,
+      done: dp ? parseLocal(dp.s, dp.tz) : null
     });
   });
   return out;
 }
+/* Only when there's a real time to protect - a bare end-of-day date
+   carries no zone at all, on purpose. */
+function tzSuffix(withTime){
+  return withTime ? '@' + enc(deviceTZ()) : '';
+}
 function goalToken(g){
-  return enc(g.name) + '~' + fmtLocal(g.target, !isEod(g.target)) +
-         (g.event ? '*' : '') + (g.done ? '!' + fmtLocal(g.done, true) : '');
+  var timed = !isEod(g.target);
+  return enc(g.name) + '~' + fmtLocal(g.target, timed) + tzSuffix(timed) +
+         (g.event ? '*' : g.since ? '^' : '') +
+         (g.done ? '!' + fmtLocal(g.done, true) + tzSuffix(true) : '');
 }
 function buildHash(goals, edit){
   var p = goals.map(goalToken);
@@ -666,6 +730,20 @@ function parseWhen(str, now){
     else if(/^(d|day)/.test(u))  day.setDate(day.getDate() + k);
     else if(/^(w|week)/.test(u)) day.setDate(day.getDate() + k * 7);
     else if(/^(y|year)/.test(u)) day.setFullYear(day.getFullYear() + k);
+    else return null;
+    return atTime(day, hh, mm);
+  }
+
+  /* N days/weeks/months/years ago - a "since" goal's mirror of "in N
+     unit". Minutes and hours ago are left out on purpose: nothing at
+     that grain needs a typed shortcut, and the quick chips never
+     offer one either. */
+  if((m = s.match(/^(\d+)\s*(days?|d|weeks?|w|months?|mos?|years?|y)\s+ago$/))){
+    var ka = +m[1], ua = m[2];
+    if(/^mo/.test(ua))          day.setMonth(day.getMonth() - ka);
+    else if(/^(d|day)/.test(ua))  day.setDate(day.getDate() - ka);
+    else if(/^(w|week)/.test(ua)) day.setDate(day.getDate() - ka * 7);
+    else if(/^(y|year)/.test(ua)) day.setFullYear(day.getFullYear() - ka);
     else return null;
     return atTime(day, hh, mm);
   }
@@ -750,7 +828,7 @@ var quiet = false;
 var celebrated = Object.create(null);
 var prev = {};
 var editingIndex = -1;
-var formKindEvent = false;
+var formKind = 'deadline';   /* 'deadline' | 'event' | 'since' */
 
 function goalKey(g){
   var s = g.name.toLowerCase().trim() + '|' + fmtLocal(g.target, true);
@@ -816,6 +894,16 @@ function tierOf(g){
 }
 function view(g, now){
   var ms = g.target - now;
+  /* A third kind, next to deadline and event: no target, no arrival,
+     no Done - just a start, counting up forever. Same ladder as the
+     overdue mirror, because the arithmetic is identical; the meaning
+     is not, so it never touches that code path. */
+  if(g.since){
+    var up = Math.max(0, now - g.target);
+    if(up < HOUR) return { m:'sinceMs', ms:up };
+    if(up < DAY)  return { m:'sinceHm', ms:up };
+    return { m:'sinceD', days:Math.max(1, dayDiff(g.target, now)) };
+  }
   if(g.done) return { m:'done', tier:tierOf(g) };
   if(ms <= 0){
     if(g.event) return { m:'arrived' };
@@ -862,6 +950,10 @@ function heroOf(v, g){
     case 'overMs':  return { n:'+'+ms2(v.ms), u:'', html:'+'+sup2(ms2(v.ms), 'm', 's') };
     case 'days':    return { n:String(v.days), u:'', html:sup1(String(v.days), 'd') };
     case 'hm':      return { n:hm(v.ms), u:'', html:sup2(hm(v.ms), 'h', 'm') };
+    /* Since counts up, not down or over - no +, just the run so far. */
+    case 'sinceD':  return { n:String(v.days), u:'', html:sup1(String(v.days), 'd') };
+    case 'sinceHm': return { n:hm(v.ms), u:'', html:sup2(hm(v.ms), 'h', 'm') };
+    case 'sinceMs': return { n:ms2(v.ms), u:'', html:sup2(ms2(v.ms), 'm', 's') };
     default:        return { n:ms2(v.ms), u:'', html:sup2(ms2(v.ms), 'm', 's') };
   }
 }
@@ -875,6 +967,9 @@ function shortOf(g, now){
     case 'overMs':  return '+'+ms2(v.ms);
     case 'days':    return v.days+'d';
     case 'hm':      return hm(v.ms);
+    case 'sinceD':  return v.days+'d';
+    case 'sinceHm': return hm(v.ms);
+    case 'sinceMs': return ms2(v.ms);
     default:        return ms2(v.ms);
   }
 }
@@ -1189,6 +1284,9 @@ function render(force){
        skip it for a finish close enough to call "to the minute". */
     sub = '<b>done ' + dateLabel(g.done) + '</b>' +
           (deltaLabel(g.target, g.done) === 'to the minute' ? '' : '<span>due ' + dateLabel(g.target) + '</span>');
+  } else if(v.m.indexOf('since') === 0){
+    var upSpan = (v.m === 'sinceD') ? humanSpan(g.target, now) : '';
+    sub = (upSpan ? '<b>' + upSpan + '</b>' : '') + '<span>since ' + dateLabel(g.target) + '</span>';
   } else {
     var span = (v.m === 'days') ? humanSpan(now, g.target) : '';
     sub = (span ? '<b>' + span + '</b>' : '') + '<span>' + dateLabel(g.target) + '</span>';
@@ -1201,10 +1299,13 @@ function render(force){
           : (v.m.indexOf('over') === 0 ? 'past due' : '');
   if(prev.t !== tag){ el.tag.textContent = tag; prev.t = tag; }
 
-  /* continuous day value, so the colour drifts and never jumps */
+  /* continuous day value, so the colour drifts and never jumps.
+     Since has no distance to encode - it only grows - so it takes
+     the same static, warm colour as something good that's already
+     arrived, rather than either cooling toward red or fading grey. */
   var c;
   if(v.m === 'done') c = doneGrad(v.tier, light);
-  else if(v.m === 'arrived') c = gradFor(0, light, true);
+  else if(v.m === 'arrived' || v.m.indexOf('since') === 0) c = gradFor(0, light, true);
   else c = gradFor(v.m.indexOf('over') === 0 ? -1 : (g.target - now) / DAY, light, g.event);
   c = paint(c, v);
   root.style.setProperty('--g1', c[0]);
@@ -1227,7 +1328,7 @@ function render(force){
       var b = document.createElement('button');
       b.className = 'chip';
       b.innerHTML = '<span class="n"></span><span class="v"></span>';
-      b.querySelector('.n').textContent = (x.event ? '★ ' : '') + x.name;
+      b.querySelector('.n').textContent = (x.event ? '★ ' : x.since ? '↑ ' : '') + x.name;
       b.querySelector('.v').textContent = shortOf(x, now);
       b.title = 'Show ' + x.name;
       b.onclick = function(){ focusGoal(i + 1); };
@@ -1244,7 +1345,7 @@ function render(force){
     drawShareGroup();
   }
 
-  el.done.hidden = !(S.edit && !g.done && !g.event && !locked);
+  el.done.hidden = !(S.edit && !g.done && !g.event && !g.since && !locked);
   soundTick(v);
   maybeCelebrate(g, v);
 }
@@ -1299,7 +1400,7 @@ function cycleFocus(dir){ rotate(dir > 0 ? 1 : -1); }
 function markDone(){
   if(locked) return;
   var g = S.goals[0];
-  if(!g || g.done || g.event) return;
+  if(!g || g.done || g.event || g.since) return;
   g.done = new Date();
   logEvent('done', g.name, '');
   prev = {};
@@ -1449,10 +1550,27 @@ function openDlg(){
   if(!el.dlg.open) el.dlg.showModal();
   setTimeout(function(){ $('#fName').focus(); }, 30);
 }
-function setFormKind(isEvent){
-  formKindEvent = !!isEvent;
-  $('#kDeadline').setAttribute('aria-pressed', String(!formKindEvent));
-  $('#kEvent').setAttribute('aria-pressed', String(formKindEvent));
+var KIND_HINTS = {
+  deadline: 'A <b>deadline</b> heats up as it nears and keeps counting after you miss it. ' +
+    'Something <b>good</b> glows as it nears, celebrates, and stops. ' +
+    'No time given means the end of that day. Typing instead? <b>10m</b> is ten minutes; months need <b>mo</b>.',
+  since: 'A goal <b>since</b> a start counts up, forever, with no deadline to reach - a running total, ' +
+    'not a countdown. Pick a day already past; typing one in still needs a year to stay in the past ' +
+    '(<b>15 mar 2024</b>, not <b>15 march</b>) or it rolls forward like everything else here.'
+};
+function setFormKind(kind){
+  formKind = kind;
+  $('#kDeadline').setAttribute('aria-pressed', String(kind === 'deadline'));
+  $('#kEvent').setAttribute('aria-pressed', String(kind === 'event'));
+  $('#kSince').setAttribute('aria-pressed', String(kind === 'since'));
+  $('#kindHint').innerHTML = kind === 'since' ? KIND_HINTS.since : KIND_HINTS.deadline;
+  /* The calendar only ever offers days from today forward - wrong
+     shape for picking a start already in the past, so it stays out
+     of the way rather than pretending to help here. Quick chips and
+     typing (with an explicit year) are the way in for Since. */
+  $('#pkToggle').hidden = (kind === 'since');
+  if(kind === 'since') setPickOpen(false);
+  drawQuick();
 }
 /* ---------- picking a date ---------------------------------
    One selection, three ways in: the quick row for the answer people
@@ -1475,6 +1593,15 @@ var QUICK = [
   ['3 months', 'in 3 months'], ['6 months', 'in 6 months'],
   ['End of year', 'end of year']
 ];
+/* The forward chips' mirror for Since - the calendar can't help here
+   (it only ever offers today forward), so this row is the one fast
+   door in. */
+var SINCE_QUICK = [
+  ['Today', 'today'], ['Yesterday', 'yesterday'],
+  ['1 week ago', '1 week ago'], ['2 weeks ago', '2 weeks ago'],
+  ['1 month ago', '1 month ago'], ['3 months ago', '3 months ago'],
+  ['6 months ago', '6 months ago'], ['1 year ago', '1 year ago']
+];
 var TIMES = [['End of day', null], ['9 am', 9], ['Noon', 12], ['6 pm', 18], ['9 pm', 21]];
 var pkSel = null;          /* the chosen Date, or null */
 var pkCursor = null;       /* the month on show */
@@ -1482,8 +1609,8 @@ var pkView = 'day';        /* day -> month -> year */
 
 function drawQuick(){
   var q = $('#fQuick');
-  if(q.childNodes.length) return;
-  QUICK.forEach(function(row){
+  q.innerHTML = '';
+  (formKind === 'since' ? SINCE_QUICK : QUICK).forEach(function(row){
     var b = document.createElement('button');
     b.type = 'button';
     b.textContent = row[0];
@@ -1642,12 +1769,15 @@ function showParsed(){
   out.innerHTML = '<b></b><i></i>';
   out.firstChild.textContent = whenLabel(d);
   /* A date already gone is usually a slip, and occasionally the point -
-     you are logging something you missed. Say so, do not refuse. */
-  out.lastChild.textContent = (d - new Date() < 0)
-    ? (formKindEvent ? ' — that has already happened. Baaki only counts forward; use this if you mean it.'
-                     : ' — that is in the past. Baaki only counts forward; use this if you mean it.')
+     you are logging something you missed. Say so, do not refuse. A
+     Since goal is the one kind where the past is the whole point, so
+     it gets no warning at all. */
+  var isPast = d - new Date() < 0;
+  out.lastChild.textContent = (isPast && formKind !== 'since')
+    ? (formKind === 'event' ? ' — that has already happened. Baaki only counts forward; use this if you mean it.'
+                             : ' — that is in the past. Baaki only counts forward; use this if you mean it.')
     : '';
-  out.className = 'parsed' + ((d - new Date() < 0) ? ' past' : '');
+  out.className = 'parsed' + (isPast && formKind !== 'since' ? ' past' : '');
 }
 /* Collapsed by default so the common case - a quick chip, or a typed
    date - never pays for the calendar's height. Opens itself for an
@@ -1663,7 +1793,7 @@ function resetForm(){
   pkSel = null; pkCursor = null; pkView = 'day';
   drawPicker();
   showParsed();
-  setFormKind(false);
+  setFormKind('deadline');
   setPickOpen(false);
   $('#bSubmit').textContent = 'Add goal';
   $('#bCancelEdit').hidden = true;
@@ -1675,8 +1805,10 @@ function startEdit(i){
   editingIndex = i;
   $('#fName').value = g.name;
   pickDate(new Date(g.target.getTime()), true);
-  setFormKind(g.event);
-  setPickOpen(true);
+  setFormKind(g.since ? 'since' : g.event ? 'event' : 'deadline');
+  /* Since has no calendar to open - its toggle is hidden by
+     setFormKind above, so there's nothing here to reveal. */
+  if(!g.since) setPickOpen(true);
   $('#bSubmit').textContent = 'Save changes';
   $('#bCancelEdit').hidden = false;
   $('#bShareDraft').hidden = true;
@@ -1705,7 +1837,7 @@ function drawRows(){
       '<button type="button" title="Show this one">▲</button>' +
       '<button type="button" title="Edit">✎</button>' +
       '<button type="button" title="Remove">✕</button>';
-    r.querySelector('.rn').textContent = (g.event ? '★ ' : '') + g.name + (g.done ? '  ✓' : '');
+    r.querySelector('.rn').textContent = (g.event ? '★ ' : g.since ? '↑ ' : '') + g.name + (g.done ? '  ✓' : '');
     r.querySelector('.rd').textContent = fmtLocal(g.target, !isEod(g.target)).replace('T', ' ');
     var bs = r.querySelectorAll('button');
     bs[0].onclick = function(){ if(i){ focusGoal(i); } drawRows(); };
@@ -2770,8 +2902,9 @@ $('#pkTitle').onclick = function(){
   pkView = pkView === 'day' ? 'month' : pkView === 'month' ? 'year' : 'day';
   drawPicker();
 };
-$('#kDeadline').onclick = function(){ setFormKind(false); };
-$('#kEvent').onclick = function(){ setFormKind(true); };
+$('#kDeadline').onclick = function(){ setFormKind('deadline'); };
+$('#kEvent').onclick = function(){ setFormKind('event'); };
+$('#kSince').onclick = function(){ setFormKind('since'); };
 $('#bClearAll').onclick = clearAllGoals;
 $('#bClearDone').onclick = clearDoneGoals;
 $('#bShare').onclick = openShare;
@@ -2792,6 +2925,17 @@ function defaultName(){
   while(used[String(n)]) n++;
   return String(n);
 }
+/* A bare day means "by the end of it" for a deadline, but "since
+   Monday" means Monday as it started, not as it finished - the same
+   bare-day parse needs the opposite default depending which kind is
+   asking. Only touches the shape that means "no time was given";
+   anything with a real time on it already means what it says. */
+function sinceAdjust(target){
+  if(formKind === 'since' && target && isEod(target)){
+    return new Date(target.getFullYear(), target.getMonth(), target.getDate(), 0, 0, 0, 0);
+  }
+  return target;
+}
 /* The one place a goal actually gets written - the typed-and-submitted
    form and a one-click preset both land here, so "add" and "save an
    edit" only have one implementation each. */
@@ -2801,11 +2945,13 @@ function submitGoal(target){
      the actual message here was unreachable. Removing required (in the
      markup) surfaces this one instead, and a name is not worth
      blocking on. */
+  target = sinceAdjust(target);
   var name = $('#fName').value.trim() || defaultName();
   if(!target){ toast('I could not read that date.'); $('#fWhen').focus(); return; }
+  var isEvent = formKind === 'event', isSince = formKind === 'since';
   if(editingIndex >= 0){
     var g = S.goals[editingIndex];
-    g.name = name; g.target = target; g.event = formKindEvent;
+    g.name = name; g.target = target; g.event = isEvent; g.since = isSince;
     logEvent('edit', name, dateLabel(target));
     toast('Saved.');
   } else {
@@ -2813,7 +2959,7 @@ function submitGoal(target){
        every hue already handed out, the first time this goal is
        actually painted. One mechanism for "new goal gets a colour",
        not two. */
-    S.goals.unshift({ name:name, target:target, event:formKindEvent, done:null });
+    S.goals.unshift({ name:name, target:target, event:isEvent, since:isSince, done:null });
     logEvent('add', name, dateLabel(target));
     toast('Added.');
   }
@@ -2835,9 +2981,10 @@ $('#addForm').onsubmit = function(e){
    copies it without ever touching S.goals. */
 function shareDraft(){
   var typed = $('#fWhen').value.trim();
-  var target = typed ? parseWhen(typed) : pkSel;
+  var target = sinceAdjust(typed ? parseWhen(typed) : pkSel);
   if(!target){ toast('I could not read that date.'); $('#fWhen').focus(); return; }
-  var g = { name: $('#fName').value.trim() || defaultName(), target:target, event:formKindEvent, done:null };
+  var g = { name: $('#fName').value.trim() || defaultName(), target:target,
+    event: formKind === 'event', since: formKind === 'since', done:null };
   copy(baseUrl() + '#' + goalToken(g)).then(function(ok){
     toast(ok ? 'Link copied — not added to your board.' : 'Copy the address bar to share.');
   });

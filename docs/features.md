@@ -46,8 +46,9 @@ Legend: **★** = load-bearing, removing it changes what Baaki is.
 | Feature | Why it exists |
 |---|---|
 | ★ Goal lives in the URL fragment | The whole product. No server, no accounts, and sharing is just sharing a link. A deadline has no state — it is target minus now — so there is nothing to store. |
-| ★ Two kinds: deadline and event (`*`) | Not everything you count toward is a threat. A deadline heats up and runs over; something good glows, arrives, and stops. Same mechanism, opposite feeling. |
-| Events never count up | "3 days since Diwali" is not a thing anyone wants. Arrival is terminal. |
+| ★ Three kinds: deadline, event (`*`), and since (`^`) | Not everything you count toward is a threat, and not everything worth watching has an end. A deadline heats up and runs over; something good glows, arrives, and stops; since counts up from a start, forever. |
+| Events never count up | "3 days since Diwali" is not a thing anyone wants. Arrival is terminal - that's what the third kind, since, is for instead. |
+| A timed goal carries its own timezone (`@Asia/Kolkata`) | A shared "6pm" used to land on a different instant for everyone who opened it, silently reinterpreted in whichever zone their own device happened to be in. Stamped on automatically, no picker, no UI - the creating device already knows its own zone. A bare date (no time) carries none on purpose: "end of day" is supposed to mean the reader's day, not the sender's. |
 | First goal is the big one | Focus needs no separate storage. Order *is* focus. |
 | Focus **rotates** the list | Promote-to-front scrambles the order, and then "previous" can't undo "next". Rotation keeps the ring intact. |
 | The link rewrites as you navigate | The link you copy is the view you are looking at. No mental translation. |
@@ -70,6 +71,19 @@ Legend: **★** = load-bearing, removing it changes what Baaki is.
 | `!edit` hides Done from viewers | Not security — the file is on their machine. Tidiness: no button that does nothing. |
 | Confetti is hand-rolled | A library would be 10× the whole file. |
 | The number itself pops | An overlay word collided with the hero that already said "early". Less is more. |
+
+## Since
+
+| Feature | Why it exists |
+|---|---|
+| ★ Counts up from a fixed start, forever | A deadline and an event are both about reaching a point. Not everything worth watching has one - "142 days sober," "6 years married" are running totals, not countdowns, and deserved the same one-number treatment rather than living outside this tool entirely. |
+| Same ladder, same superscript units, same dropped-zero rule | The arithmetic for "how long since" and "how long since it was due" (the overdue mirror) is identical - only the meaning differs, so since reuses the days/H:MM/M:SS ladder and its superscripts rather than inventing a second system. |
+| Static, warm colour - not grey, not cooling | Overdue is grey on purpose: urgency that's over is a fact, not an alarm. Since was never urgent to begin with, so it takes something good's arrived colour instead - a state to be glad about, ongoing. |
+| No Done button | Nothing to complete - it doesn't stop, on purpose. |
+| The calendar hides itself for this kind | It only ever offers days from today forward, which is backwards for picking a start already in the past. Rather than a calendar that quietly can't help, since leans on quick presets and typing instead. |
+| A mirrored quick-pick row: yesterday, a week ago, a month ago... | The forward kinds have presets for "starting soon" and "sometime out there." Since needed the same one-tap coverage pointed the other way. |
+| `N unit ago` joins the typed vocabulary | Mirrors "in N unit" going forward - the same short words, the other direction. |
+| A quick-picked bare day starts at midnight, not 11:59pm | A deadline's bare day means "by the end of it." A since start means the opposite: "since it began." Same underlying parser, the one default that had to flip. |
 
 ## Interface
 

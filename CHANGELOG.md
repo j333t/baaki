@@ -20,6 +20,27 @@ Anything that changes the **link format** is a breaking change and needs a major
 
 ---
 
+## 2.0.0 — unreleased
+
+The link format grew two new, optional fields - a major bump by this
+project's own rule, even though every existing link keeps working
+exactly as it always has. Old links carry neither field and are
+untouched; only new ones opt in.
+
+### A shared time now means the same instant everywhere
+- **The bug:** a deadline set to an exact time and shared across timezones landed on the wrong instant. "6pm" set in Kolkata and opened in Los Angeles quietly became 6pm Los Angeles time - a completely different moment, off by however far apart the two zones are. Nothing in the link said which zone "6pm" was ever measured in, so every other device could only guess: its own.
+- **The fix:** a goal with a real time now carries the zone it was set in - `@Asia/Kolkata`, invisibly, alongside the date. No new UI: the creating device already knows its own zone and stamps it on without asking. A two-pass conversion (guess, then correct for the zone's offset at that instant) turns the wall-clock time back into the right UTC instant even across a DST edge.
+- **Deliberately not touched:** a bare date with no time - "submit by end of day" - carries no zone at all. That one is supposed to mean the reader's own day, not the sender's, and losing that would have fixed a problem nobody had by breaking a feature somebody did.
+- The same fix covers a Done stamp, not just a target - "finished at 2pm" needs the same protection a deadline does.
+
+### A third kind of goal: Since
+- **Counts up from a fixed start, forever - no deadline, no Done, no arrival.** The two existing kinds are about reaching a point; this one is a running total from one - "142 days sober," "6 years married" - and the ladder, the superscript units, even the "drop a zeroed-out group" rule are all the same code the other two kinds already use. Only the direction and the meaning are different.
+- **Static, warm colour, not grey.** Overdue is grey on purpose - urgency that's over reads as a fact, not an alarm. Since was never urgent in the first place, so it takes the same colour something good keeps after it arrives, instead of fading like a miss.
+- **The calendar stays out of it.** It only ever offers days from today forward, which is exactly backwards for picking a start already in the past - so Since hides it rather than pretending it works, and leans on a mirrored set of quick presets (yesterday, a week ago, a month ago...) plus typing, the same two doors Since ever had for the forward-only kinds' "in N units."
+- A quick-picked bare day lands at the *start* of that day, not the end - "since Monday" means Monday as it began. Typed absolute dates still need an explicit year to stay in the past, same known limitation as everywhere else typing bypasses the forward-only guard.
+
+---
+
 ## 1.9.0 — unreleased
 
 Two asks that turned out to be the same size of change: colour and

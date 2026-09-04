@@ -437,10 +437,81 @@ console.log('\n--- seconds in a link, and the missed-deadline restraint ---');
 r = await open('#New%20Year~2027-01-01T00:00:00');
 ok('seconds in a target still parse', r.name, 'New Year');
 ok('seconds: the number is right', r.num, '121d');
+// a timed goal now carries the creating zone too (@Asia/Kolkata, or
+// whatever alias this ICU build reports for it) - checked by shape,
+// not by the exact alias, since that's an implementation detail
 r = await open('#Ship~2026-09-02T10:07:30');
-ok('seconds survive the round trip', r.hash, '#Ship~2026-09-02T10:07:30');
+ok('seconds survive the round trip, now with a zone', /^#Ship~2026-09-02T10:07:30@/.test(r.hash), true);
 r = await open('#Ship~2026-09-02T10:07:00');
-ok('a zero second is not written back', r.hash, '#Ship~2026-09-02T10:07');
+ok('a zero second is not written back', /^#Ship~2026-09-02T10:07@/.test(r.hash), true);
+
+console.log('\n--- the same link, opened from a different timezone ---');
+// "6pm" set in Kolkata and opened in Los Angeles used to become 6pm
+// Los Angeles time - a completely different instant, off by the
+// zones' offset difference. With the zone riding along, both devices
+// now agree on the same instant: NOW is 2026-09-02T04:30 UTC, "18:00
+// Asia/Kolkata" is 2026-09-02T12:30 UTC.
+const laCtx = await browser.newContext({ timezoneId: 'America/Los_Angeles', locale: 'en-US' });
+const laPage = await laCtx.newPage();
+await laPage.clock.setFixedTime(new Date(NOW));
+await laPage.goto(FILE + '#Ship~2026-09-02T18:00@Asia%2FKolkata');
+await laPage.waitForTimeout(300);
+// Los Angeles is 12.5 hours behind Kolkata, so "now" there is still
+// the evening of Sept 1 - the target's Sept 2 genuinely is a
+// different calendar day from where Los Angeles is standing. That's
+// the *existing*, deliberate "switch at local midnight" rule doing
+// its job, not this fix - a viewer's ladder rung is allowed to
+// differ; the instant underneath it is not.
+ok('a different calendar day from Los Angeles is still "tomorrow" there - the ladder stays viewer-local',
+   (await laPage.locator('#num').textContent()).trim(), '1d');
+// what the fix actually guarantees: the instant itself is identical
+// everywhere. 12:30 UTC is 5:30 AM in Los Angeles (UTC-7 in September) -
+// not 6:00 PM, which is what naively reinterpreting "18:00" in Los
+// Angeles' own zone would have shown instead.
+ok('but the underlying instant converts correctly - 12:30 UTC reads as 5:30 AM there, not 6:00 PM',
+   (await laPage.locator('#sub').textContent()).includes('5:30 AM'), true);
+// a bare date (end of day, no time) carries no zone at all - that one
+// is meant to stay relative to whoever is looking at it
+await laPage.goto(FILE + '#Ship~2026-09-02');
+await laPage.waitForTimeout(300);
+ok('a bare date has no zone to protect - stays relative to the viewer',
+   decodeURIComponent(await laPage.evaluate(() => location.hash)), '#Ship~2026-09-02');
+await laCtx.close();
+
+console.log('\n--- since: a third kind, counting up instead of down ---');
+// frozen clock: 2026-09-02T10:00 IST
+r = await open('#Sober~2026-01-01T00:00^');
+ok('since reads as a count of days, same "d" superscript as a deadline', /^\d+d$/.test(r.num), true);
+ok('sub says "since", not "due"', r.sub.includes('since 1 Jan 2026'), true);
+ok('a human span still shows underneath, same as the forward days rung', r.sub.includes('mo'), true);
+ok('no Done button - there is nothing to finish', r.doneVisible, false);
+ok('never greys out the way an overdue deadline does', r.g2 !== '#37373e', true);
+
+r = await open('#Sober~2026-09-02T07:00^');
+ok('since, within the day: H:MM, same ladder step as a deadline', r.num, '3h:00m');
+
+r = await open('#Sober~2026-09-02T09:59:15^');
+ok('since, last minute: a zero-minutes group drops here too', r.num, '45s');
+
+r = await open('#Sober~2027-01-01^');
+ok('a since goal that has not started yet does not go negative', r.num, '00s');
+
+console.log('\n--- since, from the Goals form ---');
+r = await open('');
+await page.keyboard.press('g');
+await page.waitForTimeout(200);
+await page.click('#kSince');
+await page.waitForTimeout(150);
+ok('picking Since hides the calendar toggle - it only ever offers days forward',
+   await page.locator('#pkToggle').isVisible(), false);
+ok('the quick row swaps to past-oriented presets', await page.locator('#fQuick button', { hasText: '1 month ago' }).count(), 1);
+await page.fill('#fName', 'Sober');
+await page.locator('#fQuick button', { hasText: '1 month ago' }).click();
+await page.waitForTimeout(200);
+const sinceHash = decodeURIComponent(await page.evaluate(() => location.hash));
+ok('a bare quick-pick lands at the start of that day, not the end', sinceHash.includes('T00:00'), true);
+ok('the link carries the since marker', /\^(\+|$)/.test(sinceHash), true);
+ok('and the creating zone, same as any other timed goal', sinceHash.includes('@'), true);
 
 // A deadline crossing zero unmarked is a miss, not a finish. The clock
 // cannot know whether you got there - that is the whole reason Done
