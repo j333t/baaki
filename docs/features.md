@@ -17,11 +17,6 @@ Legend: **★** = load-bearing, removing it changes what Baaki is.
 | Ladder only ever gets finer | A unit that appears and disappears makes you re-read the screen. One-way is legible. |
 | Switch at local midnight, not at the target's clock time | "It's today" is a human fact, not an arithmetic one. Bare dates mean end-of-day so the day you're given is the day you get. |
 | Mirrored overdue ladder (`+M:SS` → `+H:MM` → `+N days`) | The ramp was smooth going down and fell off a cliff going up. Being late is information too, and it deserves the same resolution. |
-| Tenths in the last ten minutes | The one rung that is not a decision unit. The ramp went flat at the end — `3:00` and `0:03` ticked with the same texture — so the closing minutes felt no different from the opening ones. Now it visibly accelerates into zero. |
-| The tenths are small and dim | So the seconds stay the number you read. A decimal at full weight makes you re-read the screen, which is the opposite of a glance. |
-| Reduced motion removes the rung entirely | Slowing a 10 Hz digit down would just look broken. Someone who asked for less motion should get the plain seconds, not a compromise. |
-| The tab and the favicon stay on whole seconds | A title changing ten times a second is unreadable, and it wakes the OS for nothing. |
-| Chips never carry tenths | Seven of them ticking at 10 Hz is a slot machine, not a board. |
 | Human span underneath (`1 yr 2 mo`) | 427 is motivating but not plannable. The second line makes it plannable without stealing the glance. |
 | Span hidden under a month | It would just repeat the hero number. Redundancy is noise. |
 | Tab title shows `D-427 · Name` | The cheapest "always visible" there is. Works on every OS, costs nothing, needs no install. |
@@ -82,8 +77,9 @@ Legend: **★** = load-bearing, removing it changes what Baaki is.
 | Dark/light toggle, `t` | Something always on screen must suit the room it's in. |
 | Keyboard map (arrows, digits, g/s/d/t/?) | It's a wall board — you should be able to drive it without aiming a mouse. |
 | Swipe on touch | Same idea, thumbs. |
-| Share is one button, one job | Press it, the board you're looking at is on the clipboard. It used to morph into a choice by replacing itself with two other buttons, which read as broken, not as a menu. |
-| Copy-all and the bare tool link live in Goals | The rarer moves belong next to the list they act on, as quiet text links, not competing with the Share button for attention. |
+| Share always copies immediately, no menu first | Press it, the board you're looking at is on the clipboard. |
+| The rarer share moves are a segmented family, not a popover | All *n*, Code, and the bare tool sit beside Share as one connected pill with a hairline between segments. They were tried as text links in the Goals dialog first - disconnected from the button they were about - and moved back. |
+| The QR code is a Share segment, not a separate bar icon | It is fundamentally a way of sharing. `Q` still opens it directly. |
 | Edit goals in place | Obvious in hindsight. Retyping a goal to fix a typo is the kind of thing that makes people stop using a tool. |
 | A calendar you tap, that zooms out | Choosing a date is not the same act as reciting one. Days → months → years puts any date three taps away, however far off. |
 | Typing still works, and steers the calendar | Fast for "friday", useless for "some Tuesday in March". Both doors, one room — the calendar is the truth and typing writes to it. |
@@ -96,10 +92,14 @@ Legend: **★** = load-bearing, removing it changes what Baaki is.
 | The empty board counts the rest of the year | A dash and "set a goal" is a form with its fields missing. This is a working demonstration, and it is true — which a placeholder never is. |
 | Nothing opens a dialog at you on arrival | The board says what to press and the button is visible. A modal on arrival is a small hostility. |
 | Sound is on, but a page nobody touched is silent | Written down as a rule, not left to browser autoplay policy. A link on a second monitor cannot go off in a meeting; once you have clicked, you are using it. |
+| A name is optional | It carried `required`, so the browser's own popup fired before this file's code ever ran and the actual error was unreachable. Gone now; a blank name becomes "Goal". |
 | Adding or editing a goal closes the dialog | It used to stay open, quietly inviting a second goal, then a third. One action, one result. |
+| The calendar's back arrow stops at today's period | Every day before today was already disabled, but "back" could still walk you into a month or a whole decade with nothing but disabled cells in it. |
 | Lock goals | Not a permission system — there's no server, so permission would be theatre. A guard against your own thumb on a kiosk or a wall display, switched back off by anyone, any time, on their own device. |
-| A private, per-device change log | The link tells you what a goal *is*, not what happened to it. Every add, edit, removal and Done gets a line, with a Clear button beside it. Never leaves the browser. |
-| Quiet, rotating tips fill the idle line | One to nine goals used to leave that line blank. Picked once per load, same restraint as the ten-goals-or-more snark it sits beside. |
+| A private, per-device change log, in Goals | The link tells you what a goal *is*, not what happened to it. Lives under the list it's about now, not buried in a settings panel. Every add, edit, removal and Done gets a line, with a Clear button beside it. Never leaves the browser. |
+| Tips rotate lazily on their own | Picked once per load used to mean static for the whole visit. Now they cross-fade to a new one roughly every 25-35 seconds, only while a tip is what's showing. |
+| Every setting explains itself on hover | A plain-language `title` on each row under "This screen" - what it does, not just its name. |
+| A quiet clock, always on | Goal or none. The authentic Sreedharan pairing is a station clock next to a days-left board, and it says "this is live" now that the number itself never moves. |
 | Dialog closes on outside click | Every other dialog on earth does. |
 | About panel with the Sreedharan story | The origin is the best thing about this tool and it was invisible. Also where the keyboard map lives, so the main screen stays clean. |
 
@@ -119,6 +119,7 @@ Per-device, never in the link. Sharing a board must never reach across and chang
 | All of it lives under `?` | The main screen keeps one number on it. Anything requiring a choice hides behind a key, which is the second rubric test. |
 | A sound at zero, off by default | The old blanket "no sound" was protecting against a board that makes noise *at* you. A sound you deliberately switch on for the last ten seconds of a launch is the opposite of that. |
 | Sound is remembered, keep-awake is not | Different risks. Sound goes wrong as noise in the wrong room, and only inside the last ten seconds of a deadline. Keep-awake goes wrong as a flat battery next Tuesday, whether or not you are looking. |
+| Lock goals | Stops Goals and Done opening by accident - a kiosk, a wall display. Not a permission system; anyone can turn it back off, on their own device, any time. |
 
 ## The look of it
 
@@ -128,12 +129,14 @@ Themes are data, and this is the whole extension surface. All of it per device.
 |---|---|
 | Every measurement comes off the screen | One unit from `vmin`/`vmax`, everything else a power of phi from it. A phone and a television were getting the same pixels instead of the same design. |
 | Panels are sized in ems, not pixels | So they grow with the type, which grows with the screen. A 4K monitor should get a bigger panel, not the same one further away. |
-| Two columns where there is room | The About panel and the goal form both outgrew one column. A dialog should take the screen's shape, not ignore it. |
+| One column, always | Two side by side looked considered on paper. It left a slab of dead air under whichever side was shorter, in both the About panel and the Goals form - and the two sides were never the same length. |
 | Pure black and pure white surfaces | The colour moves off the background and into the number. On OLED that is most of the panel switched off, and the ramp still works — it has only changed which surface it lives on. |
 | Five typefaces, no webfont | A file whose whole promise is that it needs nothing must not open a network connection to look like itself. System stacks only. |
 | Themes do **not** travel in the link | Sending somebody a date must not restyle their screen. Same rule as hue, size and sound. It is the one piece of the original theme design deliberately not built. |
-| A glow behind the number pulses under an hour | The number itself never moves - it is the one thing on screen that has to stay still to be read at a glance. The pulse is triggered explicitly from the same tick that updates the digits, so it can never drift out of sync the way a free-running scale animation once did. |
-| Dialog content gets its own, tamer scale | About and Goals were reusing the hero's dramatic viewport sweep and read as oversized and dense at once. Scoped to `.dlg`, near-fixed rather than swept, so panels read like a normal app screen. Only the outer panel size still scales with the screen. |
+| No moving glow, no moving digits | A pulsing background was tried, on the theory that urgency belonged behind the number rather than in it. Removed anyway - it still didn't read as organic, and tuning it further wasn't the fix. The number has never moved and nothing has replaced the pulse. |
+| Dialog content gets its own, tamer scale — buttons do not | `.dlg` re-declares a gentler `--u`/`--f0`/`--f1`/`--f2` for text and spacing. `--h`, the height every button uses, stays a single root-level variable instead, so a dialog's calmer content scale can never drag its buttons down to an untappable size. |
+| Calendar cells and nav arrows get their own floor | Denser than a lone CTA, so they float on a smaller minimum, scaled from the dialog's own content unit rather than jumping to room-scale. |
+| `kbd` looks like a key, not a button | It shared a background colour with a button's hover state, so a row of shortcuts read as a row of little pressed buttons. Now it is an inset border with no fill. |
 | A styled scrollbar | The one thing left on this screen the OS was still drawing by default. |
 | The whole board wanders a few pixels | It is meant to be left on for weeks. Nothing should sit in the same pixels that long. Two coprime periods, so the path never repeats. |
 | One height for every button in the bar | It read as scattered because nothing shared a measurement. |

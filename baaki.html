@@ -31,6 +31,10 @@
   --line:rgba(255,255,255,.16); --panel:rgba(255,255,255,.07); --panel2:rgba(255,255,255,.13);
   --g1:#080c1c; --g2:#141c44; --ang:155deg;
   --hero-w:300; --hero-k:1; --hero-track:-.04em;
+  /* Controls stay room-scale everywhere, even inside a dialog's
+     tamer content scale - a button is not a paragraph, and it should
+     not shrink just because the text next to it did. */
+  --h:max(38px, calc(var(--u) * 2.35));
   --face:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Inter,system-ui,sans-serif;
   --sheet:var(--g1);
 }
@@ -89,28 +93,22 @@ main{display:flex;flex-direction:column;align-items:center;gap:var(--s2);min-wid
   margin:calc(var(--s2) * -1) 0 var(--s1)}
 #num{font-size:calc(clamp(4.5rem,21vw,15rem) * var(--hero-k));font-weight:var(--hero-w);
   letter-spacing:var(--hero-track);line-height:.94;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
-/* the tenths are texture, not the number - small and dim so the eye still lands on the seconds */
-#num .dec{font-size:.44em;font-style:normal;opacity:.4;letter-spacing:0}
 #unit{font-size:var(--f2);font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
 #sub{font-size:var(--f1);color:var(--dim);letter-spacing:.04em;display:flex;gap:var(--s2);
   flex-wrap:wrap;justify-content:center}
 #sub b{font-weight:500;color:var(--ink);opacity:.8}
 #tag{font-size:var(--f0);letter-spacing:.2em;text-transform:uppercase;color:var(--faint);
   min-height:1em}
+/* A station clock next to the days-left board is the authentic
+   Sreedharan pairing - and it is the plainest way to say "this is
+   live" now that nothing on the number itself moves. Deliberately
+   quiet: the countdown is still the one thing you are meant to read
+   first. */
+#clock{font-size:var(--f0);color:var(--faint);letter-spacing:.04em;
+  font-variant-numeric:tabular-nums;margin-top:var(--s1)}
 #hero.pop{animation:pop .9s cubic-bezier(.16,1,.3,1)}
 @keyframes pop{0%{opacity:0;transform:scale(.82)}60%{opacity:1;transform:scale(1.05)}
   100%{opacity:1;transform:scale(1)}}
-/* A heartbeat belongs behind the number, not in it - the digits are
-   the one thing on this screen that must never move, or the "clear
-   time signal" they exist to give becomes the thing being disturbed.
-   #pulse sits under everything, painted first in the DOM so it never
-   needs a z-index, and pointer-events:none so it can never be in the
-   way. It is triggered from JS on the exact tick that moves the
-   number, never on its own timer - that is what keeps it in sync,
-   where the old scale animation (removed) could drift. */
-#pulse{position:fixed;inset:0;opacity:0;pointer-events:none;
-  background:radial-gradient(ellipse 68% 52% at 50% 40%, var(--g2), transparent 72%);
-  mix-blend-mode:screen}
 
 #others{display:flex;flex-wrap:wrap;gap:var(--s1);justify-content:center;
   margin-top:var(--s4);max-width:min(92vw,64ch)}
@@ -123,7 +121,8 @@ main{display:flex;flex-direction:column;align-items:center;gap:var(--s2);min-wid
 .chip .v{font-variant-numeric:tabular-nums;font-weight:500;color:var(--ink);opacity:.85;flex:none}
 .chip.more{color:var(--faint)}
 #snark{margin-top:var(--s3);font-size:var(--f0);color:var(--faint);letter-spacing:.03em;
-  max-width:44ch;font-style:italic;min-height:1em}
+  max-width:44ch;font-style:italic;min-height:1em;transition:opacity .8s ease}
+#snark.fade{opacity:0}
 
 /* One height for everything, squares for the icons, three groups with
    real space between them. It read as scattered because nothing shared
@@ -133,12 +132,21 @@ main{display:flex;flex-direction:column;align-items:center;gap:var(--s2);min-wid
 @media (hover:hover){body:hover #bar,#bar:focus-within{opacity:1}}
 @media (hover:none){#bar{opacity:.8}}
 .grp{display:flex;gap:var(--s1);align-items:center}
-button.b{--h:calc(var(--u) * 2.35);
-  height:var(--h);min-width:var(--h);display:inline-flex;align-items:center;justify-content:center;
+button.b{height:var(--h);min-width:var(--h);display:inline-flex;align-items:center;justify-content:center;
   font:500 var(--f1)/1 var(--face);color:var(--dim);background:var(--panel);
   border:1px solid transparent;border-radius:99px;padding:0 var(--s3);cursor:pointer;
   transition:background .2s,color .2s,border-color .2s}
 button.b.i{width:var(--h);padding:0}
+/* Share's segmented family: one pill, several buttons inside it, a
+   hairline between them - "one family", not loose pills scattered
+   around the screen. */
+.seg{display:flex;align-items:stretch;height:var(--h);background:var(--panel);
+  border:1px solid transparent;border-radius:99px;overflow:hidden}
+.seg button{background:none;border:none;height:100%;padding:0 var(--s3);
+  color:var(--dim);font:500 var(--f1)/1 var(--face);cursor:pointer;white-space:nowrap;
+  transition:background .2s,color .2s}
+.seg button:hover,.seg button:focus-visible{background:var(--panel2);color:var(--ink);outline:none}
+.seg button+button{border-left:1px solid var(--line)}
 /* display:inline-flex above beats the browser's own [hidden]{display:none},
    so Done and Save stayed on screen when they were meant to be gone */
 button.b[hidden]{display:none}
@@ -162,27 +170,16 @@ button.b svg{display:block}
 
 /* the panel grows with the type, which grows with the screen, so a
    4K monitor gets a bigger panel rather than the same one further away */
-dialog{border:1px solid var(--line);border-radius:calc(var(--u) * .9);padding:0;
+dialog{border:1px solid var(--line);border-radius:max(10px, calc(var(--u) * .9));padding:0;
   width:min(93vw,calc(var(--ft) * 34));margin:auto;max-height:90vh;overflow:auto;
   background:var(--sheet);color:var(--ink);box-shadow:0 calc(var(--u)*1.6) calc(var(--u)*5) rgba(0,0,0,.45);
   overscroll-behavior:contain}
-#about{width:min(94vw,calc(var(--ft) * 40))}
-/* on a screen with room, the panel takes the screen's own shape */
-/* Two columns wherever there is room: the form grew a calendar, and a
-   single column pushed the button that submits it off the bottom. */
-@media (min-width:860px) and (orientation:landscape){
-  /* ID-scoped on purpose: the plain form.add rule is declared later in
-     this sheet, and at equal specificity later wins - media queries do
-     not get a free pass. */
-  #dlg{width:min(92vw,calc(var(--ft) * 52))}
-  #dlg form.add{display:grid;grid-template-columns:1fr 1.05fr;gap:var(--s3) var(--s4);align-items:start}
-  #dlg form.add .full{grid-column:1 / -1}
-  #dlg .rows{max-height:22vh}
-  #about{width:min(92vw,calc(var(--ft) * 62))}
-  #about .dlg{display:grid;grid-template-columns:1.02fr .98fr;gap:var(--s4) var(--s5);align-items:start}
-  #about .full{grid-column:1 / -1}
-  #about .acts{grid-column:1 / -1}
-}
+/* One column, always. Two side by side looked considered on paper -
+   it left a slab of dead air under whichever side was shorter, in
+   both the About panel and the Goals form, and nobody said "just
+   uneven column heights" is what they wanted fixed. A single column
+   never has that problem, and the dialog already scrolls. */
+#about{width:min(94vw,calc(var(--ft) * 34))}
 dialog::backdrop{background:rgba(0,0,0,.55)}
 dialog,.rows{scrollbar-width:thin;scrollbar-color:var(--faint) transparent}
 dialog::-webkit-scrollbar,.rows::-webkit-scrollbar{width:8px;height:8px}
@@ -198,10 +195,6 @@ dialog::-webkit-scrollbar-thumb:hover,.rows::-webkit-scrollbar-thumb:hover{backg
   --f2:clamp(14px, .12vmin + .24vmax, 15.5px);
   padding:var(--s4);display:flex;flex-direction:column;gap:var(--s3);text-align:left}
 .dlg:focus{outline:none}
-.colA,.colB{display:flex;flex-direction:column;gap:var(--s3);min-width:0}
-/* the read-back sits right under the kind buttons, where the eye
-   already is - not stretched to the bottom, which just left a gap */
-.colA .parsed{margin-top:calc(var(--s1) * -1)}
 .dlg h2{font-size:var(--f2);font-weight:600;letter-spacing:-.01em;display:flex;
   justify-content:space-between;align-items:baseline;gap:var(--s2)}
 .dlg h2 span{font-size:var(--f0);font-weight:400;color:var(--faint);letter-spacing:.1em;text-transform:uppercase}
@@ -224,8 +217,10 @@ form.add{display:flex;flex-direction:column;gap:var(--s3)}
 .pktitle{flex:1;font:500 var(--f1)/1 var(--face);color:var(--ink);background:none;border:1px solid transparent;
   border-radius:8px;padding:var(--s2);cursor:pointer;letter-spacing:.01em}
 .pktitle:hover,.pktitle:focus-visible{background:var(--panel2);outline:none;border-color:var(--line)}
-.pknav{width:calc(var(--u) * 1.9);height:calc(var(--u) * 1.9);flex:none;font:400 var(--f2)/1 var(--face);
+.pknav{width:max(30px, calc(var(--u) * 1.9));height:max(30px, calc(var(--u) * 1.9));flex:none;
+  font:400 var(--f2)/1 var(--face);
   color:var(--dim);background:none;border:1px solid transparent;border-radius:8px;cursor:pointer}
+.pknav:disabled{opacity:.3;cursor:not-allowed;pointer-events:none}
 .pknav:hover,.pknav:focus-visible{background:var(--panel2);color:var(--ink);outline:none;border-color:var(--line)}
 .pkgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
 .pkgrid.wide{grid-template-columns:repeat(4,1fr);gap:var(--s1)}
@@ -233,8 +228,8 @@ form.add{display:flex;flex-direction:column;gap:var(--s3)}
   color:var(--faint);height:calc(var(--u) * 1.4);letter-spacing:.06em}
 .pkgrid button{font:400 var(--f1)/1 var(--face);color:var(--dim);background:none;
   border:1px solid transparent;border-radius:7px;cursor:pointer;
-  height:calc(var(--u) * 1.9);display:flex;align-items:center;justify-content:center;padding:0}
-.pkgrid.wide button{height:calc(var(--u) * 2.2)}
+  height:max(30px, calc(var(--u) * 1.9));display:flex;align-items:center;justify-content:center;padding:0}
+.pkgrid.wide button{height:max(34px, calc(var(--u) * 2.2))}
 .pkgrid button:hover,.pkgrid button:focus-visible{background:var(--panel2);color:var(--ink);outline:none}
 .pkgrid button.off{color:var(--faint);opacity:.55}
 .pkgrid button.now{border-color:var(--line);color:var(--ink)}
@@ -280,11 +275,17 @@ html[data-theme=light] input::-webkit-calendar-picker-indicator{filter:none}
 .hint a{color:var(--dim)}
 .hint a:hover{color:var(--ink)}
 .acts{display:flex;gap:var(--s2);justify-content:flex-end;flex-wrap:wrap}
-kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;background:var(--panel2);
-  border:1px solid var(--line);border-radius:5px;padding:2px 6px;color:var(--ink)}
-.keys{display:grid;grid-template-columns:auto 1fr auto 1fr;gap:var(--s1) var(--s2);font-size:var(--f0);
-  color:var(--dim);align-items:center}
-@media (max-width:400px){.keys{grid-template-columns:auto 1fr}}
+/* A key-cap, not a button: no fill, just an inset border, so it never
+   competes with something you can actually press. button.b owns the
+   pill-and-fill look on this screen; kbd must not borrow it. */
+kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;background:none;
+  border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--dim);
+  box-shadow:inset 0 -1px 0 var(--line)}
+/* sized to its content, not stretched across the panel - two short
+   columns side by side, not the full dialog width */
+.keys{display:inline-grid;grid-template-columns:auto 1fr auto 1fr;gap:var(--s1) var(--s3);
+  font-size:var(--f0);color:var(--dim);align-items:center;max-width:36em}
+@media (max-width:480px){.keys{grid-template-columns:auto 1fr;max-width:20em}}
 .screen{border-top:1px solid var(--line);padding-top:var(--s3);display:flex;flex-direction:column;gap:var(--s2)}
 .opts{display:flex;flex-direction:column;gap:var(--s1)}
 .opt{display:flex;align-items:center;gap:var(--s1);font-size:var(--f1);color:var(--dim)}
@@ -307,15 +308,11 @@ body.locked #bAdd{opacity:.45}
 .hist ol{list-style:none;display:flex;flex-direction:column;gap:4px;font-size:var(--f0);color:var(--faint)}
 .hist ol b{color:var(--dim);font-weight:500}
 .hist[hidden]{display:none}
-.glinks{display:flex;gap:var(--s3);flex-wrap:wrap;margin-top:calc(var(--s2) * -1)}
-.glinks button{font:400 var(--f0)/1 var(--face);color:var(--faint);background:none;border:none;
-  cursor:pointer;text-decoration:underline;text-underline-offset:2px}
-.glinks button:hover{color:var(--dim)}
 #upd{font-size:var(--f0);color:var(--ink);opacity:.85}
 #upd a{color:var(--ink)}
 .qrbox{display:flex;justify-content:center;background:#fff;border-radius:calc(var(--u)*.6);padding:var(--s3)}
 #qrCv{image-rendering:pixelated;image-rendering:crisp-edges;width:100%;max-width:260px;height:auto}
-.dev{font-size:1.6rem;letter-spacing:.04em;opacity:.9;font-weight:400}
+.dev{font-size:calc(var(--f2) * 1.7);letter-spacing:.04em;opacity:.9;font-weight:400}
 .story{font-size:var(--f1);color:var(--dim);line-height:1.6}
 .story b{color:var(--ink);font-weight:500}
 .lede{font-size:var(--f2);color:var(--ink);line-height:1.45;letter-spacing:-.01em;opacity:.92}
@@ -333,18 +330,17 @@ body.locked #bAdd{opacity:.45}
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.01ms !important;transition-duration:.01ms !important}
   main{transition:none !important}
-  #pulse{display:none}
 }
 </style>
 </head>
 <body>
 
-<div id="pulse" aria-hidden="true"></div>
 <main>
   <div id="name">Baaki</div>
   <div id="hero"><span id="num">&mdash;</span><span id="unit"></span></div>
   <div id="sub"></div>
   <div id="tag"></div>
+  <div id="clock"></div>
   <div id="others"></div>
   <div id="snark"></div>
 </main>
@@ -352,7 +348,9 @@ body.locked #bAdd{opacity:.45}
 <div id="bar">
   <div class="grp">
     <button class="b" id="bAdd" title="Goals (g)">Goals</button>
-    <button class="b" id="bShare" title="Share (s)">Share</button>
+    <div class="seg" id="shareGrp">
+      <button id="bShare" title="Share this one (s)">Share</button>
+    </div>
     <button class="b primary" id="bDone" hidden title="Mark done (d)">Done</button>
   </div>
   <div class="grp" id="tools"></div>
@@ -364,42 +362,38 @@ body.locked #bAdd{opacity:.45}
 
 <dialog id="dlg"><div class="dlg">
   <h2>Goals <span id="gCount"></span></h2>
-  <div class="glinks" id="gLinks"></div>
-  <div class="rows" id="rows"></div>
   <form class="add" id="addForm">
-    <div class="colA">
-      <input id="fName" placeholder="What is the goal?" maxlength="80" required>
-      <div class="kind">
-        <button type="button" id="kDeadline" aria-pressed="true">Deadline</button>
-        <button type="button" id="kEvent" aria-pressed="false">Something good &#9733;</button>
-      </div>
-      <div class="hint">
-        A <b>deadline</b> heats up as it nears and keeps counting after you miss it.
-        Something <b>good</b> glows as it nears, celebrates, and stops.
-        No time given means the end of that day. Typing instead? <b>10m</b> is ten
-        minutes; months need <b>mo</b>.
-      </div>
-      <div class="parsed" id="fParsed"></div>
+    <input id="fName" placeholder="What is the goal? (optional)" maxlength="80">
+    <div class="kind">
+      <button type="button" id="kDeadline" aria-pressed="true">Deadline</button>
+      <button type="button" id="kEvent" aria-pressed="false">Something good &#9733;</button>
     </div>
-    <div class="colB">
-      <div class="quick" id="fQuick"></div>
-      <div class="pick">
-        <div class="pkhead">
-          <button type="button" class="pknav" id="pkPrev" aria-label="Back">&#8249;</button>
-          <button type="button" class="pktitle" id="pkTitle" aria-label="Zoom out to months, then years"></button>
-          <button type="button" class="pknav" id="pkNext" aria-label="Forward">&#8250;</button>
-        </div>
-        <div class="pkgrid" id="pkGrid"></div>
-        <div class="times" id="fTimes"></div>
-      </div>
-      <input id="fWhen" class="typed" placeholder="or type it &mdash; friday 6pm, in 3 weeks, 31 mar 2027" autocomplete="off">
+    <div class="hint">
+      A <b>deadline</b> heats up as it nears and keeps counting after you miss it.
+      Something <b>good</b> glows as it nears, celebrates, and stops.
+      No time given means the end of that day. Typing instead? <b>10m</b> is ten
+      minutes; months need <b>mo</b>.
     </div>
-    <div class="acts full">
+    <div class="quick" id="fQuick"></div>
+    <div class="pick">
+      <div class="pkhead">
+        <button type="button" class="pknav" id="pkPrev" aria-label="Back a month">&#8249;</button>
+        <button type="button" class="pktitle" id="pkTitle" aria-label="Zoom out to months, then years"></button>
+        <button type="button" class="pknav" id="pkNext" aria-label="Forward a month">&#8250;</button>
+      </div>
+      <div class="pkgrid" id="pkGrid"></div>
+      <div class="times" id="fTimes"></div>
+    </div>
+    <input id="fWhen" class="typed" placeholder="or type it &mdash; friday 6pm, in 3 weeks, 31 mar 2027" autocomplete="off">
+    <div class="parsed" id="fParsed"></div>
+    <div class="acts">
       <button type="button" class="b" id="bCancelEdit" hidden>Cancel</button>
       <button type="button" class="b" id="bClose">Close</button>
       <button type="submit" class="b primary" id="bSubmit">Add goal</button>
     </div>
   </form>
+  <div class="rows" id="rows"></div>
+  <div class="hist" id="hist" hidden></div>
 </div></dialog>
 
 <dialog id="qr"><div class="dlg" tabindex="-1">
@@ -417,55 +411,53 @@ body.locked #bAdd{opacity:.45}
 </div></dialog>
 
 <dialog id="about"><div class="dlg" tabindex="-1">
-  <h2 class="full">Baaki <span class="dev">&#2348;&#2366;&#2325;&#2368;</span></h2>
-  <p class="lede full">A date you keep <i>not</i> looking at is a date you miss.
+  <h2>Baaki <span class="dev">&#2348;&#2366;&#2325;&#2368;</span></h2>
+  <p class="lede">A date you keep <i>not</i> looking at is a date you miss.
     Put one number where you already look, and you stop needing to be reminded.</p>
 
-  <div class="colA">
-    <h3 class="sec">How</h3>
-    <ol class="how">
-      <li><b>Add a goal.</b> Press <kbd>G</kbd> and type when — <i>friday 6pm</i>, <i>31 mar 2027</i>, <i>in 3 weeks</i>.</li>
-      <li><b>Leave it somewhere you pass.</b> A pinned tab, a spare monitor, a phone on a desk. Press <kbd>F</kbd> and any old laptop is a wall board.</li>
-      <li><b>Send it.</b> The whole countdown is in the link, so paste it into any chat and it arrives working. <kbd>Q</kbd> puts it on somebody's phone from across a room.</li>
-    </ol>
+  <h3 class="sec">How</h3>
+  <ol class="how">
+    <li><b>Add a goal.</b> Press <kbd>G</kbd> and type when — <i>friday 6pm</i>, <i>31 mar 2027</i>, <i>in 3 weeks</i>.</li>
+    <li><b>Leave it somewhere you pass.</b> A pinned tab, a spare monitor, a phone on a desk. Press <kbd>F</kbd> and any old laptop is a wall board.</li>
+    <li><b>Send it.</b> The whole countdown is in the link, so paste it into any chat and it arrives working. <kbd>Q</kbd> puts it on somebody's phone from across a room.</li>
+  </ol>
 
-    <h3 class="sec">Why it is only one number</h3>
-    <p class="story">
-      A chart asks to be studied. A list asks to be triaged. A single number asks
-      nothing, which is why you can put it somewhere you walk past and it still works
-      on the four-hundredth day.
-    </p>
-    <p class="story">
-      In the offices of the Delhi Metro, <b>E. Sreedharan</b> hung a board in every
-      room showing the days left. Not a plan. Not a chart. One number that everybody
-      walked past — and the Metro finished early and under budget, which almost never
-      happens anywhere.
-      <a href="https://en.wikipedia.org/wiki/E._Sreedharan" target="_blank" rel="noopener">He is worth ten minutes of reading.</a>
-    </p>
-    <p class="story">
-      <b>बाकी</b> is Hindi for <i>what's remaining</i>. There is no server and no
-      account: a deadline has no state, it is just target minus now.
-    </p>
+  <h3 class="sec">Why it is only one number</h3>
+  <p class="story">
+    A chart asks to be studied. A list asks to be triaged. A single number asks
+    nothing, which is why you can put it somewhere you walk past and it still works
+    on the four-hundredth day.
+  </p>
+  <p class="story">
+    In the offices of the Delhi Metro, <b>E. Sreedharan</b> hung a board in every
+    room showing the days left. Not a plan. Not a chart. One number that everybody
+    walked past — and the Metro finished early and under budget, which almost never
+    happens anywhere.
+    <a href="https://en.wikipedia.org/wiki/E._Sreedharan" target="_blank" rel="noopener">He is worth ten minutes of reading.</a>
+  </p>
+  <p class="story">
+    <b>बाकी</b> is Hindi for <i>what's remaining</i>. There is no server and no
+    account: a deadline has no state, it is just target minus now.
+  </p>
+
+  <h3 class="sec">Keys</h3>
+  <div class="keys" id="keys"></div>
+
+  <div class="screen">
+    <h3 class="sec">This screen</h3>
+    <div class="opts" id="opts"></div>
+    <div id="upd" hidden></div>
+    <div class="hint">Kept on this device, never in the link. How the board looks
+      depends on the room you are standing in, not on the goal. Hover any of the
+      above for what it does.</div>
   </div>
 
-  <div class="colB">
-    <h3 class="sec">Keys</h3>
-    <div class="keys" id="keys"></div>
-    <div class="screen">
-      <h3 class="sec">This screen</h3>
-      <div class="opts" id="opts"></div>
-      <div id="upd" hidden></div>
-      <div class="hint">Kept on this device, never in the link. How the board looks
-        depends on the room you are standing in, not on the goal.</div>
-      <div class="hist" id="hist" hidden></div>
-    </div>
-  </div>
   <div class="hint">
     Free and always will be.
     <!-- Put your own link here when you have one: -->
     <a href="#" id="donate" hidden>Buy me a coffee</a>
   </div>
-  <div class="acts full"><button type="button" class="b" id="bAboutClose">Close</button></div>
+  <div class="acts"><button type="button" class="b" id="bAboutClose">Close</button></div>
 </div></dialog>
 
 <script>
@@ -480,7 +472,7 @@ body.locked #bAdd{opacity:.45}
               Empty = fully offline; the link carries the done stamp.
    GA_ID    : GA4 measurement id, e.g. 'G-ABC1234XYZ'. Online only.
    ============================================================ */
-var VERSION  = '1.5.0';
+var VERSION  = '1.6.0';
 var SYNC_URL = '';
 var GA_ID    = '';
 /* UPDATE : a 200-byte {"version","url"} somewhere online. Two candidates,
@@ -492,14 +484,10 @@ var UPDATE_URLS = [
 ];
 
 var DAY = 864e5, HOUR = 36e5, MIN = 6e4;
-var REDUCE_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches);
-/* The last ten minutes carry tenths. Someone who asked for less motion
-   gets none of it: FINE goes to zero and the rung never opens. */
-var FINE = REDUCE_MOTION ? 0 : 10 * MIN;
 function $(s){ return document.querySelector(s); }
 var el = {
   name:$('#name'), num:$('#num'), unit:$('#unit'), sub:$('#sub'), tag:$('#tag'),
-  others:$('#others'), snark:$('#snark'), done:$('#bDone'), toast:$('#toast'),
+  others:$('#others'), snark:$('#snark'), done:$('#bDone'), toast:$('#toast'), clock:$('#clock'),
   rows:$('#rows'), dlg:$('#dlg'), about:$('#about'), hero:$('#hero'), qr:$('#qr')
 };
 
@@ -764,18 +752,10 @@ function commit(pushState){
      more than a day out ... DAYS    changes at local midnight
      the day itself ........ H:MM    changes each minute
      the last hour ......... M:SS    changes each second
-     the last ten minutes .. M:SS.t  changes ten times a second
-
-   The tenths are the one rung that is not a decision unit - nobody
-   acts on a tenth of a second. They are there because the ramp went
-   flat at the end: 3:00 and 0:03 ticked with exactly the same
-   texture. Now the board visibly accelerates into zero. They are
-   drawn small and dim, so the seconds stay the number you read.
 
    Past a deadline it mirrors, in grey, so the ramp stays smooth
    in both directions:
 
-     first ten minutes over  +M:SS.t
      first hour over ....... +M:SS
      first day over ........ +H:MM
      after that ............ +N days
@@ -798,20 +778,17 @@ function view(g, now){
   if(ms <= 0){
     if(g.event) return { m:'arrived' };
     var over = -ms;
-    if(over < FINE) return { m:'overFine', ms:over };
     if(over < HOUR) return { m:'overMs', ms:over };
     if(over < DAY)  return { m:'overHm', ms:over };
     return { m:'overD', days:Math.max(1, dayDiff(g.target, now)) };
   }
   var d = dayDiff(now, g.target);
-  if(d >= 1)     return { m:'days', days:d, ms:ms };
-  if(ms > HOUR)  return { m:'hm', ms:ms };
-  if(ms > FINE)  return { m:'ms', ms:ms };
-  return           { m:'fine', ms:ms };
+  if(d >= 1)    return { m:'days', days:d, ms:ms };
+  if(ms > HOUR) return { m:'hm', ms:ms };
+  return          { m:'ms', ms:ms };
 }
 function hm(ms){ return Math.floor(ms/HOUR) + ':' + pad(Math.floor(ms%HOUR/MIN)); }
 function ms2(ms){ return Math.floor(ms/MIN) + ':' + pad(Math.floor(ms%MIN/1000)); }
-function ms1(ms){ return ms2(ms) + '.' + Math.floor(ms % 1000 / 100); }
 
 function heroOf(v, g){
   switch(v.m){
@@ -820,10 +797,8 @@ function heroOf(v, g){
     case 'overD':   return { n:'+'+v.days, u: v.days===1 ? 'day over' : 'days over' };
     case 'overHm':  return { n:'+'+hm(v.ms), u:'hours over' };
     case 'overMs':  return { n:'+'+ms2(v.ms), u:'minutes over' };
-    case 'overFine':return { n:'+'+ms1(v.ms), u:'minutes over' };
     case 'days':    return { n:String(v.days), u: v.days===1 ? 'day' : 'days' };
     case 'hm':      return { n:hm(v.ms), u: g.event ? 'hours · today' : 'hours · today' };
-    case 'fine':    return { n:ms1(v.ms), u:'minutes' };
     default:        return { n:ms2(v.ms), u:'minutes' };
   }
 }
@@ -834,10 +809,10 @@ function shortOf(g, now){
     case 'arrived': return '★';
     case 'overD':   return '+'+v.days+'d';
     case 'overHm':  return '+'+hm(v.ms);
-    case 'overMs':  case 'overFine': return '+'+ms2(v.ms);
+    case 'overMs':  return '+'+ms2(v.ms);
     case 'days':    return v.days+'d';
     case 'hm':      return hm(v.ms);
-    default:        return ms2(v.ms);   /* 'ms' and 'fine' both, deliberately coarse */
+    default:        return ms2(v.ms);
   }
 }
 function humanSpan(now, target){
@@ -1036,20 +1011,30 @@ var TIPS = [
   '+ and \u2212 change how big the number is, not what it says.',
   'Swipe on a phone; arrow keys everywhere else.'
 ];
-var tipPick = TIPS[(Math.random() * TIPS.length) | 0];
+var tipIx = (Math.random() * TIPS.length) | 0;
+var tipPick = TIPS[tipIx];
+/* Lazily, on their own - a slow, uneven interval so it never feels
+   mechanical. Only when a tip is actually what's showing: not on an
+   empty board, not once the snark at ten-plus goals has taken over
+   that line. Cross-fades rather than cutting, and reduced motion
+   already crushes that transition to nothing via the blanket rule. */
+function rotateTip(){
+  if(S.goals.length >= 1 && S.goals.length < 10){
+    var next = tipIx;
+    while(next === tipIx) next = (Math.random() * TIPS.length) | 0;
+    tipIx = next;
+    tipPick = TIPS[tipIx];
+    el.snark.classList.add('fade');
+    setTimeout(function(){
+      if(S.goals.length >= 1 && S.goals.length < 10) el.snark.textContent = tipPick;
+      el.snark.classList.remove('fade');
+    }, 500);
+  }
+  setTimeout(rotateTip, 22000 + Math.random() * 14000);
+}
+setTimeout(rotateTip, 22000 + Math.random() * 14000);
 
 /* ---------- render ---------- */
-/* The hero is the only thing that can carry a decimal, so it is the
-   only thing that repaints on a frame. Split out so the fast path
-   can call it without touching anything else. */
-function setNum(s){
-  var i = s.indexOf('.');
-  if(i < 0){ el.num.textContent = s; return; }
-  el.num.textContent = '';
-  var whole = document.createElement('span'); whole.textContent = s.slice(0, i);
-  var dec = document.createElement('i'); dec.className = 'dec'; dec.textContent = s.slice(i);
-  el.num.appendChild(whole); el.num.appendChild(dec);
-}
 var t0 = Date.now();
 function render(force){
   var now = new Date();
@@ -1066,12 +1051,17 @@ function render(force){
   root.style.setProperty('--dx', (Math.sin(age / 397) * 11).toFixed(2) + 'px');
   root.style.setProperty('--dy', (Math.cos(age / 563) * 9).toFixed(2) + 'px');
 
+  /* always on, goal or none - a wall board earns its wall space partly
+     by also being a clock */
+  var clockNow = now.toLocaleTimeString(undefined, { hour:'numeric', minute:'2-digit' });
+  if(prev.clock !== clockNow){ el.clock.textContent = clockNow; prev.clock = clockNow; }
+
   if(!S.goals.length){
     var yr = now.getFullYear(), eoy = new Date(yr, 11, 31, 23, 59, 59, 999);
     var left = Math.max(0, dayDiff(now, eoy));
     el.name.innerHTML = '<span></span>';
     el.name.firstChild.textContent = 'बाकी';
-    if(prev.n !== String(left)){ setNum(String(left)); prev.n = String(left); }
+    if(prev.n !== String(left)){ el.num.textContent = String(left); prev.n = String(left); }
     el.unit.textContent = 'days left in ' + yr;
     el.sub.innerHTML = '<span></span>';
     el.sub.firstChild.textContent = dateLabel(eoy);
@@ -1097,7 +1087,7 @@ function render(force){
     el.name.lastChild.textContent = g.name;
     prev.nm = g.name + g.event;
   }
-  if(prev.n !== h.n){ setNum(h.n); prev.n = h.n; }
+  if(prev.n !== h.n){ el.num.textContent = h.n; prev.n = h.n; }
   if(prev.u !== h.u){ el.unit.textContent = h.u; prev.u = h.u; }
 
   var sub;
@@ -1130,12 +1120,9 @@ function render(force){
   var meta = document.querySelector('meta[name=theme-color]');
   if(meta) meta.content = c[0];
 
-  /* the tab and the favicon stay on whole seconds. A title that
-     flickers ten times a second is unreadable and wakes the OS. */
-  var steady = v.m === 'fine' ? ms2(v.ms) : v.m === 'overFine' ? '+' + ms2(v.ms) : h.n;
-  var title = (v.m === 'days' ? 'D-' + v.days : steady) + ' · ' + g.name;
+  var title = (v.m === 'days' ? 'D-' + v.days : h.n) + ' · ' + g.name;
   if(document.title !== title) document.title = title;
-  setIcon(v.m === 'days' ? String(v.days) : steady, c[1]);
+  setIcon(v.m === 'days' ? String(v.days) : h.n, c[1]);
 
   /* other goals, capped so the board stays glanceable */
   var rest = S.goals.slice(1);
@@ -1161,61 +1148,15 @@ function render(force){
       el.others.appendChild(more);
     }
     el.snark.textContent = S.goals.length >= 10 ? snarkPick : tipPick;
+    drawShareGroup();
   }
 
-  /* Under an hour, once a second - never on the fine (10 Hz) path,
-     which would turn a heartbeat into a strobe. The number is doing
-     the urgency; the glow just breathes along with it. */
-  var secs = (v.m === 'ms' || v.m === 'fine') ? v.ms / 1000 : -1;
-  if(secs >= 0) pulse((0.9 + 1.7 * Math.pow(Math.min(1, secs / 3600), 0.45)).toFixed(2));
-
   el.done.hidden = !(S.edit && !g.done && !g.event && !locked);
-  if(v.m === 'fine' || v.m === 'overFine'){ fineMode = v.m; fineStart(); }
-  else fineMode = v.m;
   soundTick(v);
   maybeCelebrate(g, v);
 }
-/* The fast path. Runs only inside the last ten minutes, writes only
-   the hero, and stops itself the moment the goal leaves that window.
-   Everything else - gradient, chips, tab, favicon - stays at 1 Hz. */
-var fineRaf = 0, fineMode = '';
-function fineTick(){
-  fineRaf = 0;
-  if(!S.goals.length) return;
-  var g = S.goals[0], v = view(g, new Date());
-  if(v.m !== fineMode){
-    /* The rung changed under us. Repaint everything on this frame, so
-       the colour, the tag, the title and the celebration all land on
-       zero instead of up to a second after it. */
-    fineMode = v.m;
-    prev = {};
-    render(true);
-    return;
-  }
-  var n = heroOf(v, g).n;
-  if(prev.n !== n){ setNum(n); prev.n = n; }
-  soundTick(v);
-  fineRaf = requestAnimationFrame(fineTick);
-}
-function fineStart(){ if(!fineRaf) fineRaf = requestAnimationFrame(fineTick); }
 /* In black and white mode the background stops carrying the colour, so
    the number has to. Same ramp, different surface. */
-/* A pulse is a forced restart of a decaying transition, not a loop -
-   called once, from the one place that already owns the real clock
-   (render's 1 Hz beat), so it can never run ahead of or behind the
-   number it is echoing. The decay gets quicker as zero nears: not
-   more beats per second, but each one landing sharper. */
-var pulseEl = null;
-function pulse(fade){
-  if(REDUCE_MOTION) return;
-  if(!pulseEl) pulseEl = document.getElementById('pulse');
-  if(!pulseEl) return;
-  pulseEl.style.transition = 'none';
-  pulseEl.style.opacity = '.5';
-  void pulseEl.offsetWidth;                    /* flush, so the next line truly restarts */
-  pulseEl.style.transition = 'opacity ' + fade + 's ease-out';
-  pulseEl.style.opacity = '0';
-}
 function setAccent(c, root){
   var t = document.documentElement.dataset.theme;
   if(t === 'black'){
@@ -1280,7 +1221,7 @@ function maybeCelebrate(g, v){
   if(celebrated[k]) return;
   if(v.m === 'done'){ celebrated[k] = 1; fire(v.tier); return; }
   if(v.m === 'arrived'){ celebrated[k] = 1; fire('arrived'); return; }
-  if((v.m === 'overFine' || v.m === 'overMs') && v.ms < 3 * MIN){
+  if(v.m === 'overMs' && v.ms < 3 * MIN){
     /* Crossed zero with the page open, and nobody pressed Done. That
        is a miss, not a finish - the whole reason Done exists is that
        the clock cannot know whether you got there. So: no confetti.
@@ -1527,6 +1468,16 @@ function drawPicker(){
     }
   }
 
+  /* This tool only counts forward, so browsing further into the past
+     than "now" has nowhere useful to land - every day back there is
+     already disabled. Rather than let you wander into a grid you
+     cannot use, back stops at the period holding today. */
+  var canBack = pkView === 'day' ? (pkCursor.getFullYear() > now.getFullYear() ||
+                  (pkCursor.getFullYear() === now.getFullYear() && pkCursor.getMonth() > now.getMonth()))
+               : pkView === 'month' ? pkCursor.getFullYear() > now.getFullYear()
+               : base > now.getFullYear();
+  $('#pkPrev').disabled = !canBack;
+
   var t = $('#fTimes');
   t.innerHTML = '';
   var refDay = pkSel ? new Date(pkSel.getFullYear(), pkSel.getMonth(), pkSel.getDate())
@@ -1602,28 +1553,9 @@ function startEdit(i){
   $('#fName').focus();
   $('#fName').select();
 }
-function drawGoalLinks(){
-  var box = $('#gLinks');
-  if(!box) return;
-  box.innerHTML = '';
-  if(S.goals.length > 1){
-    var all = document.createElement('button');
-    all.type = 'button';
-    all.textContent = 'Copy all ' + S.goals.length;
-    all.onclick = function(){ doShare(true); };
-    box.appendChild(all);
-  }
-  if(S.goals.length >= 1){
-    var bare = document.createElement('button');
-    bare.type = 'button';
-    bare.textContent = 'Copy link with no goal';
-    bare.onclick = shareBare;
-    box.appendChild(bare);
-  }
-}
 function drawRows(){
   $('#gCount').textContent = S.goals.length ? S.goals.length + (S.goals.length === 1 ? ' goal' : ' goals') : '';
-  drawGoalLinks();
+  drawHistory();
   el.rows.innerHTML = '';
   if(!S.goals.length){
     var d = document.createElement('div');
@@ -1929,13 +1861,14 @@ function qrMatrix(text){
   return best;
 }
 
-/* ---------- share: one button, one job -----------------------
-   It used to offer a choice first - "this one, or all?" - and the
-   button itself turned into that choice, in place, so Share visibly
-   vanished the moment you touched it. One job is clearer: press it,
-   the board you are looking at is on the clipboard. The rarer moves
-   (copy every goal, hand someone the bare tool) live in the Goals
-   dialog instead, next to the list they are about.
+/* ---------- share: one press, one family -----------------------
+   Pressing Share always copies the goal you are looking at - that
+   covers the common case in one motion, no menu in the way. The rarer
+   moves (every goal, the bare tool, the QR code) sit beside it as
+   segments of the same pill, so they read as one control that grew a
+   few extra buttons, not as Share breaking into pieces. #bShare never
+   leaves the DOM and never changes identity; siblings are added and
+   removed around it as the goal count changes.
 ------------------------------------------------------------ */
 function openShare(){
   if(!S.goals.length){ toast('Add a goal first.'); return; }
@@ -1950,6 +1883,24 @@ function doShare(all){
 }
 function shareBare(){
   copy(baseUrl()).then(function(ok){ toast(ok ? 'Empty board link copied.' : 'Copy the address bar.'); });
+}
+function drawShareGroup(){
+  var grp = $('#shareGrp');
+  if(!grp) return;
+  /* keep #bShare, drop everything after it, rebuild the rest */
+  while(grp.children.length > 1) grp.removeChild(grp.lastChild);
+  if(!S.goals.length) return;
+  var seg = function(label, title, fn){
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.title = title;
+    b.onclick = fn;
+    grp.appendChild(b);
+  };
+  if(S.goals.length > 1) seg('All ' + S.goals.length, 'Copy every goal as one link', function(){ doShare(true); });
+  seg('Code', 'Draw a QR code of this link (Q)', openQr);
+  seg('No goal', 'Copy the bare tool, nothing on it', shareBare);
 }
 
 /* ---------- the tool strip -----------------------------------
@@ -1988,7 +1939,6 @@ function drawTools(){
   t.innerHTML = '';
   if(canFull()) t.appendChild(toolBtn('bFull', isFull() ? 'exit' : 'full',
     (isFull() ? 'Leave fullscreen' : 'Fullscreen') + ' (F)', isFull(), toggleFull));
-  t.appendChild(toolBtn('bQr', 'qr', 'A code to scan (Q)', false, openQr));
   if(window.AudioContext || window.webkitAudioContext)
     t.appendChild(toolBtn('bSound', soundOn ? 'on' : 'off',
       soundOn ? 'Sound is on (M)' : 'Sound is off (M)', soundOn, function(){ setSound(!soundOn); }));
@@ -2215,7 +2165,7 @@ function setSound(on){
 }
 /* one tick a second through the last ten, and only on the way down */
 function soundTick(v){
-  if(!soundOn || (v.m !== 'fine' && v.m !== 'ms')){ lastTick = -1; return; }
+  if(!soundOn || v.m !== 'ms'){ lastTick = -1; return; }
   var secs = Math.ceil(v.ms / 1000);
   if(secs > 10 || secs < 1){ lastTick = -1; return; }
   if(secs === lastTick) return;
@@ -2362,9 +2312,10 @@ function checkUpdate(i){
 }
 
 /* ---------- the "this screen" panel ---------- */
-function optRow(label){
+function optRow(label, hint){
   var r = document.createElement('div');
   r.className = 'opt';
+  if(hint) r.title = hint;
   var l = document.createElement('span');
   l.className = 'lbl';
   l.textContent = label;
@@ -2386,42 +2337,42 @@ function drawOpts(){
   o.innerHTML = '';
   var r;
   if(canFull()){
-    r = optRow('Fullscreen');
+    r = optRow('Fullscreen', 'Hide the browser chrome so the board fills the whole screen.');
     optBtn(r, isFull() ? 'Exit' : 'Enter', isFull(), toggleFull);
     o.appendChild(r);
   }
   if(navigator.wakeLock){
-    r = optRow('Keep the screen awake');
+    r = optRow('Keep the screen awake', "Stops this device's screen sleeping while the board is open. Not remembered between visits.");
     optBtn(r, wakeWant ? 'On' : 'Off', wakeWant, function(){ setWake(!wakeWant); });
     o.appendChild(r);
   }
   if(window.AudioContext || window.webkitAudioContext){
-    r = optRow('Sound at zero');
+    r = optRow('Sound at zero', 'A few ticks and a chime in the last ten seconds before a deadline.');
     optBtn(r, soundOn ? 'On' : 'Off', soundOn, function(){ setSound(!soundOn); });
     o.appendChild(r);
   }
-  r = optRow('Lock goals');
+  r = optRow('Lock goals', 'Stops Goals and Done opening by accident - a kiosk, a wall display. Turn it back off here, any time.');
   optBtn(r, locked ? 'Locked' : 'Free', locked, function(){ setLocked(!locked); });
   o.appendChild(r);
   if(canRotate()){
-    r = optRow('Lock rotation');
+    r = optRow('Lock rotation', 'Keeps the screen from rotating when the device turns.');
     optBtn(r, rotLock ? 'Locked' : 'Free', rotLock, function(){ setRot(!rotLock); });
     o.appendChild(r);
   }
-  r = optRow('Surface');
+  r = optRow('Surface', 'Dark, light, or flat black/white. Changes the background, not what the colour means.');
   MODES.forEach(function(mode){
     optBtn(r, mode.charAt(0).toUpperCase() + mode.slice(1),
       document.documentElement.dataset.theme === mode, function(){ setMode(mode); });
   });
   o.appendChild(r);
 
-  r = optRow('Typeface');
+  r = optRow('Typeface', 'The font the whole board is set in. All system fonts - nothing downloaded.');
   FACES.forEach(function(f){
     optBtn(r, f[1], (document.documentElement.dataset.face || '') === f[0], function(){ setFace(f[0]); });
   });
   o.appendChild(r);
 
-  r = optRow('Hue');
+  r = optRow('Hue', 'Rotates the colour ramp. Distance still means the same thing; only the hue moves.');
   optBtn(r, '\u2212', null, function(){ setHue(hueOff - 5, true); });
   var hv = document.createElement('span');
   hv.className = 'val';
@@ -2431,11 +2382,11 @@ function drawOpts(){
   optBtn(r, 'Reset', null, function(){ setHue(0, true); });
   o.appendChild(r);
 
-  r = optRow('Auto colour change');
+  r = optRow('Auto colour change', 'Lets the hue drift slowly on its own over time.');
   optBtn(r, hueDrift ? 'On' : 'Off', hueDrift, function(){ setDrift(!hueDrift); });
   o.appendChild(r);
 
-  r = optRow('Size of the number');
+  r = optRow('Size of the number', 'Scales the big number only - everything else on screen stays put.');
   optBtn(r, '−', null, function(){ bumpSize(-1); });
   var val = document.createElement('span');
   val.className = 'val';
@@ -2588,6 +2539,7 @@ $('#pkTitle').onclick = function(){
 $('#kDeadline').onclick = function(){ setFormKind(false); };
 $('#kEvent').onclick = function(){ setFormKind(true); };
 $('#bShare').onclick = openShare;
+drawShareGroup();
 
 el.dlg.addEventListener('click', function(e){ if(outsideClick(el.dlg, e)) el.dlg.close(); });
 el.about.addEventListener('click', function(e){ if(outsideClick(el.about, e)) el.about.close(); });
@@ -2595,10 +2547,14 @@ el.dlg.addEventListener('close', resetForm);
 
 $('#addForm').onsubmit = function(e){
   e.preventDefault();
-  var name = $('#fName').value.trim();
+  /* The browser's own "please fill this out" popup used to fire before
+     this handler ever ran, because the field was marked required - so
+     the actual message here was unreachable. Removing required (in the
+     markup) surfaces this one instead, and a name is not worth
+     blocking on: a blank one becomes "Goal" rather than an error. */
+  var name = $('#fName').value.trim() || 'Goal';
   var typed = $('#fWhen').value.trim();
   var target = typed ? parseWhen(typed) : pkSel;
-  if(!name){ toast('Give it a name.'); return; }
   if(!target){ toast('I could not read that date.'); $('#fWhen').focus(); return; }
   if(editingIndex >= 0){
     var g = S.goals[editingIndex];

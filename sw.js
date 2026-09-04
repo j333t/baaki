@@ -1,7 +1,7 @@
 /* Makes the hosted page work with the network off.
    First visit online caches it; after that it opens on a plane.
    Not needed for the downloaded file - that is offline by nature. */
-const CACHE = 'baaki-v6';
+const CACHE = 'baaki-v7';
 const ASSETS = ['./', './index.html', './baaki.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

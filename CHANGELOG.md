@@ -20,6 +20,44 @@ Anything that changes the **link format** is a breaking change and needs a major
 
 ---
 
+## 1.6.0 — unreleased
+
+A second correction pass on top of the first one. Several 1.5.0 ideas
+were right in principle and wrong in execution; this round fixes the
+execution, and one idea (a moving glow behind the number) turns out
+not to have earned its place at all.
+
+### Removed outright
+- **The tenths-of-a-second rung is gone.** `7:30.0` in the last ten minutes read as clutter, not urgency - a smaller, dimmer digit competing with the one number this whole tool exists to make readable at a glance. Back to plain `M:SS`, ticking once a second, the way it worked before it ever grew a decimal. The `requestAnimationFrame` fast path, the decimal-splitting renderer, and the whole "fine" rung are deleted, not just hidden - about a kilobyte lighter for it.
+- **The background pulse is gone too.** It replaced last round's number-scale "heartbeat" on the theory that the glow belonged behind the digits, not in them. It still didn't read as organic, and the fix for "this looks bad" was to remove it, not to keep tuning it. The number itself has never moved and still doesn't; nothing has replaced the pulse.
+
+### Layout, properly this time
+- **Both dialogs are a single column again.** The two-column layout from last round looked considered on a slide but left a slab of dead air under whichever side was shorter, in both the About panel and the Goals form - and it did that in exactly the cases that mattered, since the two sides were never the same length. One column never has that problem.
+- **Buttons have a real floor.** `--h`, the height every `.b` button uses, is now a single root-level variable instead of being recomputed per-button from whatever scale was locally in effect - so a dialog's tamer *content* scale (type, spacing) no longer drags its *buttons* down with it. Close and Add goal are back to a normal size. Calendar cells and the month-nav arrows get their own smaller floor, since a seven-column grid has less room to work with than a lone CTA.
+- **`kbd` no longer looks like a button.** It shared a background colour with `button.b`'s hover state, so a row of keyboard shortcuts read as a row of little pressed buttons. It's an inset key-cap now - a border and a shadow, no fill - and the keys grid is capped to its own content width instead of stretching across the whole panel.
+- **The Devanagari watermark ties to the type scale** instead of a bare `1.6rem` sitting outside it - one fewer stray number in a file that was accumulating them.
+
+### Choosing a date
+- **The calendar cannot wander into the past.** Every day before today was already disabled; the "back" arrow could still walk you into a month, a year, or a whole decade with nothing but disabled cells in it. Back now stops exactly at the period holding today, at every zoom level. Typing a date is still the deliberate way round the guard - "yesterday" still works there, on purpose.
+- **The name field is genuinely optional.** It carried `required`, so the browser's own "please fill out this field" popup fired before this file's code ever ran - the actual, nicer error was unreachable. `required` is gone, and so is the block: a blank name becomes "Goal" rather than an error.
+
+### Share, rebuilt as one family instead of one button
+- Last round's fix - Share always copies immediately, no menu - was right and stays. What was wrong was moving the rarer moves (every goal, the bare tool) into the Goals dialog, disconnected from the button that shares things. They're back next to Share, but not as a popover: **a single segmented pill**, Share plus its siblings, with a hairline between each - one visual family, growing as the goal count allows, never replacing or hiding the button itself.
+- **The QR code is one of Share's segments now**, not a separate icon in the tool strip. `Q` still opens it directly for muscle memory; the standalone bar icon is gone.
+
+### A few things that had gone quiet or missing
+- **A private change log now lives in the Goals dialog**, under the list it's about, instead of buried in About's settings panel - a better place for something that's fundamentally about what happened to your goals.
+- **Tips rotate lazily on their own** now, roughly every 25-35 seconds with a soft cross-fade, instead of being picked once and left static for the whole visit.
+- **Every row under "This screen" explains itself on hover** - a plain-language `title` tooltip, so what "Auto colour change" or "Lock rotation" actually does isn't a guess.
+- **A quiet clock sits under the tag line**, always on, goal or none. A station clock next to a days-left board is the original Sreedharan pairing, and it's the plainest way left to say "this is live" now that the number itself never moves.
+
+### Under it
+- 222 browser checks, up from 211 (several tests for removed features were deleted rather than papered over).
+- **119 KB → 118 KB.** The first time a round has come in *lighter* - what tenths and the pulse cost turned out to be more than everything added this round put together.
+- Stopped taking and reviewing screenshots as part of verification this round, per direct feedback that it wasn't earning its cost; leaned on the 222 assertions and worked-through CSS math instead.
+
+---
+
 ## 1.5.0 — unreleased
 
 A correction pass. Most of 1.4.0's new surface was too much at once -

@@ -21,6 +21,7 @@ Kept for a moment so the reasoning is traceable, then they move to `features.md`
 **1.3.0** — plain-words date field · hue control · three-tier Done colour · Done delta · live empty board · share-this-one-first · About panel legibility, and six behaviour bugs.
 **1.4.0** — viewport-derived geometric scale · theme system (4 surfaces, 5 faces) · tactile calendar · heartbeat rhythm · burn-in wander · rebuilt tool bar with live indicators · USAGE.md.
 **1.5.0** — a tamer scale for dialog content · a typed time field, replacing the native picker · past dates disabled in the calendar · lock goals · a private on-device change log · rotating idle tips · share simplified to one job · the number's own bounce replaced with a synced background pulse.
+**1.6.0** — a correction pass on 1.5.0: tenths removed outright, the background pulse removed outright, both dialogs back to a single column, buttons floored to a real tap target regardless of a dialog's content scale, share rebuilt as a segmented family instead of text links, the QR icon folded into it, the calendar's back arrow stops at today, an optional name field, tips that rotate on their own, hover explanations on every setting, and a quiet always-on clock.
 
 ## Deliberately not built
 
@@ -43,7 +44,7 @@ it needs to be opt-in on the *receiving* side, which is a different feature.
 | Idea | Note |
 |---|---|
 | **Choose the sound** | A short list of tones rather than the one built in, per device. Cheap, and the kind of thing somebody fiddles with once and then loves. The settings surface it belongs in now exists. |
-| **Weight budget** | 119 KB. Every feature so far has been argued for one at a time and every one won. The next question is not "does this earn 2 KB" but "what is the ceiling, and what comes out when we hit it". |
+| **Weight budget** | 118 KB. 1.6.0 came in lighter than 1.5.0 - the first round where removing something (tenths, the pulse) outweighed everything added. Worth noting as proof the ceiling question still matters, not as a reason to stop asking it. |
 
 ## Measured and rejected
 
@@ -96,3 +97,5 @@ on yourself. It is in the per-device table now. A `fail` is a description of tod
 | Recurring countdowns | Ambiguous at every edge (what does "done" mean on a repeat?) and nobody asked. |
 | Percentage complete / progress ring | A countdown knows time, not work. Any percentage would be a lie. |
 | Multiple boards / folders | If you need folders you have too many goals, and there's a snark line for that. |
+| Tenths of a second in the last ten minutes | Built in 1.1.0, removed in 1.6.0. Read as clutter competing with the one number this tool exists to make readable at a glance, not as urgency. If it comes back it needs a genuinely different execution, not a smaller font. |
+| A pulsing glow (background or number) tied to the countdown | Tried twice - as a scale animation on the digits in 1.4.0, as a background radial glow in 1.5.0 - and removed both times. The digit version disturbed the one thing that has to stay still to be read at a glance; the glow version still didn't read as organic. The number does not move. Nothing has replaced either attempt. |

@@ -20,7 +20,7 @@ baaki.html#Metro%20Phase%202~2027-11-03
 
 | | What it is | Gets you |
 |---|---|---|
-| **baaki.html** | One file, 119 KB, no install | Every OS, every phone, works with the wifi off. Pin the tab — the title reads `D-427 · Metro Phase 2` even when you're not looking. |
+| **baaki.html** | One file, 118 KB, no install | Every OS, every phone, works with the wifi off. Pin the tab — the title reads `D-427 · Metro Phase 2` even when you're not looking. |
 | **desktop wrapper** | A small app around the same file | Floats above your other windows, starts with the machine, comes back where you left it. Desktop only. |
 
 Start with the file. Add the wrapper for whoever wants a window that won't get buried.
@@ -54,15 +54,11 @@ baaki.html#Launch~2027-03-31+Diwali~2026-11-08*+Trials~2026-12-01
 | More than a day | `427` days, with `1 yr 2 mo · 3 Nov 2027` under it | once a day |
 | The target day | `8:30` hours : minutes | once a minute |
 | The last hour | `40:00` minutes : seconds | once a second |
-| The last ten minutes | `7:23`<sub>`.4`</sub> tenths | ten times a second |
-| First ten minutes over | `+7:23`<sub>`.4`</sub> grey | ten times a second |
 | First hour over | `+40:00` grey | once a second |
 | First day over | `+8:30` grey | once a minute |
 | After that | `+6` days over | once a day |
 
-It only ever gets finer, never coarser. Seconds appear in the last hour and nowhere else — that's the only hour where a second changes what you do.
-
-**The tenths are the exception, and they are deliberate.** Nobody makes a decision in a tenth of a second. They are there because the ramp went flat at the end: `3:00` and `0:03` ticked with exactly the same texture, so the last minutes felt no different from the first. Now the board visibly accelerates into zero. The tenths are drawn small and dim, so the seconds stay the number you read — and if your system asks for reduced motion, the rung never opens at all. The tab title and the favicon stay on whole seconds regardless; a title flickering ten times a second is unreadable.
+It only ever gets finer, never coarser. Seconds appear in the last hour and nowhere else — that's the only hour where a second changes what you do. A tenths-of-a-second rung lived here for a few versions and was removed: it read as clutter competing with the one number this tool exists to make readable at a glance, not as urgency.
 
 **Two kinds of goal.** A **deadline** cools from indigo to hot red as it nears, then greys out and keeps counting once you've missed it. **Something good** (`*`) climbs from violet to hot pink, celebrates when it arrives, and *stops* — because "3 days since Diwali" is not a thing anyone wants. The two hues are far enough apart to tell at a glance from across a room.
 
@@ -100,9 +96,13 @@ It says back what it understood — *Fri, 4 Sept 2026 · 6:00 pm* — so nothing
 
 ---
 
+## Sharing it
+
+`S` copies the goal you're looking at, straight to the clipboard, immediately — no menu in the way for the common case. Beside it sits a small family of related moves, all one connected pill rather than separate buttons scattered around: **All *n*** copies every goal as one link; **Code** draws a QR of this link; **No goal** hands someone the bare tool with nothing on it. They only appear when relevant — one goal, and "All" doesn't show.
+
 ## Getting it off the wall
 
-`Q` draws a QR code of exactly what you're looking at. A board on a projector is useless until the link is in somebody's hand, and nobody types a URL off a screen.
+`Q` opens the same QR code directly, for muscle memory — it's also one of Share's segments above. A board on a projector is useless until the link is in somebody's hand, and nobody types a URL off a screen.
 
 It's always dark on light, in both themes — a code is not decoration, it either scans or it wastes someone's time. It covers about 270 characters, which is a board with six or seven goals on it; past that it says the board is too long rather than drawing something a camera can't read.
 
@@ -112,7 +112,7 @@ The encoder is checked by a **real decoder**, not by eye: `npm run test:qr` rend
 
 ## This screen
 
-Four things about the screen you're standing at, not about the goal — so **none of them travel in the link**. Sharing a board must never reach across and change somebody else's display. They live under `?`, in a panel called *This screen*.
+Things about the screen you're standing at, not about the goal — so **none of them travel in the link**. Sharing a board must never reach across and change somebody else's display. They live under `?`, in a panel called *This screen*.
 
 | | |
 |---|---|
@@ -126,9 +126,9 @@ Four things about the screen you're standing at, not about the goal — so **non
 | **Lock rotation** | Phones. The browser API only works fullscreen or installed, so the control only appears when it can actually do something — a dead toggle is worse than no toggle. |
 | **Lock goals** | Not a permission system — there's no server, so permission would be theatre. A guard against your own thumb on a kiosk or a wall display: Goals won't open and Done won't fire until you switch it back off, which you can do any time, on your own device. |
 
-Anything switched on is **lit in the bottom bar**, and that's where you switch it off. Keep-awake only appears there while it's actually holding the screen open.
+Anything switched on is **lit in the bottom bar**, and that's where you switch it off. Keep-awake only appears there while it's actually holding the screen open. Hover any row above for a plain-language line on what it does.
 
-A private, per-device **change log** lives here too — what got added, edited, removed, or marked done, and when. It never leaves the browser and never rides in a link; it exists because the link tells you what a goal *is*, not what happened to it.
+A private, per-device **change log** — what got added, edited, removed, or marked done, and when — lives in the Goals dialog, under the list it's about. It never leaves the browser and never rides in a link; it exists because the link tells you what a goal *is*, not what happened to it.
 
 ---
 
@@ -194,7 +194,7 @@ The wrapper injects its own drag strip and pin/close buttons, so `baaki.html` is
 
 ```bash
 npm install && npx playwright install chromium --only-shell
-npm test          # 219 checks in a real browser, frozen clock
+npm test          # 222 checks in a real browser, frozen clock
 npm run test:qr   #   9 codes rendered and read back with a real decoder
 npm run test:live #   8 checks against the hosted copy, including offline
 ```
