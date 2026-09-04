@@ -20,6 +20,22 @@ Anything that changes the **link format** is a breaking change and needs a major
 
 ---
 
+## 1.9.0 — unreleased
+
+Two asks that turned out to be the same size of change: colour and
+sharing both needed to stop being one board-wide thing.
+
+### Every goal gets its own colour
+- **A random hue lands on a goal the first time it's painted**, not on the board as a whole - the first attempt at this only rolled the dice once, for a board's first goal, which meant every goal after it still shared one colour. That undersold the actual ask: goals should be tellable apart by colour, not just by name.
+- **New hues are spaced by the golden angle**, not drawn independently at random - three goals added back to back land as genuinely different colours (pink, then blue, then green), not three numbers that happen to average out different but can still collide.
+- **`H`, `Alt+H`, and the Settings hue row now act on whichever goal is focused**, not a single board-wide value - there no longer is one, so a control that changes "the hue" has to mean *this* goal's hue.
+- Colours nobody's goal uses any more are dropped from storage when the goal list changes, the same instinct as the history log's cap.
+
+### Share a goal before it's yours
+- **A "Share" button sits in the Goals form now, beside Add goal.** Add goal always did two things at once - save it to your board *and* start counting it there - with no way to get a link without also keeping the goal. Share reads the form exactly like Add goal does, builds the same link, and copies it without ever touching your own board.
+
+---
+
 ## 1.8.0 — unreleased
 
 Live-site testing found the next layer down: things 1.7.0 got right in

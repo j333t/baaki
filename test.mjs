@@ -226,25 +226,45 @@ ok('added goal shows', (await page.locator('#num').textContent()).trim(), '114d'
 ok('added goal lands in the link',
    decodeURIComponent(await page.evaluate(() => location.hash)).includes('Phase 3 tender~2026-12-25'), true);
 ok('creator keeps the Done button', await page.locator('#bDone').isVisible(), true);
-ok('a board\'s first goal picks a hue, instead of leaving it at the default',
-   await page.evaluate(() => localStorage.getItem('baaki.hue') !== null), true);
+ok('a goal picks its own hue the first time it is painted',
+   await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('baaki.hueMap') || '{}')).length), 1);
 await page.reload();
 await page.waitForTimeout(250);
 ok('survives a reload', (await page.locator('#num').textContent()).trim(), '114d');
 
-// a second goal joining a board somebody is already looking at should
-// not pull the colour out from under them - only a board's first ever
-// goal gets to pick
+// each goal gets its own hue, spaced from every other one already
+// handed out - not pure random, which could land two goals on nearly
+// the same colour - and adding one does not touch the others already assigned
+await page.evaluate(() => localStorage.removeItem('baaki.hueMap'));
 r = await open('#Existing~2027-01-01');
-const hueBefore = await page.evaluate(() => localStorage.getItem('baaki.hue'));
+const hueMapBefore = await page.evaluate(() => JSON.parse(localStorage.getItem('baaki.hueMap') || '{}'));
+ok('starts clean: just the one goal on this board', Object.keys(hueMapBefore).length, 1);
 await page.keyboard.press('g');
 await page.waitForTimeout(200);
 await page.fill('#fName', 'Second');
 await page.fill('#fWhen', '2027-02-01');
 await page.click('#addForm button[type=submit]');
 await page.waitForTimeout(200);
-ok('a second goal does not re-roll the hue',
-   await page.evaluate(() => localStorage.getItem('baaki.hue')), hueBefore);
+const hueMapAfter = await page.evaluate(() => JSON.parse(localStorage.getItem('baaki.hueMap') || '{}'));
+ok('a new goal does not touch an existing one\'s hue',
+   Object.keys(hueMapBefore).every(k => hueMapAfter[k] === hueMapBefore[k]), true);
+ok('two goals on the same board get different hues',
+   new Set(Object.values(hueMapAfter)).size, Object.keys(hueMapAfter).length);
+
+console.log('\n--- share a goal that was never added ---');
+r = await open('#Existing~2027-01-01');
+await page.evaluate(() => { window.__copied = null; navigator.clipboard.writeText = t => { window.__copied = t; return Promise.resolve(); }; });
+await page.keyboard.press('g');
+await page.waitForTimeout(200);
+ok('the draft-share button is offered while adding', await page.locator('#bShareDraft').isVisible(), true);
+await page.fill('#fName', 'Never saved');
+await page.fill('#fWhen', '2027-05-01');
+await page.click('#bShareDraft');
+await page.waitForTimeout(200);
+const draftLink = decodeURIComponent(await page.evaluate(() => window.__copied));
+ok('the link is for the goal just typed in', draftLink.includes('Never saved~2027-05-01'), true);
+ok('closes the dialog the same way Add goal does', await page.locator('#dlg').isVisible(), false);
+ok('but never touched the board', decodeURIComponent(await page.evaluate(() => location.hash)), '#Existing~2027-01-01');
 
 console.log('\n--- junk input ---');
 await page.evaluate(() => localStorage.removeItem('baaki.hash'));

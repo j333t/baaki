@@ -1,5 +1,5 @@
 {
-  "version": "1.8.0",
+  "version": "1.9.0",
   "url": "https://j333t.github.io/baaki/",
-  "notes": "the unit reads as a real superscript now, done says exactly how early or late, the year picker starts this year, a fresh board picks its own colour"
+  "notes": "every goal gets its own distinct colour, a share button for a goal you haven't saved yet"
 }

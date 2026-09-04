@@ -419,6 +419,7 @@ body.locked #bAdd{opacity:.45}
     <div class="acts">
       <button type="button" class="b" id="bCancelEdit" hidden>Cancel</button>
       <button type="button" class="b" id="bClose">Close</button>
+      <button type="button" class="b" id="bShareDraft" title="Copy a link for this goal without adding it to your board">Share</button>
       <button type="submit" class="b primary" id="bSubmit">Add goal</button>
     </div>
   </form>
@@ -497,7 +498,7 @@ body.locked #bAdd{opacity:.45}
               Empty = fully offline; the link carries the done stamp.
    GA_ID    : GA4 measurement id, e.g. 'G-ABC1234XYZ'. Online only.
    ============================================================ */
-var VERSION  = '1.8.0';
+var VERSION  = '1.9.0';
 var SYNC_URL = '';
 var GA_ID    = '';
 /* UPDATE : a 200-byte {"version","url"} somewhere online. Two candidates,
@@ -767,7 +768,17 @@ function load(){
   }
   S = p;
 }
+/* A hue nobody's goal uses any more is just bytes sitting in
+   localStorage forever - dropped whenever the goal list changes,
+   same instinct as the history log's cap. */
+function pruneHueMap(){
+  var keys = {}, changed = false;
+  S.goals.forEach(function(g){ keys[goalKey(g)] = 1; });
+  for(var k in hueMap) if(!keys[k]){ delete hueMap[k]; changed = true; }
+  if(changed) saveHueMap();
+}
 function commit(pushState){
+  pruneHueMap();
   var h = buildHash(S.goals, S.edit);
   quiet = true;
   if(pushState) location.hash = h;
@@ -1259,7 +1270,7 @@ function paint(pair, v){
   /* Overdue is deliberately hueless - urgency is over, what is left is
      a fact. Turning a hue there would be inventing a signal. */
   if(v && v.m.indexOf('over') === 0) return pair;
-  var deg = hueOff;
+  var deg = hueFor(S.goals[0]);
   if(hueDrift){
     deg += (v && v.m === 'arrived')
       ? (Date.now() - t0) / 240000 * 360
@@ -1656,6 +1667,7 @@ function resetForm(){
   setPickOpen(false);
   $('#bSubmit').textContent = 'Add goal';
   $('#bCancelEdit').hidden = true;
+  $('#bShareDraft').hidden = false;
   drawRows();
 }
 function startEdit(i){
@@ -1667,6 +1679,7 @@ function startEdit(i){
   setPickOpen(true);
   $('#bSubmit').textContent = 'Save changes';
   $('#bCancelEdit').hidden = false;
+  $('#bShareDraft').hidden = true;
   drawRows();
   $('#fName').focus();
   $('#fName').select();
@@ -2418,20 +2431,44 @@ function cycleFace(){
 /* --- hue ---
    Everything else about the colour encodes distance and is not
    negotiable. Which end of the spectrum it sits at is not information,
-   so it belongs to whoever is looking at the screen. Per device. */
-var hueOff = 0, hueDrift = false;
+   so it belongs to whoever is looking at the screen - per goal, per
+   device, never in the link. Each goal gets its own hue so a board
+   with several on it can tell them apart at a glance, not just by
+   name. New hues are spaced by the golden angle rather than drawn
+   independently at random, so two goals never land on the same
+   colour by chance - the whole point was distinctness. The empty
+   board has no goal to hang a hue off, so it keeps one fallback
+   value, same as every per-device setting that came before this. */
+var hueOff = 0, hueDrift = false, hueMap = {}, hueSeq = 0;
+var GOLDEN_ANGLE = 137.508;
+function normHue(deg){
+  deg = ((deg % 360) + 360) % 360;
+  return deg > 180 ? deg - 360 : deg;
+}
+function saveHueMap(){ lsSet('hueMap', JSON.stringify(hueMap)); lsSet('hueSeq', hueSeq); }
+function hueFor(g){
+  if(!g) return hueOff;
+  var k = goalKey(g);
+  if(!(k in hueMap)){
+    hueMap[k] = normHue(hueSeq * GOLDEN_ANGLE);
+    hueSeq++;
+    saveHueMap();
+  }
+  return hueMap[k];
+}
 function setHue(deg, say){
-  hueOff = ((deg % 360) + 360) % 360;
-  if(hueOff > 180) hueOff -= 360;
-  lsSet('hue', hueOff);
+  var g = S.goals[0], val = normHue(deg);
+  if(g){ hueMap[goalKey(g)] = val; saveHueMap(); }
+  else { hueOff = val; lsSet('hue', hueOff); }
   prev = {}; render(true); drawOpts();
-  if(say) toast('Hue ' + (hueOff > 0 ? '+' : '') + hueOff + '\u00b0');
+  if(say) toast('Hue ' + (val > 0 ? '+' : '') + val + '\u00b0');
 }
 /* Alt+H, not H - a jump to anywhere on the wheel, not one more step
    along it. H stays a dial; this is a reroll. */
 function randomHue(){
-  setHue(Math.floor(Math.random() * 360), false);
-  toast('Hue ' + (hueOff > 0 ? '+' : '') + hueOff + '\u00b0 \u2014 random');
+  var val = Math.floor(Math.random() * 360);
+  setHue(val, false);
+  toast('Hue ' + (normHue(val) > 0 ? '+' : '') + normHue(val) + '\u00b0 \u2014 random');
 }
 function setDrift(on){
   hueDrift = !!on;
@@ -2557,13 +2594,16 @@ function drawOpts(){
   });
   o.appendChild(r);
 
-  r = optRow('Hue', 'Rotates the colour ramp. Distance still means the same thing; only the hue moves.');
-  optBtn(r, '\u2212', null, function(){ setHue(hueOff - 5, true); });
+  r = optRow('Hue' + (S.goals.length ? ' (this goal)' : ''),
+    S.goals.length ? 'Rotates this goal\'s colour ramp. Distance still means the same thing; only the hue moves.'
+                   : 'Rotates the colour ramp. Distance still means the same thing; only the hue moves.');
+  var curHue = hueFor(S.goals[0]);
+  optBtn(r, '\u2212', null, function(){ setHue(hueFor(S.goals[0]) - 5, true); });
   var hv = document.createElement('span');
   hv.className = 'val';
-  hv.textContent = (hueOff > 0 ? '+' : '') + hueOff + '\u00b0';
+  hv.textContent = (curHue > 0 ? '+' : '') + curHue + '\u00b0';
   r.appendChild(hv);
-  optBtn(r, '+', null, function(){ setHue(hueOff + 5, true); });
+  optBtn(r, '+', null, function(){ setHue(hueFor(S.goals[0]) + 5, true); });
   optBtn(r, 'Reset', null, function(){ setHue(0, true); });
   optBtn(r, 'Random', null, randomHue).title = 'Jump to anywhere on the wheel (Alt+H)';
   o.appendChild(r);
@@ -2665,7 +2705,7 @@ document.addEventListener('keydown', function(e){
     case 'q': e.preventDefault(); openQr(); break;
     case 'w': setWake(!wakeWant); break;
     case 'm': setSound(!soundOn); break;
-    case 'h': e.preventDefault(); setHue(hueOff + (e.shiftKey ? -5 : 5), true); break;
+    case 'h': e.preventDefault(); setHue(hueFor(S.goals[0]) + (e.shiftKey ? -5 : 5), true); break;
     case '?': case '/': e.preventDefault(); openAbout(); break;
   }
 });
@@ -2769,13 +2809,10 @@ function submitGoal(target){
     logEvent('edit', name, dateLabel(target));
     toast('Saved.');
   } else {
-    /* A board's first goal is a fresh start - the colour should say
-       so too, instead of always landing on whatever hue was left
-       over (or the same default, on a device that has never touched
-       it). Only the first: adding a second goal to a board somebody
-       is already looking at should not pull the colour out from
-       under them. */
-    if(!S.goals.length) setHue(Math.floor(Math.random() * 360), false);
+    /* No hue assigned here - hueFor() lazily picks one, spaced from
+       every hue already handed out, the first time this goal is
+       actually painted. One mechanism for "new goal gets a colour",
+       not two. */
     S.goals.unshift({ name:name, target:target, event:formKindEvent, done:null });
     logEvent('add', name, dateLabel(target));
     toast('Added.');
@@ -2790,6 +2827,24 @@ $('#addForm').onsubmit = function(e){
   var typed = $('#fWhen').value.trim();
   submitGoal(typed ? parseWhen(typed) : pkSel);
 };
+
+/* Add goal both saves and starts it counting on your own board - the
+   two were never actually separable before this. A goal you're only
+   handing off does not need to live on your board at all; this reads
+   the form exactly like Add goal does, builds the same link, and
+   copies it without ever touching S.goals. */
+function shareDraft(){
+  var typed = $('#fWhen').value.trim();
+  var target = typed ? parseWhen(typed) : pkSel;
+  if(!target){ toast('I could not read that date.'); $('#fWhen').focus(); return; }
+  var g = { name: $('#fName').value.trim() || defaultName(), target:target, event:formKindEvent, done:null };
+  copy(baseUrl() + '#' + goalToken(g)).then(function(ok){
+    toast(ok ? 'Link copied — not added to your board.' : 'Copy the address bar to share.');
+  });
+  resetForm();
+  el.dlg.close();
+}
+$('#bShareDraft').onclick = shareDraft;
 
 window.addEventListener('hashchange', function(){
   if(quiet) return;
@@ -2815,6 +2870,8 @@ $('#helpHint').hidden = !showHelpHint;
 document.body.classList.toggle('locked', locked);
 hueOff = parseInt(lsGet('hue'), 10) || 0;
 hueDrift = !!lsGet('drift');
+try { hueMap = JSON.parse(lsGet('hueMap') || '{}'); } catch(e){ hueMap = {}; }
+hueSeq = parseInt(lsGet('hueSeq'), 10) || 0;
 var savedSize = lsGet('size');
 sizeIx = savedSize === null ? defaultSize() : Math.max(0, Math.min(STEPS.length - 1, parseInt(savedSize, 10) || 0));
 applySize();
