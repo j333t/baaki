@@ -18,29 +18,50 @@ https://j333t.github.io/baaki/#<goal>[+<goal>...][+!edit]
 ### Grammar
 
 ```
-goal      := name "~" target [ "*" ] [ "!" done ]
+goal      := name "~" [ start "@" zone "~" ] target [ "@" zone ] [ kind ] [ "!" done [ "@" zone ] ]
 name      := percent-encoded text, no "+" or "~" left raw
 target    := YYYY-MM-DD
            | YYYY-MM-DDTHH:MM
            | YYYY-MM-DDTHH:MM:SS
+start     := same shapes as target - present only on a window goal
 done      := same shapes as target
-"*"       := this is something good, not a deadline
+zone      := percent-encoded IANA zone, e.g. Asia%2FKolkata - only ever present
+             alongside a real time, never on a bare date
+kind      := "*"                     goal is something good, not a deadline
+           | "^"                     goal counts up from target, forever (since)
+           | "#w" | "#m" | "#y"      goal recurs weekly / monthly / yearly
+           (a window goal carries no kind marker - the "start ~" before
+            target is itself the tell, and a window is never combined
+            with one of the above)
 "!edit"   := a standalone token; shows the Done button
 ```
 
 ### The rules that matter
 
-1. **Dates are local to whoever opens it.** There is no timezone in the format and
-   none is wanted — a deadline is a wall-clock fact.
-2. **A bare date means the end of that day.** `2027-03-31` is 23:59:59 on the 31st,
-   not midnight at its start. This is the single most common mistake.
-3. **The first goal is the big one.** Order is focus; there is no separate field.
-4. **Percent-encode names.** Spaces become `%20`. A literal `+` or `~` inside a name
+1. **A bare date (no time) is local to whoever opens it, on purpose.** `2027-03-31`
+   means "end of that day, wherever you are" - there is deliberately no timezone on a
+   bare date.
+2. **A timed date carries a zone.** `2026-09-02T18:00@Asia%2FKolkata` is a fixed
+   instant, not a wall-clock hour - it lands at the same moment everywhere, converted
+   for whoever opens it. Leave the zone off and a timed date is read as the opener's
+   own local time instead.
+3. **A bare date means the end of that day - unless it's already past.** `2027-03-31`
+   is 23:59:59 on the 31st. A bare date already in the past on a plain goal (no `*`,
+   `^`, or `#`) is read as a since instead: it means the *start* of that day, and
+   counts up from there rather than being an error.
+4. **The first goal is the big one.** Order is focus; there is no separate field.
+5. **Percent-encode names.** Spaces become `%20`. A literal `+` or `~` inside a name
    must be encoded (`%2B`, `%7E`) or it will split the goal.
-5. **Leave `!edit` off** when you are giving the link to someone else. With it, they
+6. **Leave `!edit` off** when you are giving the link to someone else. With it, they
    see a Done button; without it, they just see the board.
-6. **Two kinds only.** A `*` goal counts down, celebrates on arrival, and stops. A
-   plain goal counts down and then keeps counting *up*, in grey.
+7. **Five kinds, one goal shape.** A `*` goal counts down, celebrates on arrival, and
+   stops. A `^` goal only ever counts *up*, forever, from `target`. A `#w`/`#m`/`#y`
+   goal behaves like a plain deadline but rolls its own target forward, one cycle at a
+   time, the first time it is both done and past due. A window goal (`start ~ target`)
+   counts down to `start` like something good, then the instant `start` arrives it
+   switches to counting down to `target` like a deadline - no Done button until that
+   switch has happened. A plain goal counts down and then keeps counting up past zero,
+   in grey, until marked done.
 
 ### Examples
 
@@ -59,6 +80,27 @@ Something that was delivered nineteen days late:
 https://j333t.github.io/baaki/#Tender~2026-08-01!2026-08-20
 ```
 
+Something running since a fixed start, counting up, not down:
+```
+https://j333t.github.io/baaki/#Sober~2026-01-01^
+```
+
+Rent, due on the 1st of every month, until it's deleted:
+```
+https://j333t.github.io/baaki/#Rent~2026-10-01#m
+```
+
+An exam that opens at 10am and closes at noon - one link, right view either side of
+the start:
+```
+https://j333t.github.io/baaki/#Exam~2026-10-12T10:00~2026-10-12T12:00
+```
+
+A meeting at a fixed instant, readable correctly in any timezone:
+```
+https://j333t.github.io/baaki/#Standup~2026-09-10T18:00@Asia%2FKolkata
+```
+
 An empty board, for someone to fill in themselves:
 ```
 https://j333t.github.io/baaki/
@@ -69,7 +111,9 @@ https://j333t.github.io/baaki/
 - Don't invent query parameters. There are none; everything is in the fragment.
 - Don't send more than about seven goals. Past that the board stops being glanceable,
   and it will say so.
-- Don't put a timezone, an offset, or a `Z` in a target. It will not parse.
+- Don't put an offset or a `Z` in a target (no `+05:30`, no trailing `Z`). Use the
+  separate `@zone` suffix instead — an IANA name, percent-encoded, and only on a timed
+  target, never a bare date.
 - Don't try to set colours, fonts or sound in the link. Those are per-device settings
   and deliberately cannot travel — a link you send must not restyle someone's screen.
 

@@ -7,10 +7,18 @@ A **fail** names the test it fails, so we know what would have to change.
 
 ## Next up (all four tests pass)
 
-Nothing queued right now. The theme system was the last big item here; it shipped in
-1.4.0. **Fonts via CDN with system fallback** was filed alongside it and never built —
-1.4.0 committed instead to "no webfont, ever" (`CLAUDE.md`), so a CDN font would now
-break a house rule rather than extend one. Moved below, not built, for that reason.
+Scored 2026-09, queued to build. Full design notes: `docs/handoffs/since-window-badge.md`.
+
+~~**Since, without its own button.**~~ Built — see `features.md` → Since.
+
+~~**Recurring, small version.**~~ Built — see `features.md` → Recurring.
+
+~~**Window / session kind.**~~ Built — see `features.md` → Window.
+
+Nothing queued right now. The theme system was the last big item to clear this list; it shipped in 1.4.0.
+**Fonts via CDN with system fallback** was filed alongside it and never built — 1.4.0
+committed instead to "no webfont, ever" (`CLAUDE.md`), so a CDN font would now break a
+house rule rather than extend one. Moved below, not built, for that reason.
 
 ## Built
 
@@ -83,6 +91,7 @@ Cheap wins first.
 | **Link shortener on the worker** | **fails weight** — a short link is a pointer, so it needs the network. Fine as an explicitly online convenience, never the default. |
 | **Export as PNG** | glance n/a. **fails "one primitive"** unless it reuses the existing canvas. Cheap if it does. |
 | **`.ics` calendar export** | **fails one primitive.** Also: if it's in your calendar you don't need a board. |
+| **Live badge / embed** (README, favicon, terminal, handed to a script or an AI) | **needs work.** Design mostly worked out (2026-09): a stateless helper — same shape as `sync-worker.js` — decodes the *existing* link and serves either a rendered image or a raw data payload (kind-specific raw fields + a computed `{value, unit}`, never a formatted string — display stays the consumer's call). Two open gaps: **weight** — needs an optional server, same category as the existing sync-worker, not the core loop, but real. **glance** — the image mode's exact look isn't picked; leading idea is shape-follows-size (fill bar at favicon scale, plain digits at README width), not confirmed. Parked because there's no confirmed place it'd actually be embedded yet — revisit once one exists. Full notes: `docs/handoffs/since-window-badge.md`. |
 
 ## Rejected, with reasons
 
@@ -94,8 +103,7 @@ on yourself. It is in the per-device table now. A `fail` is a description of tod
 |---|---|
 | Per-goal notes / description | Fails glance. Text you must read is the opposite of this tool. |
 | Sub-tasks, dependencies, Gantt | It's a board, not a project manager. Two different products. |
-| Recurring countdowns | Ambiguous at every edge (what does "done" mean on a repeat?) and nobody asked. |
-| Percentage complete / progress ring | A countdown knows time, not work. Any percentage would be a lie. |
+| Percentage complete / progress ring | A countdown knows time, not work. Any percentage would be a lie. (The badge/embed idea below is a different case — two real dates, not a guess at work done — and isn't automatically covered by this rejection.) |
 | Multiple boards / folders | If you need folders you have too many goals, and there's a snark line for that. |
 | Tenths of a second in the last ten minutes | Built in 1.1.0, removed in 1.6.0. Read as clutter competing with the one number this tool exists to make readable at a glance, not as urgency. If it comes back it needs a genuinely different execution, not a smaller font. |
 | A pulsing glow (background or number) tied to the countdown | Tried twice - as a scale animation on the digits in 1.4.0, as a background radial glow in 1.5.0 - and removed both times. The digit version disturbed the one thing that has to stay still to be read at a glance; the glow version still didn't read as organic. The number does not move. Nothing has replaced either attempt. |

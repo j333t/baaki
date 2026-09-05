@@ -497,21 +497,182 @@ r = await open('#Sober~2027-01-01^');
 ok('a since goal that has not started yet does not go negative', r.num, '00s');
 
 console.log('\n--- since, from the Goals form ---');
+// there is no Since button any more - a past pick on the ordinary
+// Deadline kind is what since is now
 r = await open('');
 await page.keyboard.press('g');
 await page.waitForTimeout(200);
-await page.click('#kSince');
-await page.waitForTimeout(150);
-ok('picking Since hides the calendar toggle - it only ever offers days forward',
-   await page.locator('#pkToggle').isVisible(), false);
-ok('the quick row swaps to past-oriented presets', await page.locator('#fQuick button', { hasText: '1 month ago' }).count(), 1);
 await page.fill('#fName', 'Sober');
-await page.locator('#fQuick button', { hasText: '1 month ago' }).click();
+await page.fill('#fWhen', '1 month ago');
+await page.waitForTimeout(150);
+ok('typing a bare past date gets no warning - a deadline already gone is a since, not a mistake',
+   (await page.locator('#fParsed').textContent()).includes('past'), false);
+await page.click('#addForm button[type=submit]');
 await page.waitForTimeout(200);
 const sinceHash = decodeURIComponent(await page.evaluate(() => location.hash));
-ok('a bare quick-pick lands at the start of that day, not the end', sinceHash.includes('T00:00'), true);
-ok('the link carries the since marker', /\^(\+|$)/.test(sinceHash), true);
+ok('a bare past pick lands at the start of that day, not the end', sinceHash.includes('T00:00'), true);
+ok('the link carries the since marker, though nobody pressed a since button', /\^(\+|$)/.test(sinceHash), true);
 ok('and the creating zone, same as any other timed goal', sinceHash.includes('@'), true);
+
+// the calendar itself is the other door in, not just typing
+r = await open('');
+await page.keyboard.press('g');
+await page.waitForTimeout(200);
+await page.click('#pkToggle');
+await page.waitForTimeout(150);
+await page.fill('#fName', 'Streak');
+await page.locator('#pkGrid button', { hasText: /^1$/ }).first().click();
+await page.waitForTimeout(150);
+await page.click('#addForm button[type=submit]');
+await page.waitForTimeout(200);
+const calPickHash = decodeURIComponent(await page.evaluate(() => location.hash));
+ok('a calendar pick into the past becomes a since goal too', /Streak~[^+]*\^/.test(calPickHash), true);
+
+console.log('\n--- recurring: a goal that comes back on its own ---');
+// creating one from the form: a third kind, plus a cadence choice
+r = await open('');
+await page.keyboard.press('g');
+await page.waitForTimeout(200);
+await page.click('#kRepeat');
+await page.waitForTimeout(100);
+ok('picking Recurring reveals the cadence row', await page.locator('#fCadence').isVisible(), true);
+ok('weekly is the default cadence', await page.locator('#rWeekly').getAttribute('aria-pressed'), 'true');
+await page.click('#kDeadline');
+await page.waitForTimeout(100);
+ok('switching away hides the cadence row again - not just never-shown', await page.locator('#fCadence').isVisible(), false);
+await page.click('#kRepeat');
+await page.waitForTimeout(100);
+await page.click('#rMonthly');
+await page.fill('#fName', 'Rent');
+await page.fill('#fWhen', '1 oct 2026');
+await page.click('#addForm button[type=submit]');
+await page.waitForTimeout(200);
+const repeatHash = decodeURIComponent(await page.evaluate(() => location.hash));
+ok('the link carries the monthly marker', /Rent~[^+!]*#m/.test(repeatHash), true);
+
+// same ladder as an ordinary deadline - no special rendering branch needed
+r = await open('#Standup~2026-09-02T18:00#w');
+ok('counts down exactly like a deadline until then', /^\d+h:\d+m$/.test(r.num), true);
+
+// missed it, never pressed done - sits overdue like any other deadline,
+// and does not silently roll forward on its own
+r = await open('#Standup~2026-09-02T09:00#w');
+ok('a missed occurrence just sits overdue, waiting for Done', r.tag, 'past due');
+await page.clock.fastForward(1200);
+await page.waitForTimeout(50);
+const stillOverdueHash = decodeURIComponent(await page.evaluate(() => location.hash));
+ok('time passing alone does not advance it - only Done does', stillOverdueHash.includes('2026-09-02T09:00'), true);
+
+// done, but its own due moment has not arrived yet - reads as done,
+// same as any other deadline, until that moment actually passes
+r = await open('#Standup~2026-09-02T09:00#w!2026-09-02T08:00');
+ok('before its own due moment: still reads as done, not rolled yet', r.sub.includes('done'), true);
+await page.clock.fastForward(1200);
+await page.waitForTimeout(50);
+const rolledHash = decodeURIComponent(await page.evaluate(() => location.hash));
+ok('once due, it rolls forward exactly one week, same time of day', rolledHash.includes('2026-09-09T09:00'), true);
+ok('and the done stamp does not carry into the new cycle', rolledHash.includes('!'), false);
+
+console.log('\n--- window: two dates, one link ---');
+
+// a fresh hue map before each comparison, so the per-goal hue rotation
+// (keyed on name+target, and different between a reference goal and a
+// window whose own target is its *end*) does not confound the ramp
+// comparison - a brand new key with an empty map always resolves to 0
+const noHue = () => page.evaluate(() => {
+  localStorage.removeItem('baaki.hueMap');
+  localStorage.removeItem('baaki.hueSeq');
+  localStorage.removeItem('baaki.hue');
+});
+
+// pre-phase: counts down to the start exactly like something good does
+await noHue();
+const evRef = await open('#X~2026-10-12T10:00*');
+await noHue();
+r = await open('#Exam~2026-10-12T10:00~2026-11-01T12:00+!edit');
+ok('pre-phase: counts to the start, not the end', r.num, evRef.num);
+ok('pre-phase: coloured exactly like something good at the same distance', r.g2, evRef.g2);
+ok('pre-phase: starred in the name, same as something good', r.name.startsWith('★'), true);
+ok('pre-phase: no Done button, even with !edit', r.doneVisible, false);
+
+// post-phase: the start has already passed, so it counts to the end
+// exactly like an ordinary deadline, Done included
+await noHue();
+const ddlRef = await open('#Y~2026-09-10T00:00');
+await noHue();
+r = await open('#Exam~2026-09-01T00:00~2026-09-10T00:00+!edit');
+ok('post-phase: counts to the end, not the start', r.num, ddlRef.num);
+ok('post-phase: coloured exactly like an ordinary deadline', r.g2, ddlRef.g2);
+ok('post-phase: no star - it reads as a plain deadline now', r.name.startsWith('★'), false);
+ok('post-phase: Done is available, same rule as any deadline', r.doneVisible, true);
+
+// the boundary: the instant "now" equals the start, it already reads
+// as post-phase - "now >= start" the same way a deadline treats
+// "now >= target" as due, not "not quite yet"
+r = await open('#Boundary~2026-09-02T10:00:00~2026-09-02T11:00:00+!edit');
+ok('start exactly now: already past-phase, Done available', r.doneVisible, true);
+
+// a malformed window (end not after start) is dropped rather than
+// shown broken - needs a clean slate, since an empty hash otherwise
+// falls back to whatever a previous test left in localStorage
+await page.evaluate(() => localStorage.removeItem('baaki.hash'));
+r = await open('#Bad~2026-10-12T10:00~2026-10-12T09:00');
+ok('end before start: the goal is dropped, board falls back to the example', r.tag, 'an example');
+
+// the link round-trips both dates
+r = await open('#Exam~2026-10-12~2026-10-13+!edit');
+ok('window round-trips start and end through the link',
+   decodeURIComponent(await page.evaluate(() => location.hash)), '#Exam~2026-10-12~2026-10-13+!edit');
+
+// identified in the chip row even when it is not the focused goal
+r = await open('#Main~2027-06-01+Exam~2026-10-12T10:00~2026-11-01T12:00');
+ok('a window goal is marked in the chip row', r.chips.some(c => c.includes('↔')), true);
+
+console.log('\n--- window: built from the Goals form, two steps ---');
+await page.evaluate(() => localStorage.removeItem('baaki.hash'));
+r = await open('');
+await page.keyboard.press('g');
+await page.waitForTimeout(200);
+await page.click('#kWindow');
+await page.waitForTimeout(100);
+ok('picking Window asks for the start first', (await page.locator('#kindHint').textContent()).includes('starts'), true);
+await page.fill('#fName', 'Exam');
+await page.fill('#fWhen', '12 oct 2026 10am');
+await page.waitForTimeout(120);
+ok('the submit button asks to move on, not to add yet',
+   (await page.locator('#bSubmit').textContent()).indexOf('end') >= 0, true);
+await page.click('#addForm button[type=submit]');
+await page.waitForTimeout(150);
+ok('a back link appears once the start is set', await page.locator('#winBackRow').isVisible(), true);
+ok('the field clears, ready for the end', await page.locator('#fWhen').inputValue(), '');
+await page.fill('#fWhen', '12 oct 2026 12pm');
+await page.click('#addForm button[type=submit]');
+await page.waitForTimeout(200);
+const winHash = decodeURIComponent(await page.evaluate(() => location.hash));
+ok('the link carries both dates, start then end', /Exam~2026-10-12T10:00[^~]*~2026-10-12T12:00/.test(winHash), true);
+
+console.log('\n--- window: back to the start, and a rejected end ---');
+await page.evaluate(() => localStorage.removeItem('baaki.hash'));
+r = await open('');
+await page.keyboard.press('g');
+await page.waitForTimeout(200);
+await page.click('#kWindow');
+await page.fill('#fName', 'Trial');
+await page.fill('#fWhen', '1 oct 2026 9am');
+await page.click('#addForm button[type=submit]');
+await page.waitForTimeout(150);
+await page.click('#bWinBack');
+await page.waitForTimeout(100);
+ok('back repopulates the field with the start already picked', await page.locator('#fWhen').inputValue(), '2026-10-01T09:00');
+ok('the back link hides again once back on the first step', await page.locator('#winBackRow').isVisible(), false);
+await page.click('#addForm button[type=submit]');
+await page.waitForTimeout(150);
+await page.fill('#fWhen', '1 oct 2026 8am');   // before the start - not a valid end
+await page.click('#addForm button[type=submit]');
+await page.waitForTimeout(150);
+ok('an end before the start is rejected, still on step two', await page.locator('#winBackRow').isVisible(), true);
+ok('nothing got added', await page.evaluate(() => location.hash), '');
+await page.evaluate(() => localStorage.removeItem('baaki.hash'));
 
 // A deadline crossing zero unmarked is a miss, not a finish. The clock
 // cannot know whether you got there - that is the whole reason Done
@@ -757,7 +918,7 @@ ok('typed in plain words, stored exactly',
 await page.keyboard.press('Escape');
 await page.waitForTimeout(150);
 
-console.log('\n--- choosing a date: past is discouraged, not offered ---');
+console.log('\n--- choosing a date: past is a valid pick, not a mistake ---');
 // frozen clock: Wednesday 2 September 2026, 10:00 IST
 r = await open('#Seed~2027-01-01');
 await page.keyboard.press('g');
@@ -766,13 +927,13 @@ await page.click('#pkToggle');
 await page.waitForTimeout(150);
 
 const dayCell = async (n) => page.locator('#pkGrid button').filter({ hasText: new RegExp('^' + n + '$') }).first();
-ok('yesterday in the grid is disabled', await (await dayCell(1)).isDisabled(), true);
-ok('today is not', await (await dayCell(2)).isDisabled(), false);
+ok('yesterday in the grid is not disabled - it is a since now, not a mistake', await (await dayCell(1)).isDisabled(), false);
+ok('today is not either', await (await dayCell(2)).isDisabled(), false);
 ok('a day next week is not', await (await dayCell(10)).isDisabled(), false);
 
 // with no day chosen yet, "today" is the implied day - a time already
-// gone this morning should be dimmed out too
-ok('9 am is already gone today', await page.locator('#fTimes button', { hasText: '9 am' }).isDisabled(), true);
+// gone this morning is dimmed, same treatment as a past day, but not disabled
+ok('9 am is not disabled, even though it is already gone today', await page.locator('#fTimes button', { hasText: '9 am' }).isDisabled(), false);
 ok('noon is not', await page.locator('#fTimes button', { hasText: 'Noon' }).isDisabled(), false);
 ok('end of day is never gone', await page.locator('#fTimes button', { hasText: 'End of day' }).isDisabled(), false);
 
@@ -781,10 +942,11 @@ await (await dayCell(10)).click();
 await page.waitForTimeout(150);
 ok('9 am is fine on a future day', await page.locator('#fTimes button', { hasText: '9 am' }).isDisabled(), false);
 
-// the free-text field is the deliberate way round the guard
+// typing a past date works too, same door it always was
 await page.fill('#fWhen', 'yesterday');
 await page.waitForTimeout(100);
-ok('typing a past date still works', (await page.locator('#fParsed').textContent()).includes('past'), true);
+ok('typing a past date gets no warning any more - a deadline already gone just counts up instead',
+   (await page.locator('#fParsed').textContent()).includes('past'), false);
 await page.fill('#fWhen', '');
 
 console.log('\n--- a typed time, standing in for the native picker ---');
@@ -917,29 +1079,30 @@ ok('no beat class, ever', (await page.locator('#num').getAttribute('class')) || 
 ok('no pulse layer in the page', await page.locator('#pulse').count(), 0);
 ok('ticking the last hour throws nothing', errs2.length, 0);
 
-console.log('\n--- the calendar does not let you wander into the past ---');
+console.log('\n--- the calendar can wander into the past now ---');
 r = await open('#Seed~2027-01-01');
 await page.keyboard.press('g');
 await page.waitForTimeout(250);
 await page.click('#pkToggle');
 await page.waitForTimeout(150);
-ok('back is off while viewing the current month', await page.locator('#pkPrev').isDisabled(), true);
-await page.click('#pkNext');
-await page.waitForTimeout(120);
-ok('forward a month, back turns on', await page.locator('#pkPrev').isDisabled(), false);
+ok('back is never disabled - any day is a valid pick, past or future', await page.locator('#pkPrev').isDisabled(), false);
+const monthTitle = await page.locator('#pkTitle').textContent();
 await page.click('#pkPrev');
 await page.waitForTimeout(120);
-ok('back to the current month, back turns off again', await page.locator('#pkPrev').isDisabled(), true);
+ok('back a month actually moves the grid - the title changes', (await page.locator('#pkTitle').textContent()) !== monthTitle, true);
+await page.click('#pkNext');
+await page.waitForTimeout(120);
+ok('forward returns to the month holding today', await page.locator('#pkTitle').textContent(), monthTitle);
 // zoom out: same rule at the month and year levels
 await page.click('#pkTitle');
 await page.waitForTimeout(120);
-ok('month view, same year: back is off', await page.locator('#pkPrev').isDisabled(), true);
+ok('month view: back is not disabled either', await page.locator('#pkPrev').isDisabled(), false);
 await page.click('#pkTitle');
 await page.waitForTimeout(120);
-ok('year view, current decade: back is off', await page.locator('#pkPrev').isDisabled(), true);
+ok('year view: back is not disabled either', await page.locator('#pkPrev').isDisabled(), false);
 // the window used to snap to an absolute mod-12 boundary, which could
 // open mostly into the past (e.g. 2016-2027 from 2026); it starts at
-// the current year now, since nothing before it is even selectable
+// the current year instead, so the window Prev first lands on is useful
 ok('the year window starts this year, not an arbitrary decade boundary',
    await page.locator('#pkTitle').textContent(), '2026 – 2037');
 await page.keyboard.press('Escape');

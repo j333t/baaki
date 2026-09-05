@@ -287,7 +287,11 @@ input{font:400 var(--f1) var(--face);color:var(--ink);background:var(--panel);
 input:focus{outline:none;border-color:var(--ink)}
 input::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.5;cursor:pointer}
 html[data-theme=light] input::-webkit-calendar-picker-indicator{filter:none}
-.kind{display:flex;gap:var(--s1)}
+.kind{display:flex;flex-wrap:wrap;gap:var(--s1)}
+/* #fCadence carries this class and toggles [hidden] - the class's own
+   display:flex otherwise beats the browser's [hidden]{display:none},
+   same trap button.b and .hist caught before it. */
+.kind[hidden]{display:none}
 .kind button{flex:1;font:500 var(--f1)/1 var(--face);color:var(--dim);
   background:var(--panel);border:1px solid transparent;border-radius:10px;padding:11px;cursor:pointer}
 .kind button[aria-pressed=true]{color:var(--ink);background:var(--panel2);border-color:var(--line)}
@@ -395,11 +399,19 @@ body.locked #bAdd{opacity:.45}
     <div class="kind">
       <button type="button" id="kDeadline" aria-pressed="true">Deadline</button>
       <button type="button" id="kEvent" aria-pressed="false">Something good &#9733;</button>
-      <button type="button" id="kSince" aria-pressed="false">Since</button>
+      <button type="button" id="kRepeat" aria-pressed="false">Recurring</button>
+      <button type="button" id="kWindow" aria-pressed="false">Window</button>
     </div>
+    <div class="kind" id="fCadence" hidden>
+      <button type="button" id="rWeekly" aria-pressed="true">Weekly</button>
+      <button type="button" id="rMonthly" aria-pressed="false">Monthly</button>
+      <button type="button" id="rYearly" aria-pressed="false">Yearly</button>
+    </div>
+    <div class="listActs" id="winBackRow" hidden><button type="button" id="bWinBack">&#8249; Back to the start</button></div>
     <div class="hint" id="kindHint">
       A <b>deadline</b> heats up as it nears and keeps counting after you miss it.
-      Something <b>good</b> glows as it nears, celebrates, and stops.
+      Pick a day already past and it counts up instead — a running total, not a
+      countdown. Something <b>good</b> glows as it nears, celebrates, and stops.
       No time given means the end of that day. Typing instead? <b>10m</b> is ten
       minutes; months need <b>mo</b>.
     </div>
@@ -521,9 +533,15 @@ var el = {
 
 /* ---------- link format ------------------------------------
    #Launch~2027-03-31+Diwali~2026-11-08*+Beta~2026-11-15T18:00!2026-11-14T10:30+!edit
+   #Exam~2026-10-12T10:00~2026-10-12T12:00                      (a window: start~end)
 
-   token containing ~   goal:  name ~ target [*] [! doneStamp ]
-                               *  = something good, not a deadline
+   token containing ~   goal:  name ~ [ start ~ ] target [*|^|#w|#m|#y] [! doneStamp ]
+                               *        = something good, not a deadline
+                               ^        = since (a past target reads this way on its own)
+                               #w/#m/#y = recurring, weekly / monthly / yearly
+                               start ~  = a window: counts to start like something good,
+                                          then to target like a deadline. Never combined
+                                          with the markers above - a window is its own kind.
    token without ~      flag:  !edit
 
    First goal is the big one. Move focus and it goes to the front,
@@ -627,15 +645,35 @@ function parseHash(h){
     var rest = tok.slice(i+1), doneS = null;
     var b = rest.indexOf('!');
     if(b !== -1){ doneS = rest.slice(b+1); rest = rest.slice(0,b); }
-    var event = false, since = false;
-    if(rest.slice(-1) === '*'){ event = true; rest = rest.slice(0,-1); }
+    var event = false, since = false, repeat = null, winStart = null;
+    /* A window goal carries two dates, start and end, joined by a
+       second "~" - the extra tilde is itself the tell, so no trailing
+       marker is needed, and window is never combined with the markers
+       below (it is its own kind, not a modifier on one of these). */
+    var w = rest.indexOf('~');
+    if(w !== -1){
+      var sp = splitTZ(rest.slice(0, w));
+      winStart = parseLocal(sp.s, sp.tz);
+      if(!winStart) return;
+      rest = rest.slice(w + 1);
+    }
+    else if(rest.slice(-1) === '*'){ event = true; rest = rest.slice(0,-1); }
     else if(rest.slice(-1) === '^'){ since = true; rest = rest.slice(0,-1); }
+    /* "#w"/"#m"/"#y" - a two-char marker, not one, because a bare
+       trailing letter risks colliding with a real timezone name that
+       happens to end in w/m/y (Europe/Moscow, Pacific/Guam, Europe/
+       Jersey...). "#" never appears in an encoded zone, so the pair is
+       unambiguous regardless of what the zone name itself ends in. */
+    else if(rest.length > 1 && rest.charAt(rest.length - 2) === '#' && 'wmy'.indexOf(rest.slice(-1)) !== -1){
+      repeat = rest.slice(-1); rest = rest.slice(0, -2);
+    }
     var tp = splitTZ(rest);
     var target = parseLocal(tp.s, tp.tz);
     if(!target) return;
+    if(winStart && target <= winStart) return;   /* a window whose end never comes is not a window */
     var dp = doneS ? splitTZ(doneS) : null;
     out.goals.push({
-      name:name, target:target, event:event, since:since,
+      name:name, target:target, event:event, since:since, repeat:repeat, winStart:winStart,
       done: dp ? parseLocal(dp.s, dp.tz) : null
     });
   });
@@ -648,8 +686,13 @@ function tzSuffix(withTime){
 }
 function goalToken(g){
   var timed = !isEod(g.target);
-  return enc(g.name) + '~' + fmtLocal(g.target, timed) + tzSuffix(timed) +
-         (g.event ? '*' : g.since ? '^' : '') +
+  var startPart = '';
+  if(g.winStart){
+    var st = !isEod(g.winStart);
+    startPart = fmtLocal(g.winStart, st) + tzSuffix(st) + '~';
+  }
+  return enc(g.name) + '~' + startPart + fmtLocal(g.target, timed) + tzSuffix(timed) +
+         (g.event ? '*' : g.since ? '^' : g.repeat ? '#' + g.repeat : '') +
          (g.done ? '!' + fmtLocal(g.done, true) + tzSuffix(true) : '');
 }
 function buildHash(goals, edit){
@@ -828,7 +871,9 @@ var quiet = false;
 var celebrated = Object.create(null);
 var prev = {};
 var editingIndex = -1;
-var formKind = 'deadline';   /* 'deadline' | 'event' | 'since' */
+var formKind = 'deadline';   /* 'deadline' | 'event' | 'repeat' | 'window' */
+var formRepeat = 'w';        /* 'w' | 'm' | 'y' - only read when formKind is 'repeat' */
+var formWinStart = null;     /* the start Date, once picked - only read when formKind is 'window' */
 
 function goalKey(g){
   var s = g.name.toLowerCase().trim() + '|' + fmtLocal(g.target, true);
@@ -849,9 +894,15 @@ function load(){
 /* A hue nobody's goal uses any more is just bytes sitting in
    localStorage forever - dropped whenever the goal list changes,
    same instinct as the history log's cap. */
+/* Hue is per-goal identity, but a recurring goal's target moves every
+   cycle - keying its colour on the name alone keeps it recognisable
+   across cycles. goalKey (name+target) is right everywhere else
+   (celebration, sync) because those *do* want a fresh identity each
+   cycle. */
+function hueKey(g){ return g.repeat ? g.name.toLowerCase().trim() : goalKey(g); }
 function pruneHueMap(){
   var keys = {}, changed = false;
-  S.goals.forEach(function(g){ keys[goalKey(g)] = 1; });
+  S.goals.forEach(function(g){ keys[hueKey(g)] = 1; });
   for(var k in hueMap) if(!keys[k]){ delete hueMap[k]; changed = true; }
   if(changed) saveHueMap();
 }
@@ -891,6 +942,55 @@ function tierOf(g){
   if(!g.done) return null;
   var d = g.target - g.done;
   return d > DAY ? 'early' : (d >= 0 ? 'ontime' : 'late');
+}
+/* The next occurrence after a given one, same weekday/date/day-of-year
+   and time of day - no separate pattern fields to store, the anchor
+   date already carries the weekday, the day-of-month and the month.
+   Clamped at month/year end (31st in a 30-day month, 29 Feb in a
+   non-leap year) rather than overflowing into the following month. */
+function nextOccurrence(target, repeat){
+  var y = target.getFullYear(), mo = target.getMonth(), da = target.getDate();
+  var hh = target.getHours(), mi = target.getMinutes(), se = target.getSeconds();
+  if(repeat === 'w') return new Date(y, mo, da + 7, hh, mi, se);
+  if(repeat === 'm'){
+    var d = new Date(y, mo + 1, 1, hh, mi, se);
+    d.setDate(Math.min(da, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()));
+    return d;
+  }
+  if(repeat === 'y'){
+    var dy = new Date(y + 1, mo, 1, hh, mi, se);
+    dy.setDate(Math.min(da, new Date(dy.getFullYear(), dy.getMonth() + 1, 0).getDate()));
+    return dy;
+  }
+  return target;
+}
+/* A window has two dates, and which one every existing render path
+   should treat as "the target" depends on the phase: before start it
+   is Something Good counting to start, from start on it is an
+   ordinary deadline counting to end - both paths already exist, this
+   is the one seam that decides which applies right now. The shadow
+   object is only ever fed to view()/heroOf()/the colour ramp for
+   display; the real goal (with its real target = end, stable for
+   life) is what everything else - hue, goalKey, Done - keeps using,
+   so nothing about a window's identity moves when it flips phase. */
+function effGoal(g, now){
+  if(!g.winStart || now >= g.winStart) return g;
+  return { name:g.name, target:g.winStart, event:true, since:false, repeat:null, done:null };
+}
+/* Done only ever means "the end was reached", and a window has no end
+   to reach until its own start has passed - so it borrows event's
+   "nothing to complete" rule for exactly the pre-start phase, then
+   drops it exactly at the same instant the render flips to deadline
+   mode. */
+function canDone(g, now){
+  return !g.done && !g.event && !g.since && !(g.winStart && now < g.winStart);
+}
+/* The identifying glyph in a list of goals (chips, the Goals dialog) -
+   phase-independent, unlike the main screen's star, because a list
+   entry's job is saying what kind a goal is, not mimicking how it
+   currently renders. */
+function kindGlyph(g){
+  return g.event ? '★ ' : g.since ? '↑ ' : g.repeat ? '↻ ' : g.winStart ? '↔ ' : '';
 }
 function view(g, now){
   var ms = g.target - now;
@@ -958,7 +1058,7 @@ function heroOf(v, g){
   }
 }
 function shortOf(g, now){
-  var v = view(g, now);
+  var v = view(effGoal(g, now), now);
   switch(v.m){
     case 'done':    return '✓';
     case 'arrived': return '★';
@@ -1171,7 +1271,7 @@ var TIPS = [
   { t:'Press H to shift the colour. It only changes on this screen, never in a shared link.' },
   { t:'The whole countdown lives in the address bar \u2014 copy it from there and you have shared everything.' },
   { t:'A Done button appears once you are on time or early \u2014 press D, or click it.',
-    ok:function(){ return S.goals[0] && !S.goals[0].event; } },
+    ok:function(){ return S.goals[0] && canDone(S.goals[0], new Date()); } },
   { t:'Press 1 through 9 to jump straight to a goal.',
     ok:function(){ return S.goals.length > 1; } },
   { t:'Press + or \u2212 to change how big the number is \u2014 not what it says.' },
@@ -1261,13 +1361,13 @@ function render(force){
   }
 
   document.body.classList.remove('empty');
-  var g = S.goals[0], v = view(g, now), h = heroOf(v, g);
+  var g = S.goals[0], eg = effGoal(g, now), v = view(eg, now), h = heroOf(v, eg);
 
-  var nameHtml = (g.event ? '<span class="star">★</span>' : '') + '<span></span>';
-  if(force || prev.nm !== g.name + g.event){
+  var nameHtml = (eg.event ? '<span class="star">★</span>' : '') + '<span></span>';
+  if(force || prev.nm !== g.name + eg.event){
     el.name.innerHTML = nameHtml;
     el.name.lastChild.textContent = g.name;
-    prev.nm = g.name + g.event;
+    prev.nm = g.name + eg.event;
   }
   if(prev.n !== h.n){
     el.num.innerHTML = h.html;
@@ -1282,14 +1382,14 @@ function render(force){
        coarse early/on time/late bucket - so "due" only needs to
        repeat here when it says something that word didn't already:
        skip it for a finish close enough to call "to the minute". */
-    sub = '<b>done ' + dateLabel(g.done) + '</b>' +
-          (deltaLabel(g.target, g.done) === 'to the minute' ? '' : '<span>due ' + dateLabel(g.target) + '</span>');
+    sub = '<b>done ' + dateLabel(eg.done) + '</b>' +
+          (deltaLabel(eg.target, eg.done) === 'to the minute' ? '' : '<span>due ' + dateLabel(eg.target) + '</span>');
   } else if(v.m.indexOf('since') === 0){
-    var upSpan = (v.m === 'sinceD') ? humanSpan(g.target, now) : '';
-    sub = (upSpan ? '<b>' + upSpan + '</b>' : '') + '<span>since ' + dateLabel(g.target) + '</span>';
+    var upSpan = (v.m === 'sinceD') ? humanSpan(eg.target, now) : '';
+    sub = (upSpan ? '<b>' + upSpan + '</b>' : '') + '<span>since ' + dateLabel(eg.target) + '</span>';
   } else {
-    var span = (v.m === 'days') ? humanSpan(now, g.target) : '';
-    sub = (span ? '<b>' + span + '</b>' : '') + '<span>' + dateLabel(g.target) + '</span>';
+    var span = (v.m === 'days') ? humanSpan(now, eg.target) : '';
+    sub = (span ? '<b>' + span + '</b>' : '') + '<span>' + dateLabel(eg.target) + '</span>';
   }
   if(prev.s !== sub){ el.sub.innerHTML = sub; prev.s = sub; }
 
@@ -1306,7 +1406,7 @@ function render(force){
   var c;
   if(v.m === 'done') c = doneGrad(v.tier, light);
   else if(v.m === 'arrived' || v.m.indexOf('since') === 0) c = gradFor(0, light, true);
-  else c = gradFor(v.m.indexOf('over') === 0 ? -1 : (g.target - now) / DAY, light, g.event);
+  else c = gradFor(v.m.indexOf('over') === 0 ? -1 : (eg.target - now) / DAY, light, eg.event);
   c = paint(c, v);
   root.style.setProperty('--g1', c[0]);
   root.style.setProperty('--g2', c[1]);
@@ -1328,7 +1428,7 @@ function render(force){
       var b = document.createElement('button');
       b.className = 'chip';
       b.innerHTML = '<span class="n"></span><span class="v"></span>';
-      b.querySelector('.n').textContent = (x.event ? '★ ' : x.since ? '↑ ' : '') + x.name;
+      b.querySelector('.n').textContent = kindGlyph(x) + x.name;
       b.querySelector('.v').textContent = shortOf(x, now);
       b.title = 'Show ' + x.name;
       b.onclick = function(){ focusGoal(i + 1); };
@@ -1345,7 +1445,7 @@ function render(force){
     drawShareGroup();
   }
 
-  el.done.hidden = !(S.edit && !g.done && !g.event && !g.since && !locked);
+  el.done.hidden = !(S.edit && canDone(g, now) && !locked);
   soundTick(v);
   maybeCelebrate(g, v);
 }
@@ -1400,7 +1500,7 @@ function cycleFocus(dir){ rotate(dir > 0 ? 1 : -1); }
 function markDone(){
   if(locked) return;
   var g = S.goals[0];
-  if(!g || g.done || g.event || g.since) return;
+  if(!g || !canDone(g, new Date())) return;
   g.done = new Date();
   logEvent('done', g.name, '');
   prev = {};
@@ -1409,6 +1509,25 @@ function markDone(){
   copy(baseUrl() + '#' + goalToken(g)).then(function(ok){
     toast(ok ? 'Done. Share link copied.' : 'Done. Copy the address bar to share.');
   });
+}
+/* A recurring goal only advances one cycle at a time, and only once
+   its own due moment has actually arrived - marking it done early just
+   waits, it doesn't jump the queue. Target and done are the only
+   fields that change, so everything else (view, colour, the overdue
+   mirror) keeps treating it as an ordinary deadline and needs no
+   special case of its own. Runs from the same one-second beat as
+   render, not inside it - it commits, and commit already re-renders. */
+function rollRepeats(now){
+  var moved = false;
+  S.goals.forEach(function(g){
+    if(g.repeat && g.done && now >= g.target){
+      g.target = nextOccurrence(g.target, g.repeat);
+      g.done = null;
+      moved = true;
+    }
+  });
+  if(moved) commit(false);
+  return moved;
 }
 function maybeCelebrate(g, v){
   var k = goalKey(g);
@@ -1550,27 +1669,79 @@ function openDlg(){
   if(!el.dlg.open) el.dlg.showModal();
   setTimeout(function(){ $('#fName').focus(); }, 30);
 }
-var KIND_HINTS = {
-  deadline: 'A <b>deadline</b> heats up as it nears and keeps counting after you miss it. ' +
-    'Something <b>good</b> glows as it nears, celebrates, and stops. ' +
-    'No time given means the end of that day. Typing instead? <b>10m</b> is ten minutes; months need <b>mo</b>.',
-  since: 'A goal <b>since</b> a start counts up, forever, with no deadline to reach - a running total, ' +
-    'not a countdown. Pick a day already past; typing one in still needs a year to stay in the past ' +
-    '(<b>15 mar 2024</b>, not <b>15 march</b>) or it rolls forward like everything else here.'
-};
+var KIND_HINT = 'A <b>deadline</b> heats up as it nears and keeps counting after you miss it. ' +
+  'Pick a day already past and it counts up instead - a running total, not a countdown. ' +
+  'Something <b>good</b> glows as it nears, celebrates, and stops. ' +
+  'No time given means the end of that day. Typing instead? <b>10m</b> is ten minutes; months need <b>mo</b>.';
+var REPEAT_HINT = 'A <b>recurring</b> goal comes back on its own - weekly on this weekday, monthly on ' +
+  'this date, or yearly on this day. Marking it done does not end it: once the moment you picked ' +
+  'actually arrives, it quietly resets to the next one. Delete the goal to stop it for good.';
+var WINDOW_HINT_START = 'A <b>window</b> has a start and an end - "exam 10am-noon," "boarding ' +
+  'opens-gate closes." One link, and whoever opens it on the day gets the right view on its own. ' +
+  'Pick when it <b>starts</b> first.';
+var WINDOW_HINT_END = 'Now pick when it <b>ends</b>. Up to the start it counts down like something ' +
+  'good; the moment the start arrives it switches straight to counting down to the end, like a deadline.';
+/* setFormKind only ever decides which KIND is selected. Everything
+   that also depends on which half of a window's two dates is being
+   asked for lives in updateWinUI, called from here and from the two
+   places that can move that step along (advance, winBack) - one
+   place computing the form's current state, however it got there. */
 function setFormKind(kind){
   formKind = kind;
+  if(kind !== 'window') formWinStart = null;
   $('#kDeadline').setAttribute('aria-pressed', String(kind === 'deadline'));
   $('#kEvent').setAttribute('aria-pressed', String(kind === 'event'));
-  $('#kSince').setAttribute('aria-pressed', String(kind === 'since'));
-  $('#kindHint').innerHTML = kind === 'since' ? KIND_HINTS.since : KIND_HINTS.deadline;
-  /* The calendar only ever offers days from today forward - wrong
-     shape for picking a start already in the past, so it stays out
-     of the way rather than pretending to help here. Quick chips and
-     typing (with an explicit year) are the way in for Since. */
-  $('#pkToggle').hidden = (kind === 'since');
-  if(kind === 'since') setPickOpen(false);
+  $('#kRepeat').setAttribute('aria-pressed', String(kind === 'repeat'));
+  $('#kWindow').setAttribute('aria-pressed', String(kind === 'window'));
+  $('#fCadence').hidden = (kind !== 'repeat');
+  updateWinUI();
   drawQuick();
+}
+function setFormRepeat(r){
+  formRepeat = r;
+  $('#rWeekly').setAttribute('aria-pressed', String(r === 'w'));
+  $('#rMonthly').setAttribute('aria-pressed', String(r === 'm'));
+  $('#rYearly').setAttribute('aria-pressed', String(r === 'y'));
+}
+/* The one place that reads "which step of a window pick am I on" and
+   makes the form agree with itself - the hint, the back link, the
+   submit button's label, and whether a half-finished window can be
+   quick-shared (it can't; there is nothing complete to share until
+   the end is picked). */
+function updateWinUI(){
+  var atEnd = formKind === 'window' && formWinStart !== null;
+  $('#winBackRow').hidden = !atEnd;
+  $('#kindHint').innerHTML = formKind === 'repeat' ? REPEAT_HINT
+    : formKind !== 'window' ? KIND_HINT
+    : atEnd ? WINDOW_HINT_END : WINDOW_HINT_START;
+  $('#bSubmit').textContent = (formKind === 'window' && !atEnd) ? 'Next → pick the end'
+    : editingIndex >= 0 ? 'Save changes' : 'Add goal';
+  $('#bShareDraft').hidden = editingIndex >= 0 || formKind === 'window';
+}
+/* Quick chips and the typed field both funnel here instead of
+   straight to submitGoal, because a window needs one extra tap in the
+   middle: the first date picked is the start, not the goal itself.
+   Every other kind has always had exactly one date, so this is a
+   no-op detour for them - target goes straight through to submitGoal. */
+function advance(target){
+  if(formKind === 'window' && formWinStart === null){
+    if(!target){ toast('I could not read that date.'); $('#fWhen').focus(); return; }
+    formWinStart = target;
+    $('#fWhen').value = '';
+    pkSel = null; pkCursor = null; pkView = 'day';
+    drawPicker();
+    showParsed();
+    updateWinUI();
+    return;
+  }
+  submitGoal(target);
+}
+function winBack(){
+  if(formKind !== 'window' || formWinStart === null) return;
+  var s = formWinStart;
+  formWinStart = null;
+  pickDate(new Date(s.getTime()), true);
+  updateWinUI();
 }
 /* ---------- picking a date ---------------------------------
    One selection, three ways in: the quick row for the answer people
@@ -1593,15 +1764,6 @@ var QUICK = [
   ['3 months', 'in 3 months'], ['6 months', 'in 6 months'],
   ['End of year', 'end of year']
 ];
-/* The forward chips' mirror for Since - the calendar can't help here
-   (it only ever offers today forward), so this row is the one fast
-   door in. */
-var SINCE_QUICK = [
-  ['Today', 'today'], ['Yesterday', 'yesterday'],
-  ['1 week ago', '1 week ago'], ['2 weeks ago', '2 weeks ago'],
-  ['1 month ago', '1 month ago'], ['3 months ago', '3 months ago'],
-  ['6 months ago', '6 months ago'], ['1 year ago', '1 year ago']
-];
 var TIMES = [['End of day', null], ['9 am', 9], ['Noon', 12], ['6 pm', 18], ['9 pm', 21]];
 var pkSel = null;          /* the chosen Date, or null */
 var pkCursor = null;       /* the month on show */
@@ -1610,15 +1772,17 @@ var pkView = 'day';        /* day -> month -> year */
 function drawQuick(){
   var q = $('#fQuick');
   q.innerHTML = '';
-  (formKind === 'since' ? SINCE_QUICK : QUICK).forEach(function(row){
+  QUICK.forEach(function(row){
     var b = document.createElement('button');
     b.type = 'button';
     b.textContent = row[0];
     if(row[2]) b.title = row[2];
     /* A preset is a whole answer, not a suggestion to keep editing -
-       press it and the goal exists. Name the goal first if it wants
-       one; the field's current value still goes along with the date. */
-    b.onclick = function(){ submitGoal(parseWhen(row[1])); };
+       press it and the goal exists (or, for a window's first date,
+       press it and move on to the end). Name the goal first if it
+       wants one; the field's current value still goes along with
+       the date. */
+    b.onclick = function(){ advance(parseWhen(row[1])); };
     q.appendChild(b);
   });
 }
@@ -1674,18 +1838,19 @@ function drawPicker(){
     var start = new Date(first.getFullYear(), first.getMonth(), 1 - first.getDay());
     for(i = 0; i < 42; i++){
       var d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
-      var past = dayDiff(now, d) < 0;
       var cls = [];
       if(d.getMonth() !== pkCursor.getMonth()) cls.push('off');
       if(dayDiff(now, d) === 0) cls.push('now');
-      if(past) cls.push('gone');
+      /* Dimmed, not disabled - a past day is a valid pick, not a mistake.
+         For a deadline it just means since, counting up instead of down. */
+      if(dayDiff(now, d) < 0) cls.push('gone');
       if(pkSel && dayDiff(pkSel, d) === 0) cls.push('sel');
       grid.appendChild(pkBtn(String(d.getDate()), cls.join(' '), (function(dd){
         return function(){
           var keep = pkSel && !isEod(pkSel);
           pickDate(keep ? atTime(new Date(dd.getTime()), pkSel.getHours(), pkSel.getMinutes()) : eod(new Date(dd.getTime())), false);
         };
-      })(d), past));
+      })(d)));
     }
   } else if(pkView === 'month'){
     grid.className = 'pkgrid wide';
@@ -1699,11 +1864,8 @@ function drawPicker(){
   } else {
     grid.className = 'pkgrid wide';
     /* Windows of 12 anchored on the current year, not on an absolute
-       mod-12 boundary - the old base+ (year % 12) math could land a
-       window mostly in the past, e.g. 2016-2027 from 2026, ten of
-       those disabled before you ever pressed Prev. Every year before
-       now is already off-limits, so the first window may as well
-       start where the grid actually becomes useful. */
+       mod-12 boundary, so the window Prev first lands on always holds
+       the year you started from rather than an arbitrary mod-12 line. */
     var base = now.getFullYear() + 12 * Math.floor((pkCursor.getFullYear() - now.getFullYear()) / 12);
     title.textContent = base + ' – ' + (base + 11);
     for(i = 0; i < 12; i++){
@@ -1714,15 +1876,9 @@ function drawPicker(){
     }
   }
 
-  /* This tool only counts forward, so browsing further into the past
-     than "now" has nowhere useful to land - every day back there is
-     already disabled. Rather than let you wander into a grid you
-     cannot use, back stops at the period holding today. */
-  var canBack = pkView === 'day' ? (pkCursor.getFullYear() > now.getFullYear() ||
-                  (pkCursor.getFullYear() === now.getFullYear() && pkCursor.getMonth() > now.getMonth()))
-               : pkView === 'month' ? pkCursor.getFullYear() > now.getFullYear()
-               : base > now.getFullYear();
-  $('#pkPrev').disabled = !canBack;
+  /* Any date is a valid pick now, past or future, so Prev has nowhere
+     it needs to stop - same as Next never has. */
+  $('#pkPrev').disabled = false;
 
   var t = $('#fTimes');
   t.innerHTML = '';
@@ -1731,8 +1887,10 @@ function drawPicker(){
   var refIsToday = dayDiff(now, refDay) === 0;
   TIMES.forEach(function(row){
     var on = pkSel && (row[1] === null ? isEod(pkSel) : (!isEod(pkSel) && pkSel.getHours() === row[1] && pkSel.getMinutes() === 0));
+    /* Dimmed, not disabled - a time already gone today is still a
+       valid pick, same as any other past moment. */
     var gone = refIsToday && row[1] !== null && atTime(new Date(refDay.getTime()), row[1], 0) < now;
-    t.appendChild(pkBtn(row[0], 'x' + (on ? ' sel' : '') + (gone ? ' gone' : ''), function(){ pickTime(row[1]); }, gone));
+    t.appendChild(pkBtn(row[0], 'x' + (on ? ' sel' : '') + (gone ? ' gone' : ''), function(){ pickTime(row[1]); }));
   });
   /* a small text field standing in for the native time widget, whose
      spinner chrome never matched anything else on this screen. It
@@ -1768,16 +1926,15 @@ function showParsed(){
   if(!d){ out.textContent = 'Not a date yet — try "31 mar 2027", "friday", or "in 3 weeks".'; out.className = 'parsed no'; return; }
   out.innerHTML = '<b></b><i></i>';
   out.firstChild.textContent = whenLabel(d);
-  /* A date already gone is usually a slip, and occasionally the point -
-     you are logging something you missed. Say so, do not refuse. A
-     Since goal is the one kind where the past is the whole point, so
-     it gets no warning at all. */
-  var isPast = d - new Date() < 0;
-  out.lastChild.textContent = (isPast && formKind !== 'since')
-    ? (formKind === 'event' ? ' — that has already happened. Baaki only counts forward; use this if you mean it.'
-                             : ' — that is in the past. Baaki only counts forward; use this if you mean it.')
+  /* Something good already having happened is usually a slip - say so,
+     do not refuse. A deadline already past is not a mistake, it's a
+     since: the past is the whole point there, same as it always was,
+     so it gets no warning at all. */
+  var warn = (d - new Date() < 0) && formKind === 'event';
+  out.lastChild.textContent = warn
+    ? ' — that has already happened. Baaki only counts forward; use this if you mean it.'
     : '';
-  out.className = 'parsed' + (isPast && formKind !== 'since' ? ' past' : '');
+  out.className = 'parsed' + (warn ? ' past' : '');
 }
 /* Collapsed by default so the common case - a quick chip, or a typed
    date - never pays for the calendar's height. Opens itself for an
@@ -1794,6 +1951,7 @@ function resetForm(){
   drawPicker();
   showParsed();
   setFormKind('deadline');
+  setFormRepeat('w');
   setPickOpen(false);
   $('#bSubmit').textContent = 'Add goal';
   $('#bCancelEdit').hidden = true;
@@ -1805,10 +1963,13 @@ function startEdit(i){
   editingIndex = i;
   $('#fName').value = g.name;
   pickDate(new Date(g.target.getTime()), true);
-  setFormKind(g.since ? 'since' : g.event ? 'event' : 'deadline');
-  /* Since has no calendar to open - its toggle is hidden by
-     setFormKind above, so there's nothing here to reveal. */
-  if(!g.since) setPickOpen(true);
+  /* A window jumps straight to its end - the date most likely being
+     adjusted - with the start already carried over; the back link
+     is there for the rarer case of wanting to revisit it instead. */
+  if(g.winStart){ formWinStart = new Date(g.winStart.getTime()); setFormKind('window'); }
+  else setFormKind(g.repeat ? 'repeat' : g.event ? 'event' : 'deadline');
+  if(g.repeat) setFormRepeat(g.repeat);
+  setPickOpen(true);
   $('#bSubmit').textContent = 'Save changes';
   $('#bCancelEdit').hidden = false;
   $('#bShareDraft').hidden = true;
@@ -1837,8 +1998,10 @@ function drawRows(){
       '<button type="button" title="Show this one">▲</button>' +
       '<button type="button" title="Edit">✎</button>' +
       '<button type="button" title="Remove">✕</button>';
-    r.querySelector('.rn').textContent = (g.event ? '★ ' : g.since ? '↑ ' : '') + g.name + (g.done ? '  ✓' : '');
-    r.querySelector('.rd').textContent = fmtLocal(g.target, !isEod(g.target)).replace('T', ' ');
+    r.querySelector('.rn').textContent = kindGlyph(g) + g.name + (g.done ? '  ✓' : '');
+    r.querySelector('.rd').textContent = g.winStart
+      ? fmtLocal(g.winStart, !isEod(g.winStart)).replace('T', ' ') + ' → ' + fmtLocal(g.target, !isEod(g.target)).replace('T', ' ')
+      : fmtLocal(g.target, !isEod(g.target)).replace('T', ' ');
     var bs = r.querySelectorAll('button');
     bs[0].onclick = function(){ if(i){ focusGoal(i); } drawRows(); };
     bs[1].onclick = function(){ startEdit(i); };
@@ -2580,7 +2743,7 @@ function normHue(deg){
 function saveHueMap(){ lsSet('hueMap', JSON.stringify(hueMap)); lsSet('hueSeq', hueSeq); }
 function hueFor(g){
   if(!g) return hueOff;
-  var k = goalKey(g);
+  var k = hueKey(g);
   if(!(k in hueMap)){
     hueMap[k] = normHue(hueSeq * GOLDEN_ANGLE);
     hueSeq++;
@@ -2590,7 +2753,7 @@ function hueFor(g){
 }
 function setHue(deg, say){
   var g = S.goals[0], val = normHue(deg);
-  if(g){ hueMap[goalKey(g)] = val; saveHueMap(); }
+  if(g){ hueMap[hueKey(g)] = val; saveHueMap(); }
   else { hueOff = val; lsSet('hue', hueOff); }
   prev = {}; render(true); drawOpts();
   if(say) toast('Hue ' + (val > 0 ? '+' : '') + val + '\u00b0');
@@ -2904,7 +3067,12 @@ $('#pkTitle').onclick = function(){
 };
 $('#kDeadline').onclick = function(){ setFormKind('deadline'); };
 $('#kEvent').onclick = function(){ setFormKind('event'); };
-$('#kSince').onclick = function(){ setFormKind('since'); };
+$('#kRepeat').onclick = function(){ setFormKind('repeat'); };
+$('#kWindow').onclick = function(){ setFormKind('window'); };
+$('#rWeekly').onclick = function(){ setFormRepeat('w'); };
+$('#rMonthly').onclick = function(){ setFormRepeat('m'); };
+$('#rYearly').onclick = function(){ setFormRepeat('y'); };
+$('#bWinBack').onclick = winBack;
 $('#bClearAll').onclick = clearAllGoals;
 $('#bClearDone').onclick = clearDoneGoals;
 $('#bShare').onclick = openShare;
@@ -2925,13 +3093,16 @@ function defaultName(){
   while(used[String(n)]) n++;
   return String(n);
 }
-/* A bare day means "by the end of it" for a deadline, but "since
-   Monday" means Monday as it started, not as it finished - the same
-   bare-day parse needs the opposite default depending which kind is
-   asking. Only touches the shape that means "no time was given";
-   anything with a real time on it already means what it says. */
+/* A bare day means "by the end of it" for a deadline - but once that
+   day is already gone, the goal is a since, and "since Monday" means
+   Monday as it started, not as it finished. Only touches the shape
+   that means "no time was given"; anything with a real time on it
+   already means what it says. Something good never flips this way -
+   arriving late is still arriving, not a start to run from - and
+   neither does recurring, which rolls a past pick forward instead of
+   turning it into a since. */
 function sinceAdjust(target){
-  if(formKind === 'since' && target && isEod(target)){
+  if(formKind === 'deadline' && target && isEod(target) && target < new Date()){
     return new Date(target.getFullYear(), target.getMonth(), target.getDate(), 0, 0, 0, 0);
   }
   return target;
@@ -2948,10 +3119,23 @@ function submitGoal(target){
   target = sinceAdjust(target);
   var name = $('#fName').value.trim() || defaultName();
   if(!target){ toast('I could not read that date.'); $('#fWhen').focus(); return; }
-  var isEvent = formKind === 'event', isSince = formKind === 'since';
+  /* Since isn't a kind you choose - pick a deadline already in the
+     past and that's what it is. Something good never counts up, and
+     neither does recurring or window - a past pick on either just
+     rolls forward, or starts life already in its second phase. */
+  var isEvent = formKind === 'event', isRepeat = formKind === 'repeat', isWindow = formKind === 'window';
+  var isSince = !isEvent && !isRepeat && !isWindow && target < new Date();
+  if(isRepeat) while(target < new Date()) target = nextOccurrence(target, formRepeat);
+  var repeat = isRepeat ? formRepeat : null;
+  var winStart = null;
+  if(isWindow){
+    if(!formWinStart){ toast('Pick when it starts first.'); return; }
+    if(target <= formWinStart){ toast('The end has to be after the start.'); return; }
+    winStart = formWinStart;
+  }
   if(editingIndex >= 0){
     var g = S.goals[editingIndex];
-    g.name = name; g.target = target; g.event = isEvent; g.since = isSince;
+    g.name = name; g.target = target; g.event = isEvent; g.since = isSince; g.repeat = repeat; g.winStart = winStart;
     logEvent('edit', name, dateLabel(target));
     toast('Saved.');
   } else {
@@ -2959,7 +3143,7 @@ function submitGoal(target){
        every hue already handed out, the first time this goal is
        actually painted. One mechanism for "new goal gets a colour",
        not two. */
-    S.goals.unshift({ name:name, target:target, event:isEvent, since:isSince, done:null });
+    S.goals.unshift({ name:name, target:target, event:isEvent, since:isSince, repeat:repeat, winStart:winStart, done:null });
     logEvent('add', name, dateLabel(target));
     toast('Added.');
   }
@@ -2971,7 +3155,7 @@ function submitGoal(target){
 $('#addForm').onsubmit = function(e){
   e.preventDefault();
   var typed = $('#fWhen').value.trim();
-  submitGoal(typed ? parseWhen(typed) : pkSel);
+  advance(typed ? parseWhen(typed) : pkSel);
 };
 
 /* Add goal both saves and starts it counting on your own board - the
@@ -2983,8 +3167,11 @@ function shareDraft(){
   var typed = $('#fWhen').value.trim();
   var target = sinceAdjust(typed ? parseWhen(typed) : pkSel);
   if(!target){ toast('I could not read that date.'); $('#fWhen').focus(); return; }
+  var isEvent = formKind === 'event', isRepeat = formKind === 'repeat';
+  if(isRepeat) while(target < new Date()) target = nextOccurrence(target, formRepeat);
   var g = { name: $('#fName').value.trim() || defaultName(), target:target,
-    event: formKind === 'event', since: formKind === 'since', done:null };
+    event: isEvent, since: !isEvent && !isRepeat && target < new Date(),
+    repeat: isRepeat ? formRepeat : null, done:null };
   copy(baseUrl() + '#' + goalToken(g)).then(function(ok){
     toast(ok ? 'Link copied — not added to your board.' : 'Copy the address bar to share.');
   });
@@ -3031,7 +3218,7 @@ if(S.goals.length && location.hash !== buildHash(S.goals, S.edit)) commit(false)
 tipIx = pickTip(-1);
 if(tipIx >= 0) tipPick = TIPS[tipIx].t;
 render(true);
-setInterval(function(){ render(false); }, 1000);
+setInterval(function(){ if(!rollRepeats(new Date())) render(false); }, 1000);
 /* no dialog opens itself at you: the empty board is a working example
    that says what to press, which is a better welcome than a form */
 syncPull();
