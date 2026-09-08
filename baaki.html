@@ -1503,6 +1503,7 @@ function markDone(){
   if(!g || !canDone(g, new Date())) return;
   g.done = new Date();
   logEvent('done', g.name, '');
+  track('goal_done');
   prev = {};
   commit(false);
   syncPush(g);
@@ -2324,6 +2325,7 @@ function openShare(){
      end, so Share falls back to it instead of refusing. */
   if(S.goals.length) doShare(false); else shareBare();
   expandShare();
+  track('share');
 }
 function doShare(all){
   var link = baseUrl() + (all ? buildHash(S.goals, false) : '#' + goalToken(S.goals[0]));
@@ -2432,6 +2434,7 @@ function drawTools(){
 /* ---------- the code on screen ---------- */
 var qrLink = '';
 function openQr(){
+  track('qr');
   var link = qrLink = S.goals.length ? baseUrl() + buildHash(S.goals, false) : baseUrl();
   var g = qrMatrix(link), cv = $('#qrCv'), note = $('#qrNote');
   if(!g){
@@ -3145,6 +3148,7 @@ function submitGoal(target){
        not two. */
     S.goals.unshift({ name:name, target:target, event:isEvent, since:isSince, repeat:repeat, winStart:winStart, done:null });
     logEvent('add', name, dateLabel(target));
+    track('goal_add');
     toast('Added.');
   }
   S.edit = true;
@@ -3238,6 +3242,11 @@ if(GA_ID && navigator.onLine){
   window.gtag = function(){ window.dataLayer.push(arguments); };
   window.gtag('js', new Date());
   window.gtag('config', GA_ID);
+}
+/* real use, not just opens - never carries a goal's name or date, only
+   that one of these four things happened */
+function track(name){
+  if(typeof window.gtag === 'function') window.gtag('event', name);
 }
 })();
 </script>

@@ -208,6 +208,7 @@ Themes are data, and this is the whole extension surface. All of it per device.
 | Desktop wrapper (Tauri) | The three things a browser tab cannot do: float above other windows, start with the machine, remember where it was. |
 | Wrapper injects its own chrome | So `baaki.html` stays one portable file with no idea it's ever inside an app. |
 | GA4, off unless a measurement id is set | It only counts opens of a hosted link. Worth having, not worth pretending it measures use. |
+| Four custom events: goal added, marked done, shared, QR drawn | An open isn't use. These are the four moments that are. Fires a bare event name only — never a goal's name, date, or count. |
 | Hosted under `baaki.j33t.pro`, not a bare `github.io` URL or a shortener | Every link sent bakes in the domain at send time — moving hosts later breaks it for whoever already has it. A personal domain also puts the credit on the person, which is the actual growth edge right now. |
 | Update check against a 200-byte `version.json` | A file you emailed cannot be recalled. This is the only channel a downloaded copy has, and it costs a fifth of a kilobyte. |
 | It is a dot, not a banner | The board is something you walk past. Anything that interrupts that has already broken it. Silent offline, silent when the host does not answer. |

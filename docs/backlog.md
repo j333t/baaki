@@ -53,6 +53,7 @@ it needs to be opt-in on the *receiving* side, which is a different feature.
 |---|---|
 | **Choose the sound** | A short list of tones rather than the one built in, per device. Cheap, and the kind of thing somebody fiddles with once and then loves. The settings surface it belongs in now exists. |
 | **Weight budget** | 118 KB. 1.6.0 came in lighter than 1.5.0 - the first round where removing something (tenths, the pulse) outweighed everything added. Worth noting as proof the ceiling question still matters, not as a reason to stop asking it. |
+| **Bulk-add in the UI** | Asked 2026-09. The link already does this — `+` chains goals in one fragment, capped ~7 for glance — so this is only about the *form* getting a faster path to the same thing (paste a block of dates instead of one Add per goal), not a new capability. |
 
 ## Measured and rejected
 
@@ -106,4 +107,5 @@ on yourself. It is in the per-device table now. A `fail` is a description of tod
 | Percentage complete / progress ring | A countdown knows time, not work. Any percentage would be a lie. (The badge/embed idea below is a different case — two real dates, not a guess at work done — and isn't automatically covered by this rejection.) |
 | Multiple boards / folders | If you need folders you have too many goals, and there's a snark line for that. |
 | Tenths of a second in the last ten minutes | Built in 1.1.0, removed in 1.6.0. Read as clutter competing with the one number this tool exists to make readable at a glance, not as urgency. If it comes back it needs a genuinely different execution, not a smaller font. |
+| Working-days-only counting | Discussed 2026-09. Needs a country holiday calendar, which goes stale every year — an ongoing cost, not a one-time build, and already the reasoning behind the standing "no workday/holiday counting" rule. Talked through and dropped for a simpler reason too: for a deadline, the calendar days between now and it are what actually count, not the working days inside it. |
 | A pulsing glow (background or number) tied to the countdown | Tried twice - as a scale animation on the digits in 1.4.0, as a background radial glow in 1.5.0 - and removed both times. The digit version disturbed the one thing that has to stay still to be read at a glance; the glow version still didn't read as organic. The number does not move. Nothing has replaced either attempt. |
