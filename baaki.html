@@ -514,13 +514,13 @@ body.locked #bAdd{opacity:.45}
    ============================================================ */
 var VERSION  = '2.0.0';
 var SYNC_URL = '';
-var GA_ID    = '';
+var GA_ID    = 'G-7GQQT1N383';
 /* UPDATE : a 200-byte {"version","url"} somewhere online. Two candidates,
             tried in order, because a host that will not send CORS headers
             is silently useless to a file opened from a disk. */
 var UPDATE_URLS = [
   'https://raw.githubusercontent.com/j333t/baaki/main/version.json',
-  'https://j333t.github.io/baaki/version.json'
+  'https://baaki.j33t.pro/version.json'
 ];
 
 var DAY = 864e5, HOUR = 36e5, MIN = 6e4;
@@ -1348,7 +1348,7 @@ function render(force){
     el.sub.firstChild.textContent = dateLabel(eoy);
     el.tag.textContent = 'an example';
     el.others.innerHTML = '';
-    el.snark.textContent = 'Click anywhere, or press G, to count something of your own.';
+    el.snark.textContent = 'Click here, or press G, to count something of your own.';
     document.body.classList.add('empty');
     el.done.hidden = true;
     drawShareGroup();
@@ -2928,7 +2928,7 @@ function drawOpts(){
   if(newer){
     u.appendChild(document.createTextNode('Version ' + newer.version + ' is out. '));
     var a = document.createElement('a');
-    a.href = newer.url || 'https://j333t.github.io/baaki/';
+    a.href = newer.url || 'https://baaki.j33t.pro/';
     a.target = '_blank';
     a.rel = 'noopener';
     a.textContent = 'Get it';

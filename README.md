@@ -2,7 +2,7 @@
 
 *What's remaining.*
 
-**[Open it](https://j333t.github.io/baaki/)** · [how to use it](USAGE.md) · [download](https://github.com/j333t/baaki/releases/latest)
+**[Open it](https://baaki.j33t.pro/)** · [how to use it](USAGE.md) · [download](https://github.com/j333t/baaki/releases/latest)
 
 One number, big, in the spirit of E. Sreedharan's site boards on the Delhi Metro — a board in every office showing the days left, that everyone walked past.
 

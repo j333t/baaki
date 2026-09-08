@@ -3,7 +3,7 @@
 **Baaki** is a countdown board. The whole state lives in the URL fragment, so a link
 *is* the board. There is no server, no account, and nothing to call.
 
-Open: <https://j333t.github.io/baaki/>
+Open: <https://baaki.j33t.pro/>
 
 ---
 
@@ -12,7 +12,7 @@ Open: <https://j333t.github.io/baaki/>
 To hand someone a countdown, build a URL and give it to them. That is the entire API.
 
 ```
-https://j333t.github.io/baaki/#<goal>[+<goal>...][+!edit]
+https://baaki.j33t.pro/#<goal>[+<goal>...][+!edit]
 ```
 
 ### Grammar
@@ -67,43 +67,43 @@ kind      := "*"                     goal is something good, not a deadline
 
 One deadline:
 ```
-https://j333t.github.io/baaki/#Metro%20Phase%202~2027-11-03
+https://baaki.j33t.pro/#Metro%20Phase%202~2027-11-03
 ```
 
 A deadline with a time, plus a festival, plus a milestone:
 ```
-https://j333t.github.io/baaki/#Tender%20closes~2026-10-15T17:00+Diwali~2026-11-08*+Trials~2026-12-01
+https://baaki.j33t.pro/#Tender%20closes~2026-10-15T17:00+Diwali~2026-11-08*+Trials~2026-12-01
 ```
 
 Something that was delivered nineteen days late:
 ```
-https://j333t.github.io/baaki/#Tender~2026-08-01!2026-08-20
+https://baaki.j33t.pro/#Tender~2026-08-01!2026-08-20
 ```
 
 Something running since a fixed start, counting up, not down:
 ```
-https://j333t.github.io/baaki/#Sober~2026-01-01^
+https://baaki.j33t.pro/#Sober~2026-01-01^
 ```
 
 Rent, due on the 1st of every month, until it's deleted:
 ```
-https://j333t.github.io/baaki/#Rent~2026-10-01#m
+https://baaki.j33t.pro/#Rent~2026-10-01#m
 ```
 
 An exam that opens at 10am and closes at noon - one link, right view either side of
 the start:
 ```
-https://j333t.github.io/baaki/#Exam~2026-10-12T10:00~2026-10-12T12:00
+https://baaki.j33t.pro/#Exam~2026-10-12T10:00~2026-10-12T12:00
 ```
 
 A meeting at a fixed instant, readable correctly in any timezone:
 ```
-https://j333t.github.io/baaki/#Standup~2026-09-10T18:00@Asia%2FKolkata
+https://baaki.j33t.pro/#Standup~2026-09-10T18:00@Asia%2FKolkata
 ```
 
 An empty board, for someone to fill in themselves:
 ```
-https://j333t.github.io/baaki/
+https://baaki.j33t.pro/
 ```
 
 ### What not to do

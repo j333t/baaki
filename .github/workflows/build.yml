@@ -97,7 +97,7 @@ jobs:
           body: |
             **The file itself is the product.** Download
             [`baaki.html`](https://github.com/j333t/baaki/raw/${{ github.ref_name }}/baaki.html)
-            and double-click it, or just open <https://j333t.github.io/baaki/>.
+            and double-click it, or just open <https://baaki.j33t.pro/>.
 
             The desktop wrappers below are optional. They exist for the three
             things a browser tab cannot do: float above other windows, start

@@ -5,7 +5,7 @@ import { chromium } from 'playwright';
 import fs from 'fs';
 import jsQR from 'jsqr';
 
-const URL = 'https://j333t.github.io/baaki/';
+const URL = 'https://baaki.j33t.pro/';
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ timezoneId: 'Asia/Kolkata', locale: 'en-IN' });
 const page = await ctx.newPage();
@@ -31,7 +31,7 @@ ok('service worker registers', await page.evaluate(() => navigator.serviceWorker
 
 // version.json is reachable from the page, which is the whole update path
 const check = await page.evaluate(() =>
-  fetch('https://j333t.github.io/baaki/version.json', { cache: 'no-store' }).then(r => r.json()).catch(e => ({ err: String(e) })));
+  fetch('https://baaki.j33t.pro/version.json', { cache: 'no-store' }).then(r => r.json()).catch(e => ({ err: String(e) })));
 // checked against baaki.html's own VERSION rather than a hardcoded
 // string, so this stops going stale every time we ship
 const localVer = fs.readFileSync('baaki.html', 'utf8').match(/VERSION\s*=\s*'([^']+)'/)[1];
