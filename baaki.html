@@ -2306,6 +2306,10 @@ function askClashes(q){
       S.goals[c.i] = c.g; after();
     },
     'Keep both', function(){
+      /* Two goals with one name on two dates is exactly the confusion
+         the question was asked to avoid. The incoming one takes a
+         number, so the board stays readable either way you answer. */
+      c.g.name = uniqueName(c.g.name);
       logEvent('add', c.g.name, 'kept alongside your own');
       S.goals.push(c.g); after();
     }
@@ -3553,12 +3557,59 @@ el.dlg.addEventListener('close', resetForm);
    read as the same thing three times. The smallest number nobody else
    on this board is using is just as short and actually tells them
    apart. */
+/* ---------- a goal nobody named ---------------------------
+   It used to be "1", "2", "3", which tells you nothing and looks
+   like an error. A board is read at a glance, so the one thing a
+   placeholder must do is be obviously a placeholder - nobody should
+   mistake one for a label somebody chose, least of all the person
+   you sent the link to.
+
+   One register, on purpose: everyday things and vague stretches of
+   time. The joke is that the same board counts down to the washing
+   up and to one of these days, which is the whole idea of the thing
+   stated as a gag. Nothing grim - "heat death" was drafted and cut,
+   because a board that says that over somebody's surgery date is
+   not funny. Nothing that reads as a real label either.
+------------------------------------------------------------ */
+var NAMES = [
+  'doing the dishes', 'laundry day', 'bin day', 'spring cleaning', 'the big shop',
+  'the school run', 'tea time', 'payday', 'rent day', 'the deep clean',
+  'the repair', 'the delivery', 'the return', 'the refill', 'the renewal',
+  'any minute now', 'one of these days', 'sooner or later', 'the long haul',
+  'till kingdom come', 'not long now', 'someday soon', 'in due course',
+  'before long', 'round about now', 'give or take', 'the small hours',
+  'a fortnight hence', 'this time next year', 'the far future',
+  'the big day', 'opening night', 'launch day', 'go live', 'the reveal',
+  'moving day', 'the reunion', 'the visit', 'the flight', 'the trip',
+  'the handover', 'the changeover', 'the cutover', 'the drop',
+  'the verdict', 'the results', 'the interview', 'the pitch', 'the viva',
+  'the audit', 'the checkup', 'the appointment', 'the inspection',
+  'crunch time', 'zero hour', 'the final push', 'the last mile',
+  'the home stretch', 'the halfway mark', 'the wind-down', 'the wrap',
+  'the comeback', 'the rematch', 'the encore', 'the finale',
+  'the first day', 'the last day', 'the morning after', 'the long weekend'
+];
+
+/* Two of anything with the same name is a board you cannot read, and
+   it does not matter whether the collision came from the phrase list
+   or from somebody else's link - so both go through here. */
+function uniqueName(base){
+  var used = {};
+  S.goals.forEach(function(g){ used[normName(g.name)] = true; });
+  if(!used[normName(base)]) return base;
+  var n = 2;
+  while(used[normName(base + ' ' + n)]) n++;
+  return base + ' ' + n;
+}
 function defaultName(){
   var used = {};
-  S.goals.forEach(function(g){ used[g.name] = true; });
-  var n = 1;
-  while(used[String(n)]) n++;
-  return String(n);
+  S.goals.forEach(function(g){ used[normName(g.name)] = true; });
+  var free = [];
+  for(var i = 0; i < NAMES.length; i++) if(!used[normName(NAMES[i])]) free.push(NAMES[i]);
+  /* Only once every phrase is spoken for does anything get a number,
+     and even then uniqueName is what adds it. */
+  var pool = free.length ? free : NAMES;
+  return uniqueName(pool[(Math.random() * pool.length) | 0]);
 }
 /* A bare day means "by the end of it" for a deadline - but once that
    day is already gone, the goal is a since, and "since Monday" means

@@ -83,6 +83,34 @@ Two things to be honest about before this is built:
 
 ~~**An iframe embed already works and is undocumented.**~~ Documented in `USAGE.md`.
 
+## Queued, scored 2026-09-22
+
+**The number rolls in.** On a board whose starting point is known, count the number down
+to its real value over a second or two rather than printing it — each digit rolling, with
+some weight to the motion. The default board knows its start (365); a scheduled goal
+knows its own start; anything else does not, and gets no animation rather than a
+made-up one.
+
+The colour could ride the same curve, so the ramp travels the same distance in the same
+time and the two read as one movement.
+
+Needs easing tuned against the *distance*, not a fixed duration: a three-day difference
+must not take ten seconds, and 290 days must not blur past in one. Something
+logarithmic, like the ramp itself already uses.
+
+Watch it against a house rule: **the number itself never moves.** This is arrival
+motion, once, not an ongoing effect tied to urgency — which is what got a scale
+animation and a background pulse removed in 1.4.0 and 1.5.0. It stays on the right side
+of that line only if it ends and never repeats.
+
+Glance: pass (it settles into a still number). Cold open: pass. Weight: needs work.
+One primitive: pass. **Deferred** until the screen work lands.
+
+**Rename Window to Scheduled.** "Window" is a word this tool taught the user; "scheduled"
+is one they already have. Pure label change — the link format carries a window as
+`start~end` with no marker letter, so nothing about an existing link changes. Cheap and
+independent of everything else. **Deferred** with the above.
+
 ## Still open, from the work above
 
 **The per-link card image.** The worker rewrites `og:title` and `og:description` per

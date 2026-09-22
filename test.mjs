@@ -1117,8 +1117,11 @@ await page.waitForTimeout(100);
 await page.click('#addForm button[type=submit]');
 await page.waitForTimeout(250);
 ok('an empty name does not block the form', await page.locator('#dlg').isVisible(), false);
-ok('it gets a short, unique default name instead of the same word every time',
-   decodeURIComponent(await page.evaluate(() => location.hash)).includes('1~2027-03-31'), true);
+/* "1", "2", "3" told you nothing and looked like an error. A
+   placeholder's one job is to be obviously a placeholder. */
+const gotName = decodeURIComponent(await page.evaluate(() => location.hash)).split('~')[0].replace('#', '');
+ok('an unnamed goal gets a phrase, not a number', /^\d+$/.test(gotName), false);
+ok('and it is short enough to read at a glance', gotName.length <= 20, true);
 ok('and no native validation popup was in the way',
    await page.evaluate(() => document.querySelector('#fName').hasAttribute('required')), false);
 
@@ -1144,6 +1147,31 @@ await page.waitForTimeout(150);
 /* ---------- keeping a board somebody sent you --------------
    Every case here has either a date boundary or a piece of stored
    state in it, which between them is where every bug so far lived. */
+/* ---------- a goal nobody named ---------------------------
+   Random is only useful if it cannot collide: a board with two goals
+   called "bin day" is worse than one called "2". */
+console.log('\n--- unnamed goals get told apart ---');
+
+await page.evaluate(() => { localStorage.removeItem('baaki.hash'); localStorage.removeItem('baaki.prev'); });
+await page.goto('about:blank');
+await page.goto(FILE);
+await page.waitForTimeout(350);
+for (let i = 0; i < 8; i++) {
+  await page.locator('#bAdd').click();
+  await page.waitForTimeout(200);
+  await page.fill('#fWhen', `in ${i + 2} weeks`);
+  await page.waitForTimeout(120);
+  await page.click('#addForm button[type=submit]');
+  await page.waitForTimeout(220);
+}
+const picked = decodeURIComponent(await page.evaluate(() => location.hash))
+  .replace('#', '').split('+').filter(t => t.indexOf('~') > -1).map(t => t.split('~')[0]);
+ok('eight unnamed goals, eight goals', picked.length, 8);
+ok('and eight different names', new Set(picked.map(s => s.toLowerCase())).size, 8);
+ok('none of them a bare number', picked.some(s => /^\d+$/.test(s)), false);
+
+await page.evaluate(() => { localStorage.removeItem('baaki.hash'); localStorage.removeItem('baaki.prev'); });
+
 /* ---------- the front door is not a deadline ---------------
    The empty board is the only screen not counting anything real, and
    it is what a stranger lands on. It steps off the deadline ramp
@@ -1421,7 +1449,9 @@ ok('the question names the goal and both dates',
    /Exam/.test(await offerText()) && (await offerText()).split('2027').length === 3, true);
 await page.locator('#offerNo').click();     // Keep both
 await page.waitForTimeout(220);
-ok('keep both leaves two', await goals(), 'Exam~2027-03-12,Exam~2027-03-15');
+/* Two goals called "Exam" on two dates is the very confusion the
+   question existed to avoid - the incoming one takes a number. */
+ok('keep both leaves two, told apart', await goals(), 'Exam~2027-03-12,Exam 2~2027-03-15');
 
 await fresh('#Exam~2027-03-12');
 await paste('#Exam~2027-03-15');
