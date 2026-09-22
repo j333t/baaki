@@ -78,7 +78,14 @@ const shot = await page.evaluate(() => {
   return { w: big.width, data: Array.from(x.getImageData(0, 0, big.width, big.height).data), href: location.href };
 });
 const decoded = jsQR(Uint8ClampedArray.from(shot.data), shot.w, shot.w);
-ok('the code scans back to the live link', decoded && decoded.data, shot.href);
+/* The root, not /baaki.html. index.html forwards the fragment
+   untouched, so it is the same board in a shorter link - and it is the
+   page carrying the preview card, which the file name is not. Shorter
+   also means fewer modules, and the code has a version budget. */
+ok('the code scans back to the live board', decoded && decoded.data,
+   shot.href.replace('/baaki.html', '/'));
+ok('and carries the root, not the file name',
+   (decoded && decoded.data || '').includes('baaki.html'), false);
 ok('and a hosted link needs a small code', (shot.w / 6 - 8 - 17) / 4 <= 4, true);
 
 // offline, after one visit — the reason sw.js exists at all

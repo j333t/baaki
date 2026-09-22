@@ -46,7 +46,12 @@
   --ink:#fff; --dim:rgba(255,255,255,.60); --faint:rgba(255,255,255,.30);
   --line:rgba(255,255,255,.16); --panel:rgba(255,255,255,.07); --panel2:rgba(255,255,255,.13);
   --g1:#080c1c; --g2:#141c44; --ang:155deg;
-  --hero-w:300; --hero-k:1; --hero-track:-.04em;
+  /* 300 was elegant on a laptop and thin on a wall, which is the case
+     that matters - this is a board you read from across a room. 600
+     rather than a true 700: past that the counters in 0, 4, 6 and 8
+     start to close at 21vw and the digit stops being legible at a
+     glance, which is the only thing it is for. */
+  --hero-w:600; --hero-k:1; --hero-track:-.04em;
   /* Controls stay room-scale everywhere, even inside a dialog's
      tamer content scale - a button is not a paragraph, and it should
      not shrink just because the text next to it did. */
@@ -57,9 +62,9 @@
 /* Five directions, all from fonts the machine already has. A webfont
    would be a network dependency in a file whose whole promise is that
    it needs nothing. */
-html[data-face=grotesk]{--face:"Helvetica Neue",Helvetica,Arial,"Liberation Sans",sans-serif;--hero-w:300;--hero-track:-.045em}
+html[data-face=grotesk]{--face:"Helvetica Neue",Helvetica,Arial,"Liberation Sans",sans-serif;--hero-w:500;--hero-track:-.045em}
 html[data-face=serif]{--face:ui-serif,Georgia,"Iowan Old Style","Palatino Linotype","Times New Roman",serif;--hero-w:400;--hero-track:-.025em}
-html[data-face=mono]{--face:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;--hero-w:300;--hero-track:-.05em}
+html[data-face=mono]{--face:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;--hero-w:500;--hero-track:-.05em}
 html[data-face=display]{--face:Bahnschrift,"Avenir Next Condensed","Arial Narrow",Impact,sans-serif;--hero-w:600;--hero-track:-.03em}
 html[data-theme=light]{
   --ink:#141821; --dim:rgba(20,24,33,.62); --faint:rgba(20,24,33,.34);
@@ -86,6 +91,13 @@ html[data-theme=black] #num,html[data-theme=white] #num{
   -webkit-background-clip:text;background-clip:text;color:transparent;
 }
 html[data-theme=black] #unit,html[data-theme=white] #unit{color:var(--acc1,var(--dim))}
+/* The unit rides on the digits, so it has to be made of the same
+   material. On these two surfaces the digits are the page's background
+   clipped to their own glyphs; left with its own colour the unit came
+   out flat white on black and flat grey on white, reading as a
+   different font stuck to the number. Transparent hands it back to the
+   parent's clip. */
+html[data-theme=black] #num sup,html[data-theme=white] #num sup{color:transparent}
 html,body{height:100%}
 body{
   font:400 var(--f2)/1.45 var(--face);
@@ -115,7 +127,12 @@ main{display:flex;flex-direction:column;align-items:center;gap:var(--s2);min-wid
 /* The unit rides on the digits now, not beside them - a real size, not
    the browser's cramped default <sup>, so it survives being read from
    across a room. */
-#num sup{font-size:.26em;font-weight:500;vertical-align:.95em;color:var(--dim);
+/* The offset is worked out, not guessed: the digits' cap height is
+   about .72em, the unit's own is about .19 of the number's, so lifting
+   its baseline by .53 of the number puts the two cap-tops level. In
+   the unit's own em - which is what vertical-align counts in - that is
+   .53 / .26, near enough 2. At .95em it sat halfway down the digits. */
+#num sup{font-size:.26em;font-weight:600;vertical-align:2.04em;color:var(--dim);
   letter-spacing:0;margin-left:.03em}
 #unit{font-size:var(--f2);font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
 #unit[hidden]{display:none}
@@ -777,6 +794,16 @@ function buildHash(goals, edit){
   return p.length ? '#' + p.join('+') : '';
 }
 function baseUrl(){ return location.href.split(/[?#]/)[0]; }
+/* What a link should say out loud. On the hosted copy the file name is
+   noise: index.html forwards the fragment untouched, so the root is
+   the same board in a shorter, better-looking link - and it is the
+   page a crawler finds the preview card on, which "/baaki.html" is
+   not. A file:// copy or the desktop wrapper has no root to fall back
+   to, so they keep the path they were opened from. */
+function siteUrl(){
+  var b = baseUrl();
+  return /^https?:$/.test(location.protocol) ? b.replace(/\/[^\/]*\.html$/i, '/') : b;
+}
 
 /* ---------- the other half of the link --------------------
    A fragment is never sent to a server. That is the whole reason
@@ -808,7 +835,7 @@ function pathNoBoard(){
    actually deployed, and after that whenever this device has asked for
    it - a setting that never rides in a link, like every other one. */
 function shareUrl(hash){
-  if(!OG_HOST || lsGet('priv')) return baseUrl() + hash;
+  if(!OG_HOST || lsGet('priv')) return siteUrl() + hash;
   return OG_HOST.replace(/\/+$/, '') + '/' + (hash ? '?b=' + hash.slice(1) : '');
 }
 
@@ -1267,6 +1294,15 @@ var RAMP = {
   }
 };
 var OVER = { dark:['#17171a','#37373e'], light:['#f1f1f3','#d8d8de'] };
+/* The empty board is the one screen that is not counting anything real
+   - it is the front door, and the number on it is an example. So it
+   steps off the deadline ramp, which would otherwise paint it whatever
+   colour the days left in the year happen to land on, and takes a
+   fixed one instead. Bottle green: the ramps run navy through teal to
+   amber to red, so green is the one direction nothing else occupies,
+   and a front door should not look like a deadline in progress.
+   Still a pair, still hue-rotatable, still nothing pasted into a rule. */
+var FRONT = { dark:['#04150d','#0e9457'], light:['#e8f7ef','#7fd6a8'] };
 
 /* Done is not one state, it is three, and they should not look alike.
    Early keeps the full arrival colour; on time is the same colour with
@@ -1480,7 +1516,7 @@ function render(force){
     el.done.hidden = true;
     drawShareGroup();
     document.title = 'Baaki · ' + left + ' days left in ' + yr;
-    var g0 = paint(gradFor(left, light, false), null);
+    var g0 = paint(FRONT[light ? 'light' : 'dark'], null);
     root.style.setProperty('--g1', g0[0]);
     root.style.setProperty('--g2', g0[1]);
     setIcon(String(left), g0[1]);
@@ -2829,7 +2865,7 @@ function drawTools(){
 var qrLink = '';
 function openQr(){
   track('qr');
-  var link = qrLink = S.goals.length ? baseUrl() + buildHash(S.goals, false) : baseUrl();
+  var link = qrLink = siteUrl() + (S.goals.length ? buildHash(S.goals, false) : '');
   var g = qrMatrix(link), cv = $('#qrCv'), note = $('#qrNote');
   if(!g){
     cv.width = cv.height = 1;

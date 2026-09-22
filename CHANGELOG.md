@@ -22,6 +22,48 @@ Anything that changes the **link format** is a breaking change and needs a major
 
 ## Unreleased
 
+### The number reads from across a room now
+
+300 was elegant on a laptop and thin on a wall, which is the case that
+actually matters. The hero is 600 — not a true 700, because past that
+the counters in 0, 4, 6 and 8 start to close at 21vw and the digit
+stops being legible at a glance, which is the only thing it is for.
+
+The unit was sitting halfway down the digits rather than on top of
+them. The offset is worked out now rather than guessed: cap height of
+the digits is about .72em, the unit's own about .19 of the number, so
+lifting its baseline by .53 of the number puts the two cap-tops level
+— which in the unit's own em, what `vertical-align` counts in, is 2.04.
+
+**Fixed:** on the black and white surfaces the digits become the page
+background clipped to their own glyphs, and the unit did not follow.
+It came out flat white on black and flat grey on white, reading as a
+different font stuck to the side of the number. It is transparent on
+those two surfaces now, so the parent's clip paints it.
+
+### The front door stopped looking like a deadline
+
+The empty board is the only screen not counting anything real, but it
+was still taking its colour from the deadline ramp — so it wore
+whatever the days left in the year happened to land on. Teal in
+September, amber by December. It has its own pair now, bottle green:
+the ramps run navy through teal to amber to red, so green is the one
+direction nothing else occupies.
+
+The preview card follows, because it asks the empty board what it is
+painted rather than being told. It is also flat now rather than a
+gradient — on screen the gradient is slow and alive and you look at it
+for weeks, but in a crop glanced at for half a second in a chat list it
+just reads as an uneven wash.
+
+### Shared links carry the root
+
+They were handing out `baaki.j33t.pro/baaki.html#...`. `index.html`
+forwards the fragment untouched, so the root is the same board in a
+shorter link — and it is the page carrying the preview card, which the
+file name is not. Shorter also means fewer QR modules, and the code has
+a version budget it has already hit once.
+
 ### A link can show a preview card, and a board can leave the browser
 
 A link to Baaki showed a bare blue URL in every chat app there is. That

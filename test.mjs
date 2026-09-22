@@ -1144,6 +1144,69 @@ await page.waitForTimeout(150);
 /* ---------- keeping a board somebody sent you --------------
    Every case here has either a date boundary or a piece of stored
    state in it, which between them is where every bug so far lived. */
+/* ---------- the front door is not a deadline ---------------
+   The empty board is the only screen not counting anything real, and
+   it is what a stranger lands on. It steps off the deadline ramp
+   rather than taking whatever colour the days left in the year happen
+   to land on. Checked by behaviour, never by hex - a nudged ramp must
+   not break a test. */
+console.log('\n--- the empty board has its own colour ---');
+
+const chan = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+const painted = () => page.evaluate(() => ({
+  g1: document.documentElement.style.getPropertyValue('--g1'),
+  g2: document.documentElement.style.getPropertyValue('--g2')
+}));
+
+await page.evaluate(() => { localStorage.removeItem('baaki.hash'); localStorage.removeItem('baaki.prev'); });
+await page.goto('about:blank');
+await page.goto(FILE);
+await page.waitForTimeout(400);
+let paintNow = await painted();
+/* If the paint path ever throws, the number still renders and only the
+   colour silently vanishes - which is exactly how a name collision on
+   the palette got through once. Assert it was painted at all. */
+ok('the empty board is actually painted, not left on the stylesheet default',
+   /^#[0-9a-f]{6}$/i.test(paintNow.g2), true);
+let [er, eg, eb] = chan(paintNow.g2);
+ok('and it is green, which no ramp goes near', eg > er && eg > eb, true);
+
+r = await open('#Metro~2027-11-03');
+const [dr, dg, db] = chan((await painted()).g2);
+ok('a real deadline is not painted like the front door', dg > dr && dg > db, false);
+
+console.log('\n--- the number reads from across a room ---');
+
+r = await open('#Metro~2027-11-03');
+ok('the hero is heavy enough to carry a wall',
+   +(await page.locator('#num').evaluate(e => getComputedStyle(e).fontWeight)) >= 500, true);
+
+/* The unit rides on top of the digits. It sat halfway down them for a
+   while, which is the sort of thing only a measurement catches. */
+const numBox = await page.locator('#num').boundingBox();
+const supBox = await page.locator('#num sup').boundingBox();
+ok('the unit sits in the top half of the digits, not their middle',
+   supBox.y < numBox.y + numBox.height * 0.4, true);
+ok('and it stays inside them, not floating above',
+   supBox.y >= numBox.y - 2, true);
+
+/* On black and white the digits become the page background clipped to
+   their own glyphs. The unit has to be made of that same material or
+   it detaches into a different colour and weight. */
+for (const surface of ['black', 'white']) {
+  await page.evaluate(t => localStorage.setItem('baaki.theme', t), surface);
+  await page.goto('about:blank');
+  await page.goto(FILE + '#Metro~2027-11-03');
+  await page.waitForTimeout(350);
+  ok(`on ${surface} the unit is cut from the same gradient as the digits`,
+     await page.locator('#num sup').evaluate(e => getComputedStyle(e).color),
+     'rgba(0, 0, 0, 0)');
+}
+await page.evaluate(() => localStorage.removeItem('baaki.theme'));
+await page.goto('about:blank');
+await page.goto(FILE);
+await page.waitForTimeout(250);
+
 /* ---------- the other half of the link ---------------------
    A fragment never reaches a server, so a preview bot cannot read one.
    The query form exists for exactly that, and must arrive at the same
