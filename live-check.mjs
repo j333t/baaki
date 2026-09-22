@@ -22,8 +22,36 @@ const ok = (n, got, want) => {
 await page.goto(URL + '#Metro%20Phase%202~2027-11-03');
 await page.waitForTimeout(1200);
 ok('index.html forwards and keeps the hash', page.url().includes('baaki.html#Metro'), true);
-ok('the number is right on the real host', (await page.locator('#num').textContent()).trim(), '427');
+ok('the number is right on the real host', (await page.locator('#num').textContent()).trim(), '427d');
 ok('the tab title', await page.title(), 'D-427 · Metro Phase 2');
+
+/* The preview card, which is the one thing about a link that people
+   who have not clicked will ever see. A crawler fetches the root and
+   stops there - it never follows the redirect - so the tags have to be
+   on index.html, and the image has to actually be reachable at the
+   absolute URL they name. Both are easy to get wrong and impossible to
+   notice from a browser. */
+const root = await (await fetch(URL)).text();
+ok('the root page carries a card at all', /property="og:image"/.test(root), true);
+const card = (/property="og:image" content="([^"]+)"/.exec(root) || [])[1];
+ok('and names it absolutely, because a crawler resolves nothing',
+   /^https:\/\//.test(card || ''), true);
+const img = await fetch(card);
+ok('the image is really there', img.status, 200);
+ok('and is a format a chat app will draw', (img.headers.get('content-type') || '').includes('image/'), true);
+const bytes = +(img.headers.get('content-length') || 0);
+ok('and is light enough that WhatsApp will not skip it', bytes > 0 && bytes < 300000, true);
+
+/* The query form only matters once the worker is up. Until then it
+   still has to load the board - it is the same page either way. */
+await page.goto(URL + '?b=Metro%20Phase%202~2027-11-03');
+await page.waitForTimeout(1200);
+ok('a ?b= link lands on the right board', (await page.locator('#num').textContent()).trim(), '427d');
+ok('and puts the private form back in the address bar',
+   await page.evaluate(() => location.search), '');
+
+await page.goto(URL + '#Metro%20Phase%202~2027-11-03');
+await page.waitForTimeout(1200);
 
 // the service worker, which only exists on a real origin
 await page.waitForTimeout(1500);
@@ -58,7 +86,7 @@ await ctx.setOffline(true);
 await page.goto('about:blank');
 await page.goto(URL + '#Metro%20Phase%202~2027-11-03');
 await page.waitForTimeout(1000);
-ok('it still opens with the network off', (await page.locator('#num').textContent()).trim(), '427');
+ok('it still opens with the network off', (await page.locator('#num').textContent()).trim(), '427d');
 await ctx.setOffline(false);
 
 console.log(`\n${pass} passed, ${fail} failed`);
