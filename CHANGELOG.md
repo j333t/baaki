@@ -20,6 +20,91 @@ Anything that changes the **link format** is a breaking change and needs a major
 
 ---
 
+## Unreleased
+
+### A link can show a preview card, and a board can leave the browser
+
+A link to Baaki showed a bare blue URL in every chat app there is. That
+is the one place this thing introduces itself to people who have not
+clicked — and it was blank.
+
+The awkward part is structural: everything after `#` is never sent to a
+server, which is exactly why nothing about a goal leaks and exactly why
+no crawler can see one. So there are now two forms of the same link.
+`?b=` carries the identical grammar in the query string, where a
+preview bot can read it, and rewrites itself back to `#` the moment the
+board loads — the preview form is for sending, not for keeping.
+
+`og.jpg` ships as a static card and is drawn by `npm run build:card`,
+which loads the real page and asks it what 365 days out looks like
+rather than storing a hex anywhere. `og-worker.mjs` is an optional
+Cloudflare worker that rewrites the title and description per link, so
+a thread reads "Board exam — 171 days" instead of a URL. It also
+serves a live SVG badge at `/img` for READMEs and Notion pages. All of
+it is off until `OG_HOST` is set; nothing half-deployed changes what
+anybody already holds.
+
+The card only ever states what survives being stale, because a preview
+is cached on the platform's CDN for weeks: whole days, or
+"Today"/"Tomorrow", never a running time, and always with the target
+date printed beside the number so a stale card corrects itself.
+
+Separately, a board can now be saved as a small file, and the dates
+sent to a calendar. The link was always a perfect export; what it was
+not was recognisable as one, so a wiped laptop took the board with it
+and the only warning was a string nobody reads. The saved file is a
+pointer rather than a copy — copying `baaki.html` into it would fork a
+frozen app that never updates and never comes home.
+
+One bug worth recording because it would have been invisible: reading
+`?b=` with `URLSearchParams` form-decodes it, turning `+` into a space
+**and** the `%20` inside `Board%20exam` into one as well. After that
+nothing can tell the separator from the name and every goal with a
+space in it splits in two. Both ends read the raw query instead.
+
+### The blank board now says what it is
+
+It showed बाकी, a number counting to the end of the year, and nothing
+else. Somebody arriving cold — which is every first visit — had a word
+in a script they may not read and a number counting to nothing they
+recognised, with no way to find out what either meant.
+
+The roman spelling now sits beside the Devanagari, because a name you
+cannot pronounce is a name you cannot pass on. Under the number, one
+plain line: *"A deadline in a link. No account. Works offline."* Three
+facts, three beats. Plainer drafts beat more cadenced ones here; the
+line is only ever read by somebody who does not yet know what they are
+looking at.
+
+### A board somebody sent you can be kept
+
+Opening a shared link used to replace your board outright, and the only
+way to keep both was to hand-edit the address bar. That made every
+share a dead end, and a dead end never produces a second sharer — which
+is the one loop this thing grows by.
+
+Two ways in, because they are two different moments. Click somebody's
+link and their board is on screen while yours is not: you get one line
+offering yours back, and taking it folds theirs in. Get the link as
+text instead and your board is already on screen: paste it anywhere.
+Paste is the reliable path because the keystroke is its own permission;
+the "Add from a link" button exists beside it because nobody discovers
+a gesture that has no button.
+
+The merge treats the **name** as identity and the date as its value.
+Two goals on one day are ordinary — an exam and a flight — and worth no
+question. The same name on two different days is the real collision,
+and the only thing it ever asks about. Matching forgives case and
+spacing and nothing else: a wrong merge silently eats a goal you cannot
+get back, while a missed merge leaves a visible duplicate you delete in
+two seconds, and you never trade an obvious error for an invisible one.
+
+A board pushed aside by an incoming link is kept under `baaki.prev`,
+because `baaki.hash` is overwritten by the very next edit. "Restore my
+board" appears in the Goals dialog while one is waiting.
+
+---
+
 ## 2.0.0 — unreleased
 
 The link format grew two new, optional fields - a major bump by this

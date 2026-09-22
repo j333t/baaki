@@ -63,6 +63,48 @@ kind      := "*"                     goal is something good, not a deadline
    switch has happened. A plain goal counts down and then keeps counting up past zero,
    in grey, until marked done.
 
+### The same board, in a query string
+
+A fragment is never sent to a server. That is why nothing about a goal can leak — and
+also why no crawler, and therefore no chat app, can draw a preview of one. So there is
+a second form that carries the board where a preview bot can read it:
+
+```
+https://baaki.j33t.pro/?b=Board%20exam~2027-03-12+Goa~2026-12-20
+```
+
+`?b=` holds **exactly** what would follow the `#` — same grammar, same parser, no second
+format to learn. Opening one loads the board and immediately rewrites the address to the
+`#` form, so a bookmark or anything copied out of the address bar carries the private
+version. The query form is for sending, not for keeping.
+
+Generating links? Prefer the `#` form unless you specifically want a preview card. And
+if you read `?b=` yourself, read it off the raw query — `URLSearchParams` form-decodes,
+which turns `+` into a space *and* the `%20` inside `Board%20exam` into one too, after
+which a two-word goal reads as two goals.
+
+### A live badge in someone else's page
+
+Once the preview worker is deployed, an ordinary `<img>` gets a number that re-renders
+every time the page is loaded — a README, a Notion page, a wiki, an email template:
+
+```markdown
+![](https://baaki.j33t.pro/img?b=Launch~2027-03-31)
+```
+
+### Putting one inside another page
+
+Any surface that allows an iframe gets a live board with no extra work — it ticks,
+it themes itself, it is the real thing:
+
+```html
+<iframe src="https://baaki.j33t.pro/#Launch~2027-03-31" width="480" height="270"
+        style="border:0;border-radius:12px"></iframe>
+```
+
+Works in Notion, Confluence, Google Sites and most CMS embed blocks. The fragment
+carries the goal exactly as it does in a shared link.
+
 ### Examples
 
 One deadline:
@@ -108,7 +150,10 @@ https://baaki.j33t.pro/
 
 ### What not to do
 
-- Don't invent query parameters. There are none; everything is in the fragment.
+- Don't invent query parameters. There is exactly one, `?b=`, described above.
+  Everything else is in the fragment.
+- Don't assume a link replaces a board. Anything you generate can be pasted into a
+  board that already has goals and will merge into it, matching on the goal's name.
 - Don't send more than about seven goals. Past that the board stops being glanceable,
   and it will say so.
 - Don't put an offset or a `Z` in a target (no `+05:30`, no trailing `Z`). Use the
@@ -131,6 +176,17 @@ screen sleeping.
 
 **Send it.** <kbd>S</kbd> copies the board you are looking at. <kbd>Q</kbd> draws a QR
 code, so somebody across a room can point a phone at it and get the same board.
+
+**Keep a board somebody sent you.** Opening their link shows *their* board — that is
+what clicking a link should mean. One line offers yours back; take it and both boards
+end up on one screen. If the link arrived as text instead, paste it anywhere on the
+page, or press <kbd>G</kbd> and use **Add from a link**. Goals you already have are
+skipped; a name you already have on a different date is the only thing it asks about.
+
+**Bookmark the bare address, not a goal link.** `https://baaki.j33t.pro/` with nothing
+after it always opens your latest board, because the board is remembered on the device.
+A link carrying goals is for sending, not for saving — the moment you add or edit a
+goal, the old one points at the old board.
 
 **Mark it done.** <kbd>D</kbd>. You get early, on time, or late — each looks different
 and says how far off it was. The clock cannot know you finished, which is why the

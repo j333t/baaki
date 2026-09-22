@@ -6,6 +6,22 @@
 <title>Baaki</title>
 <meta name="theme-color" content="#080c1c">
 <meta name="description" content="Baaki — what's remaining. The link carries the goal.">
+<!-- The card a chat app shows instead of a bare blue URL. It is the only
+     place Baaki introduces itself to people who have not clicked yet, which
+     makes it the cheapest marketing surface there is. Static on purpose:
+     a crawler never receives the fragment, so it cannot see the goal and no
+     amount of script will change that. Absolute URLs - a crawler resolves
+     nothing relative to where it found the tag. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Baaki">
+<meta property="og:title" content="Baaki — a deadline in a link">
+<meta property="og:description" content="Count anything down. Send it to anyone. No account, ever.">
+<meta property="og:image" content="https://baaki.j33t.pro/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="365 days remaining">
+<meta property="og:url" content="https://baaki.j33t.pro/">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="manifest" href="manifest.webmanifest">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -89,6 +105,9 @@ main{display:flex;flex-direction:column;align-items:center;gap:var(--s2);min-wid
   max-width:min(88vw,32ch);overflow-wrap:anywhere;opacity:.92;
   display:flex;align-items:center;gap:var(--s2);justify-content:center}
 #name .star{font-size:.7em;opacity:.5;flex:none}
+/* The roman spelling, beside the Devanagari. Somebody landing cold has
+   to be able to say the name out loud before they can pass it on. */
+#name .rom{font-weight:400;opacity:.5;flex:none}
 #hero{display:flex;align-items:baseline;gap:var(--s3);justify-content:center;flex-wrap:wrap;
   margin:calc(var(--s2) * -1) 0 var(--s1)}
 #num{font-size:calc(clamp(4.5rem,21vw,15rem) * var(--hero-k));font-weight:var(--hero-w);
@@ -129,6 +148,17 @@ main{display:flex;flex-direction:column;align-items:center;gap:var(--s2);min-wid
 #snark{margin-top:var(--s3);font-size:var(--f0);color:var(--faint);letter-spacing:.03em;
   max-width:44ch;font-style:italic;min-height:1em;transition:opacity .8s ease}
 #snark.fade{opacity:0}
+/* On an empty board this line does the one job nothing else on screen
+   does: say what the thing is. A stranger sees a number and a word in
+   a script they may not read, and has no way to find out otherwise.
+   Plain, not italic, and a shade brighter than the nudge under it -
+   what it is outranks what to press. */
+#snark .pitch{display:block;font-style:normal;font-weight:500;letter-spacing:0;color:var(--dim)}
+#snark .cue{display:block;margin-top:var(--s1)}
+/* Two sentences instead of one, so the measure that suited a single
+   rotating tip is a shade too narrow. Scoped by an ID so a later plain
+   rule cannot quietly outrank it. */
+body.empty #snark{max-width:54ch}
 
 /* One height for everything, squares for the icons, three groups with
    real space between them. It read as scattered because nothing shared
@@ -173,6 +203,29 @@ button.b svg{display:block}
   padding:9px var(--s4);font-size:var(--f1);opacity:0;pointer-events:none;
   transition:opacity .25s,transform .25s;backdrop-filter:blur(12px);white-space:nowrap;z-index:50}
 #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* An offer waits for an answer; a toast does not. Two moments need
+   one - a link that arrived on top of a board you already had, and a
+   name already on your board carrying a different date. It sits a
+   rung above the button bar so the bar keeps its own row, and it goes
+   nowhere near the number. */
+#offer{position:fixed;bottom:calc(var(--s6) + var(--s5));left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
+  gap:var(--s2) var(--s3);max-width:min(92vw, 62rem);
+  background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+  border-radius:calc(var(--h) / 2 + var(--s2));
+  padding:var(--s2) var(--s2) var(--s2) var(--s4);font-size:var(--f1);
+  backdrop-filter:blur(12px);z-index:55}
+#offer[hidden]{display:none}
+/* A truncated question cannot be answered - "already here on 12 Mar 2..."
+   is exactly the half a date you need. So it wraps rather than
+   ellipsing, and the pill grows a line instead of eating one. */
+#offerMsg{flex:1 1 20ch;min-width:0}
+#offer button.b{white-space:nowrap;flex:0 0 auto}
+/* The idle tip lives in that band. A rotating hint half-covered by a
+   question you are being asked reads as breakage, so it stands down
+   until the question is answered. */
+body.asking #snark{opacity:0}
 
 #fx{position:fixed;inset:0;pointer-events:none;z-index:40}
 
@@ -390,6 +443,13 @@ body.locked #bAdd{opacity:.45}
 </div>
 
 <div id="toast"></div>
+<div id="offer" hidden>
+  <span id="offerMsg"></span>
+  <div class="grp">
+    <button type="button" class="b primary" id="offerYes"></button>
+    <button type="button" class="b" id="offerNo"></button>
+  </div>
+</div>
 <canvas id="fx"></canvas>
 
 <dialog id="dlg"><div class="dlg">
@@ -437,7 +497,13 @@ body.locked #bAdd{opacity:.45}
       <button type="submit" class="b primary" id="bSubmit">Add goal</button>
     </div>
   </form>
+  <div class="listActs" id="ioActs">
+    <button type="button" id="bImport" title="Paste a Baaki link someone sent you and keep their goals as well as yours">Add from a link</button>
+    <button type="button" id="bSave" title="Save a small file that opens this board again — a backup for a new laptop">Save this board</button>
+    <button type="button" id="bIcs" title="Put these dates in the calendar you already look at">Add to calendar</button>
+  </div>
   <div class="listActs" id="listActs" hidden>
+    <button type="button" id="bRestore" hidden title="Bring back the board that was here before this link replaced it">Restore my board</button>
     <button type="button" id="bClearDone">Clear completed</button>
     <button type="button" id="bClearAll">Clear all</button>
   </div>
@@ -514,6 +580,15 @@ body.locked #bAdd{opacity:.45}
    ============================================================ */
 var VERSION  = '2.0.0';
 var SYNC_URL = '';
+/* OG_HOST : origin running og-worker.js, which turns a shared link into
+             a chat-app preview card. Empty = not deployed, and Share
+             keeps handing out the private "#" form, which is the right
+             default when there is nothing on the other end to answer.
+             Set it and Share switches to "?b=" - the one form a crawler
+             can actually read, because a fragment is never sent to any
+             server. Per-device, a reader can still force the private
+             form back under ? -> This screen. */
+var OG_HOST  = '';
 var GA_ID    = 'G-7GQQT1N383';
 /* UPDATE : a 200-byte {"version","url"} somewhere online. Two candidates,
             tried in order, because a host that will not send CORS headers
@@ -528,7 +603,8 @@ function $(s){ return document.querySelector(s); }
 var el = {
   name:$('#name'), num:$('#num'), unit:$('#unit'), sub:$('#sub'), tag:$('#tag'),
   others:$('#others'), snark:$('#snark'), done:$('#bDone'), toast:$('#toast'), clock:$('#clock'),
-  rows:$('#rows'), dlg:$('#dlg'), about:$('#about'), hero:$('#hero'), qr:$('#qr')
+  rows:$('#rows'), dlg:$('#dlg'), about:$('#about'), hero:$('#hero'), qr:$('#qr'),
+  offer:$('#offer'), offerMsg:$('#offerMsg')
 };
 
 /* ---------- link format ------------------------------------
@@ -700,7 +776,41 @@ function buildHash(goals, edit){
   if(edit) p.push('!edit');
   return p.length ? '#' + p.join('+') : '';
 }
-function baseUrl(){ return location.href.split('#')[0]; }
+function baseUrl(){ return location.href.split(/[?#]/)[0]; }
+
+/* ---------- the other half of the link --------------------
+   A fragment is never sent to a server. That is the whole reason
+   nothing about a goal can leak - and also the reason no crawler,
+   and therefore no chat app, can draw a preview of one. The query
+   string is the only place a link can carry a goal somewhere a
+   preview bot will see it.
+
+   Same grammar either way, so there is one format to learn and one
+   parser to trust: "?b=" holds exactly what would follow the "#".
+
+   Read off location.search rather than URLSearchParams on purpose.
+   URLSearchParams applies form-decoding, which turns "+" into a space
+   - and turns the "%20" inside "Board%20exam" into one as well. Once
+   both are spaces nothing can tell the separator from the name, and
+   every goal with a space in it splits in two. The raw value keeps
+   them distinct, which also makes turning a stray space back into a
+   "+" a lossless net: a raw query value never holds a literal one.
+------------------------------------------------------------ */
+function queryBoard(){
+  var m = /[?&]b=([^&]*)/.exec(location.search);
+  return m ? '#' + m[1].replace(/ /g, '+') : '';
+}
+function pathNoBoard(){
+  var q = location.search.replace(/(^\?|&)b=[^&]*/, '');
+  return location.pathname + (q && q !== '?' ? (q.charAt(0) === '&' ? '?' + q.slice(1) : q) : '');
+}
+/* Which form Share hands over. The private one until a renderer is
+   actually deployed, and after that whenever this device has asked for
+   it - a setting that never rides in a link, like every other one. */
+function shareUrl(hash){
+  if(!OG_HOST || lsGet('priv')) return baseUrl() + hash;
+  return OG_HOST.replace(/\/+$/, '') + '/' + (hash ? '?b=' + hash.slice(1) : '');
+}
 
 /* ---------- when? ------------------------------------------
    Two native pickers is three interactions to say "friday". This
@@ -881,13 +991,27 @@ function goalKey(g){
   for(var i=0;i<s.length;i++) h = ((h*33) ^ s.charCodeAt(i)) >>> 0;
   return h.toString(36);
 }
+/* The board this link pushed aside, if it pushed one aside. Read once
+   at load, before the first commit can overwrite it. */
+var displaced = null, fromQuery = false;
 function load(){
-  var p = parseHash(location.hash);
+  var q = location.hash ? '' : queryBoard();
+  fromQuery = !!q;
+  var p = parseHash(location.hash || q);
+  var saved = null;
+  try { saved = localStorage.getItem('baaki.hash'); } catch(e){}
   if(!p.goals.length){
-    try {
-      var saved = localStorage.getItem('baaki.hash');
-      if(saved){ var q = parseHash(saved); if(q.goals.length){ q.edit = true; p = q; } }
-    } catch(e){}
+    if(saved){ var q = parseHash(saved); if(q.goals.length){ q.edit = true; p = q; } }
+  }
+  /* A link carrying goals, and a different board saved from last time:
+     somebody sent this one. Theirs is what should show - that is what
+     clicking a link means - but yours must not evaporate without being
+     offered back. Kept under its own key, because 'baaki.hash' is
+     overwritten by the very next edit. */
+  else if(saved && parseHash(saved).goals.length &&
+          buildHash(parseHash(saved).goals, false) !== buildHash(p.goals, false)){
+    displaced = saved;
+    try { localStorage.setItem('baaki.prev', saved); } catch(e){}
   }
   S = p;
 }
@@ -1340,15 +1464,18 @@ function render(force){
   if(!S.goals.length){
     var yr = now.getFullYear(), eoy = new Date(yr, 11, 31, 23, 59, 59, 999);
     var left = Math.max(0, dayDiff(now, eoy));
-    el.name.innerHTML = '<span></span>';
+    el.name.innerHTML = '<span></span><span class="rom"></span>';
     el.name.firstChild.textContent = 'बाकी';
+    el.name.lastChild.textContent = 'Baaki';
     if(prev.n !== String(left)){ el.num.innerHTML = sup1(String(left), 'd'); prev.n = String(left); }
     el.unit.hidden = true;
     el.sub.innerHTML = '<span></span>';
     el.sub.firstChild.textContent = dateLabel(eoy);
     el.tag.textContent = 'an example';
     el.others.innerHTML = '';
-    el.snark.textContent = 'Click here, or press G, to count something of your own.';
+    el.snark.innerHTML = '<span class="pitch"></span><span class="cue"></span>';
+    el.snark.firstChild.textContent = 'A deadline in a link. No account. Works offline.';
+    el.snark.lastChild.textContent = 'Click here, or press G, to count something of your own.';
     document.body.classList.add('empty');
     el.done.hidden = true;
     drawShareGroup();
@@ -1507,7 +1634,7 @@ function markDone(){
   prev = {};
   commit(false);
   syncPush(g);
-  copy(baseUrl() + '#' + goalToken(g)).then(function(ok){
+  copy(shareUrl('#' + goalToken(g))).then(function(ok){
     toast(ok ? 'Done. Share link copied.' : 'Done. Copy the address bar to share.');
   });
 }
@@ -1981,9 +2108,18 @@ function startEdit(i){
 function drawRows(){
   $('#gCount').textContent = S.goals.length ? S.goals.length + (S.goals.length === 1 ? ' goal' : ' goals') : '';
   drawHistory();
-  $('#listActs').hidden = !S.goals.length;
+  $('#bClearAll').hidden = !S.goals.length;
   var bClearDone = $('#bClearDone');
+  bClearDone.hidden = !S.goals.length;
   bClearDone.disabled = !S.goals.some(function(g){ return g.done; });
+  $('#bSave').hidden = $('#bIcs').hidden = !S.goals.length;
+  var ph = lsGet('prev');
+  var phGoals = ph ? parseHash(ph).goals : [];
+  var canRestore = !!phGoals.length && buildHash(phGoals, false) !== buildHash(S.goals, false);
+  $('#bRestore').hidden = !canRestore;
+  /* The row itself goes when it holds nothing - but a board you can get
+     back is reason enough to keep it, even with nothing on screen. */
+  $('#listActs').hidden = !S.goals.length && !canRestore;
   el.rows.innerHTML = '';
   if(!S.goals.length){
     var d = document.createElement('div');
@@ -2031,6 +2167,264 @@ function clearDoneGoals(){
   if(editingIndex >= 0 && (!S.goals.length || editingIndex >= S.goals.length)) resetForm();
   prev = {}; commit(false); drawRows();
   toast('Cleared ' + n + (n === 1 ? ' completed goal.' : ' completed goals.'));
+}
+
+/* ---------- taking in somebody else's link -----------------
+   A shared board that cannot be kept is a dead end, and a dead end
+   never produces a second sharer. Two ways in, because these are two
+   different moments: you clicked their link, so their board is on
+   screen and yours is not - or they sent it as text, so your board is
+   on screen and theirs is in the clipboard. Neither path can cover
+   the other.
+
+   Identity is the name; the date is the value. Two goals on one day
+   are ordinary - an exam and a flight - and nothing to ask about. The
+   same name on two different days is the real collision, and the only
+   thing worth a question.
+
+   Matching stays literal, on purpose. The two errors cost wildly
+   different amounts: a wrong merge silently eats a goal you cannot
+   get back, a missed merge leaves a visible duplicate you delete in
+   two seconds. When one error is invisible and permanent and the
+   other is obvious and free, always err toward the obvious one - so
+   case and spacing are forgiven and nothing else is.
+------------------------------------------------------------ */
+function normName(s){ return String(s || '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+
+/* Same goal, same shape - the name is compared separately. The done
+   stamp is deliberately left out: theirs saying "finished" when yours
+   does not is news, not a disagreement. */
+function sameShape(a, b){
+  return a.target.getTime() === b.target.getTime() &&
+         !!a.event === !!b.event && !!a.since === !!b.since &&
+         (a.repeat || '') === (b.repeat || '') &&
+         (a.winStart ? a.winStart.getTime() : 0) === (b.winStart ? b.winStart.getTime() : 0);
+}
+
+/* Anything carrying a fragment that parses to a goal. A bare
+   "#Exam~2027-01-01" counts, and so does a full URL from any host -
+   the desktop wrapper and a file:// copy are ours too. The host is
+   never checked, because "it parses to a real goal" is a stricter
+   test than any hostname match. */
+function goalsFromText(s){
+  s = String(s || '').trim();
+  var i = s.indexOf('#');
+  if(i === -1) return [];
+  return parseHash(s.slice(i).split(/\s/)[0]).goals;
+}
+
+function showOffer(msg, yesLabel, yesFn, noLabel, noFn){
+  el.offerMsg.textContent = msg;
+  var y = $('#offerYes'), n = $('#offerNo');
+  y.textContent = yesLabel;
+  n.textContent = noLabel;
+  y.onclick = function(){ hideOffer(); yesFn(); };
+  n.onclick = function(){ hideOffer(); if(noFn) noFn(); };
+  el.offer.hidden = false;
+  document.body.classList.add('asking');
+}
+function hideOffer(){
+  el.offer.hidden = true;
+  document.body.classList.remove('asking');
+}
+
+function mergeIn(incoming, lead){
+  if(locked){ toast('Goals are locked on this device — turn it off under ? → This screen.'); return; }
+  var added = 0, same = 0, marked = 0, clashes = [];
+  incoming.forEach(function(g){
+    var mine = -1;
+    for(var i = 0; i < S.goals.length; i++){
+      if(normName(S.goals[i].name) === normName(g.name)){ mine = i; break; }
+    }
+    if(mine === -1){ S.goals.push(g); added++; return; }
+    if(!sameShape(S.goals[mine], g)){ clashes.push({ i:mine, g:g }); return; }
+    if(g.done && !S.goals[mine].done){ S.goals[mine].done = g.done; marked++; }
+    else same++;
+  });
+  if(added) logEvent('add', added + (added === 1 ? ' goal' : ' goals') + ' from a link', '');
+  if(marked) logEvent('done', marked + (marked === 1 ? ' goal' : ' goals') + ' from a link', '');
+  var parts = [];
+  if(added) parts.push(added + ' added');
+  if(marked) parts.push(marked + ' marked done');
+  if(same) parts.push(same + ' already there');
+  if(added || marked){ prev = {}; commit(true); }
+  if(el.dlg.open) drawRows();
+  var msg = parts.length ? parts.join(', ') + '.' : (clashes.length ? '' : 'Nothing new in that link.');
+  if(lead) msg = lead + (msg ? ' ' + msg : '');
+  if(msg) toast(msg);
+  askClashes(clashes);
+}
+
+/* One at a time. Two questions stacked on each other is a dialog, and
+   this is deliberately not one. Answering by appending keeps every
+   index in the queue behind it valid. */
+function askClashes(q){
+  if(!q.length) return;
+  var c = q[0], rest = q.slice(1), mine = S.goals[c.i];
+  var after = function(){ prev = {}; commit(true); if(el.dlg.open) drawRows(); askClashes(rest); };
+  showOffer(
+    '“' + mine.name + '” is already here on ' + dateLabel(mine.target) +
+      '. Theirs says ' + dateLabel(c.g.target) + '.',
+    'Replace', function(){
+      logEvent('edit', mine.name, 'date replaced from a link');
+      S.goals[c.i] = c.g; after();
+    },
+    'Keep both', function(){
+      logEvent('add', c.g.name, 'kept alongside your own');
+      S.goals.push(c.g); after();
+    }
+  );
+}
+
+/* Paste needs no permission: the keystroke is the consent. Reading the
+   clipboard on a click does need one, and Firefox mostly refuses, so
+   the button tries and falls back to asking for the keystroke. The
+   button exists at all because nobody discovers a gesture that has no
+   button. */
+function importFromClipboard(){
+  var nudge = function(){ toast('Copy a Baaki link, then paste it anywhere on this page.'); };
+  if(!(window.isSecureContext && navigator.clipboard && navigator.clipboard.readText)) return nudge();
+  navigator.clipboard.readText().then(function(t){
+    var g = goalsFromText(t);
+    if(!g.length) return nudge();
+    mergeIn(g);
+  }, nudge);
+}
+
+/* ---------- getting a board back out ----------------------
+   The link is already a perfect export; what it is not is
+   recognisable as one. Nobody looks at an address bar and thinks
+   "that is my data, I should keep a copy of that" - so a formatted
+   laptop takes the board with it, and the only warning was a string
+   you never read.
+
+   Two files, for the two things people actually do. One is a
+   backup; one puts the dates where they already look.
+------------------------------------------------------------ */
+var HOME = 'https://baaki.j33t.pro/';
+
+function escHtml(s){
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function saveFile(name, text, mime){
+  try {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: mime }));
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
+    return true;
+  } catch(e){ return false; }
+}
+function fileStamp(ext){ return 'baaki-' + fmtLocal(new Date(), false) + '.' + ext; }
+
+/* Deliberately a pointer, not a copy. Baking baaki.html into the
+   download would work offline everywhere, and would also fork a frozen
+   app that never updates and never comes home. Your goals are what a
+   wiped laptop destroys; the app is on a domain and in git.
+
+   It does not redirect while offline. A redirect to a host you cannot
+   reach is a browser error page and a dead end, so in that case the
+   board simply stays readable as text, which is the whole point of
+   having saved it. */
+function downloadBoard(){
+  if(!S.goals.length){ toast('Nothing to save yet.'); return; }
+  var url = HOME + buildHash(S.goals, false);
+  var rows = S.goals.map(function(g){
+    return '<li><b>' + escHtml(g.name) + '</b> \u2014 ' + escHtml(dateLabel(g.target)) + '</li>';
+  }).join('');
+  var doc = '<!DOCTYPE html>\n<html lang="en"><head><meta charset="utf-8">\n' +
+    '<title>\u092c\u093e\u0915\u0940 Baaki \u2014 saved board</title>\n' +
+    '<style>body{font:16px/1.6 system-ui,sans-serif;max-width:34em;margin:12vh auto;padding:0 1.4em;' +
+    'background:#0a1530;color:#e8ecf6}a{color:#9fc0ff}h1{font-weight:500;font-size:1.5em}' +
+    'ul{margin:1.2em 0;padding-left:1.2em}li{margin:.3em 0}small{opacity:.6}</style>\n' +
+    '</head><body>\n<h1>\u092c\u093e\u0915\u0940 Baaki</h1>\n' +
+    '<p>Your board, saved ' + escHtml(dateLabel(eod(new Date()))) + '.</p>\n' +
+    '<p><a href="' + escHtml(url) + '">Open it again</a></p>\n<ul>' + rows + '</ul>\n' +
+    '<p><small>This file holds nothing but that link \u2014 the link is the board. ' +
+    'Keep it anywhere: email it to yourself, put it in a drive, leave it on a stick.</small></p>\n' +
+    '<script>if(navigator.onLine) location.replace(' + JSON.stringify(url) + ');<\/script>\n' +
+    '</body></html>\n';
+  if(!saveFile(fileStamp('html'), doc, 'text/html')){ toast('Could not save the file.'); return; }
+  logEvent('add', 'board saved to a file', '');
+  toast('Saved. Keep it anywhere \u2014 it opens this board again.');
+}
+
+/* ---------- the same dates, in the calendar you already open ----
+   Not dynamic, and it does not need to be: a calendar re-reads the
+   date, not the countdown. Local times become UTC because that is the
+   only form every calendar agrees on; a bare date stays a bare date,
+   so an all-day deadline does not drift a day for somebody abroad. */
+function icsUtc(d){
+  return d.getUTCFullYear() +
+    pad(d.getUTCMonth() + 1) + pad(d.getUTCDate()) + 'T' +
+    pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + pad(d.getUTCSeconds()) + 'Z';
+}
+function icsDate(d){ return String(fmtLocal(d, false)).replace(/-/g, ''); }
+function icsEsc(s){
+  return String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+}
+/* RFC 5545 folds at 75 octets. Most parsers forgive a long line; the
+   ones that do not fail silently, which is worse than being strict. */
+function icsFold(line){
+  if(line.length <= 74) return line;
+  var out = line.slice(0, 74), rest = line.slice(74);
+  while(rest.length){ out += '\r\n ' + rest.slice(0, 73); rest = rest.slice(73); }
+  return out;
+}
+function downloadIcs(){
+  if(!S.goals.length){ toast('Nothing to put in a calendar yet.'); return; }
+  var now = new Date(), out = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Baaki//' + VERSION + '//EN',
+    'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'
+  ];
+  S.goals.forEach(function(g, i){
+    var timed = !isEod(g.target);
+    out.push('BEGIN:VEVENT');
+    out.push('UID:' + goalKey(g) + '-' + i + '@baaki');
+    out.push('DTSTAMP:' + icsUtc(now));
+    if(g.winStart){
+      out.push('DTSTART:' + icsUtc(g.winStart));
+      out.push('DTEND:' + icsUtc(g.target));
+    } else if(timed){
+      /* A deadline is a moment, but a zero-length event draws as a
+         hairline nobody can click. Half an hour is enough to see. */
+      out.push('DTSTART:' + icsUtc(g.target));
+      out.push('DTEND:' + icsUtc(new Date(g.target.getTime() + 30 * MIN)));
+    } else {
+      out.push('DTSTART;VALUE=DATE:' + icsDate(g.target));
+      out.push('DTEND;VALUE=DATE:' + icsDate(new Date(g.target.getTime() + DAY)));
+    }
+    if(g.repeat){
+      out.push('RRULE:FREQ=' + ({ w:'WEEKLY', m:'MONTHLY', y:'YEARLY' })[g.repeat]);
+    }
+    out.push(icsFold('SUMMARY:' + icsEsc(g.name)));
+    out.push(icsFold('URL:' + HOME + buildHash([g], false)));
+    out.push(icsFold('DESCRIPTION:' + icsEsc('Counting down at ' + HOME + buildHash([g], false))));
+    out.push('END:VEVENT');
+  });
+  out.push('END:VCALENDAR');
+  if(!saveFile(fileStamp('ics'), out.join('\r\n') + '\r\n', 'text/calendar')){
+    toast('Could not save the file.'); return;
+  }
+  logEvent('add', S.goals.length + ' dates sent to a calendar', '');
+  toast('Calendar file saved. Open it to add the dates.');
+}
+
+function restoreBoard(){
+  var ph = lsGet('prev');
+  var q = ph ? parseHash(ph) : { goals:[] };
+  if(!q.goals.length){ toast('Nothing to restore.'); return; }
+  hideOffer();
+  var theirs = S.goals;
+  S.goals = q.goals.slice();
+  logEvent('add', 'your own board', 'restored');
+  if(theirs.length) return mergeIn(theirs, 'Your board is back.');
+  prev = {}; commit(true);
+  if(el.dlg.open) drawRows();
+  toast('Your board is back.');
 }
 
 /* ---------- QR: getting the board off the wall -------------
@@ -2328,14 +2722,14 @@ function openShare(){
   track('share');
 }
 function doShare(all){
-  var link = baseUrl() + (all ? buildHash(S.goals, false) : '#' + goalToken(S.goals[0]));
+  var link = shareUrl(all ? buildHash(S.goals, false) : '#' + goalToken(S.goals[0]));
   copy(link).then(function(ok){
     toast(ok ? (all ? 'All ' + S.goals.length + ' copied.' : 'Link copied.')
              : 'Copy the address bar to share.');
   });
 }
 function shareBare(){
-  copy(baseUrl()).then(function(ok){ toast(ok ? 'Empty board link copied.' : 'Copy the address bar.'); });
+  copy(shareUrl('')).then(function(ok){ toast(ok ? 'Empty board link copied.' : 'Copy the address bar.'); });
 }
 function expandShare(){
   shareOpen = true;
@@ -2559,6 +2953,12 @@ function drawHistory(){
    your own thumb on a kiosk or a wall display, not against another
    person. Anyone can switch it back off, on their own device, any
    time. Per device, never in the link. */
+function setPriv(on){
+  lsSet('priv', on ? '1' : '');
+  drawOpts();
+  toast(on ? 'Links will stay private \u2014 no preview.' : 'Links will show a preview card.');
+}
+
 var locked = false;
 function setLocked(on){
   locked = !!on;
@@ -2871,6 +3271,20 @@ function drawOpts(){
     optBtn(r, soundOn ? 'On' : 'Off', soundOn, function(){ setSound(!soundOn); });
     o.appendChild(r);
   }
+  /* Only where there is a renderer to turn off. A switch for something
+     that is not running is a switch that teaches people the wrong thing
+     about what this tool does. */
+  if(OG_HOST){
+    r = optRow('Link previews',
+      'On, a link you send shows a card with the goal and the date in WhatsApp, Slack and the rest \u2014 ' +
+      'and the goal\'s name passes through ' + OG_HOST.replace(/^https?:\/\//, '') + ' to be drawn. ' +
+      'Nothing is stored and there is no account either way. Off, the link carries the goal in the part ' +
+      'of a URL no server ever receives, and no preview is possible. This device only.');
+    var priv = !!lsGet('priv');
+    optBtn(r, 'On', !priv, function(){ setPriv(false); });
+    optBtn(r, 'Off', priv, function(){ setPriv(true); });
+    o.appendChild(r);
+  }
   r = optRow('Lock goals', 'Stops Goals and Done opening by accident - a kiosk, a wall display. Turn it back off here, any time.');
   optBtn(r, locked ? 'Locked' : 'Free', locked, function(){ setLocked(!locked); });
   o.appendChild(r);
@@ -2976,6 +3390,7 @@ document.addEventListener('keydown', function(e){
     if(el.dlg.open) el.dlg.close();
     else if(el.qr.open) el.qr.close();
     else if(el.about.open) el.about.close();
+    else if(!el.offer.hidden) hideOffer();
     return;
   }
   if(anyDialogOpen()) return;                 // let the form have the keyboard
@@ -3078,6 +3493,19 @@ $('#rYearly').onclick = function(){ setFormRepeat('y'); };
 $('#bWinBack').onclick = winBack;
 $('#bClearAll').onclick = clearAllGoals;
 $('#bClearDone').onclick = clearDoneGoals;
+$('#bImport').onclick = importFromClipboard;
+$('#bSave').onclick = downloadBoard;
+$('#bIcs').onclick = downloadIcs;
+$('#bRestore').onclick = restoreBoard;
+
+document.addEventListener('paste', function(e){
+  var cd = e.clipboardData || window.clipboardData;
+  if(!cd) return;
+  var g = goalsFromText(cd.getData('text') || '');
+  if(!g.length) return;              /* an ordinary paste - let it through */
+  e.preventDefault();
+  mergeIn(g);
+});
 $('#bShare').onclick = openShare;
 drawShareGroup();
 
@@ -3176,7 +3604,7 @@ function shareDraft(){
   var g = { name: $('#fName').value.trim() || defaultName(), target:target,
     event: isEvent, since: !isEvent && !isRepeat && target < new Date(),
     repeat: isRepeat ? formRepeat : null, done:null };
-  copy(baseUrl() + '#' + goalToken(g)).then(function(ok){
+  copy(shareUrl('#' + goalToken(g))).then(function(ok){
     toast(ok ? 'Link copied — not added to your board.' : 'Copy the address bar to share.');
   });
   resetForm();
@@ -3219,9 +3647,24 @@ load();
 /* Normalise the address on arrival: drops junk tokens and settles
    encoding, so the next Share hands over a clean link. */
 if(S.goals.length && location.hash !== buildHash(S.goals, S.edit)) commit(false);
+/* A "?b=" link has done its whole job the moment the board is loaded.
+   Swapping it for the fragment form immediately means the address bar,
+   a bookmark, and anything copied out of it all carry the private
+   version - the preview form exists for sending, not for keeping. */
+if(fromQuery) history.replaceState(null, '', pathNoBoard() + buildHash(S.goals, S.edit));
 tipIx = pickTip(-1);
 if(tipIx >= 0) tipPick = TIPS[tipIx].t;
 render(true);
+
+/* Their board is showing and yours is not. Say so once, offer yours
+   back, then get out of the way - the number stays the number. Only
+   after render, because load() is what discovers this and load() runs
+   last. */
+if(displaced){
+  var dispN = parseHash(displaced).goals.length;
+  showOffer('Someone sent you this. You had ' + dispN + (dispN === 1 ? ' goal' : ' goals') + ' here.',
+    'Add to mine', restoreBoard, 'Just theirs', null);
+}
 setInterval(function(){ if(!rollRepeats(new Date())) render(false); }, 1000);
 /* no dialog opens itself at you: the empty board is a working example
    that says what to press, which is a better welcome than a form */

@@ -25,13 +25,18 @@ index.html          3-line redirect, hosting entry point only
 sw.js               offline cache for the hosted copy
 manifest.webmanifest  add-to-home-screen
 sync-worker.js      optional Cloudflare worker for online "Done"
+og-worker.mjs       optional Cloudflare worker for chat-app preview cards
+og-card.mjs         draws og.jpg from the real page's own colour ramp
+og.jpg              the static preview card. generated - `npm run build:card`
 desktop/            Tauri wrapper. wraps baaki.html unmodified.
-test.mjs            222 browser checks, frozen clock
+test.mjs            340 browser checks, frozen clock
 USAGE.md            the link grammar, written for a script or an LLM to follow
 qr-check.mjs        renders each QR version and reads it back with a real decoder
+og-check.mjs        the worker's pure half, frozen clock. `npm run test:og`
 live-check.mjs      the hosted copy: redirect, service worker, offline, update path
 version.json        200 bytes, so an emailed copy can learn it is old
 docs/               rubric, feature ledger, backlog, easter eggs
+docs/turn-on-previews.md  plain-language runbook for deploying og-worker.mjs
 ```
 
 `desktop/dist/index.html` is a generated copy of `baaki.html`. Never edit it.
@@ -45,6 +50,15 @@ docs/               rubric, feature ledger, backlog, easter eggs
 - **Dialog content gets its own scale - buttons do not.** `.dlg` re-declares `--u`/`--f0`/`--f1`/`--f2` with much gentler clamps than root, for text and spacing only. `--h` (button height) is a single root-level variable, deliberately not re-declared in `.dlg`, so a calmer content scale can never drag a button down to an untappable size. Calendar cells and nav arrows get their own smaller floor instead, via `max(Npx, calc(var(--u)*k))` using the dialog's local `--u` - denser grid, smaller floor, still scaled to content rather than jumping to room-scale.
 - **Both dialogs are single-column, on purpose.** Two columns were tried twice (1.4.0, 1.5.0 tuning) and looked considered on paper but left dead space under whichever side was shorter, every time. Do not reintroduce a grid split without a real fix for that.
 - **No webfonts, ever.** Five faces, all system stacks. The file must look like itself on a plane.
+- **A preview is a snapshot, not a clock.** Chat apps fetch a card once per URL and cache
+  it on their own CDN for weeks. Anything on it must survive being days out of date:
+  whole days, or "Today"/"Tomorrow", never a running time, and always the target date
+  beside the number so a stale card corrects itself. Anything finer is a lie by the time
+  it is seen.
+- **`OG_HOST` and `SYNC_URL` are both empty and both mean "not deployed".** A feature
+  whose endpoint is not up must change nothing: Share keeps giving out the private link,
+  and the preview setting is not even drawn. A switch for something that is not running
+  teaches people the wrong thing about what this tool does.
 - **Nothing about the look travels in the link.** Surface, typeface, hue, size, sound: `localStorage` or nothing. Sending somebody a date must not restyle their screen.
 - **Tests are the spec.** `node test.mjs` uses a frozen clock and a real browser. Add a case for anything with a date boundary in it — that is where every bug so far has lived.
 - **Dates are local, always.** `new Date('2027-01-01')` parses as UTC and is a trap. Use `parseLocal`.
@@ -64,6 +78,7 @@ docs/               rubric, feature ledger, backlog, easter eggs
 
 ```
 #Name~TARGET[*][!DONE] + Name~TARGET + !edit
+?b=Name~TARGET+Name~TARGET          the same thing, where a crawler can read it
 ```
 
 `~` name/date · `+` between goals · `*` something good rather than a deadline ·
@@ -71,10 +86,20 @@ docs/               rubric, feature ledger, backlog, easter eggs
 
 First goal is the big one. Focus **rotates** the list — never promote-to-front, or "previous" stops being the inverse of "next".
 
+`?b=` holds exactly what would follow the `#`. One grammar, one parser. A `?b=` link
+rewrites itself to the `#` form on arrival — it is for sending, not for keeping. **Never
+read it with `URLSearchParams`**: form-decoding turns `+` into a space *and* the `%20`
+inside `Board%20exam` into one too, after which every goal with a space in its name
+splits in two. Read the raw query, both in the page and in the worker.
+
 ## Things deliberately not done
 
 - No accounts, no login, no backend for the core loop.
 - No plugin API. Themes are data; that is the whole extension surface.
 - No bundled webfonts by default — CDN with a system fallback, so offline still works.
 - No workday/holiday counting. It needs a country calendar that rots every year.
+- No per-link card *image* yet. The worker rewrites the preview's title and description,
+  which is most of the value and needs no build step. A per-link image needs a wasm
+  rasteriser because chat apps refuse SVG as `og:image` — marked in `og-worker.mjs`, not
+  blocking anything.
 - No compressed (`z.`) fragment. Measured: base64 costs more than deflate saves until a board has five or more long-named goals, and it loses at every count with ordinary short names. Numbers are in `backlog.md`.

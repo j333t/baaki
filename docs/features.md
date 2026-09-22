@@ -198,6 +198,52 @@ Themes are data, and this is the whole extension surface. All of it per device.
 | Anything switched on is lit in the bar | A setting you cannot see is a setting you forget you left on — and that is also the place to turn it off. |
 | Keep-awake appears in the bar only while on | It is the only time you would go looking for it. |
 
+## The blank board introduces itself
+
+| Feature | Why it exists |
+|---|---|
+| The roman spelling sits beside the Devanagari | बाकी alone cannot be said out loud by most of the people it would spread to, and a name you cannot pronounce is a name you cannot pass on. |
+| One plain line saying what it is | The empty board is the first thing a stranger sees and the only screen with no goal on it to explain itself. It showed a word in an unfamiliar script and a number counting to nothing in particular, and gave no way to find out what either meant. |
+| "A deadline in a link. No account. Works offline." | Three facts, three beats — what it counts, what it costs, where it runs. Plain beats crafted here: this line's whole job is to be understood by somebody who has no idea what they are looking at. Earlier drafts reached for cadence ("One number. Any deadline. Sent as a link.") and were harder to parse cold, which is the only condition it is ever read in. |
+| The pitch sits above the nudge, and brighter | What a thing *is* outranks what to press. The cue keeps the italic; the pitch does not, because it is a statement rather than an aside. |
+
+## Getting a board out, and showing it elsewhere
+
+| Feature | Why it exists |
+|---|---|
+| Save this board | The link is already a perfect export; what it is not is *recognisable* as one. Nobody looks at an address bar and thinks "that is my data". A formatted laptop took the board with it and the only warning was a string you never read. |
+| The saved file is a pointer, not a copy | Baking `baaki.html` into the download would work offline everywhere and would also fork a frozen app that never updates and never comes home. Your goals are what a wiped laptop destroys; the app is on a domain and in git. |
+| It does not redirect while offline | A redirect to a host you cannot reach is a browser error page and a dead end. Offline, the goals simply stay readable as text, which is the entire point of having saved it. |
+| Add to calendar (`.ics`) | Puts the dates where people already look. Not dynamic and does not need to be — a calendar re-reads the date, not the countdown. |
+| A timed deadline gets half an hour, not zero | A deadline is a moment, but a zero-length event draws as a hairline nobody can click. |
+| A bare date stays a bare date in the `.ics` | An all-day deadline exported as a UTC instant lands a day early or late for somebody abroad. |
+| Two rows of actions in the dialog, split by verb | In and out (add from a link, save, calendar) above; undo and clear below. Six underlined links in one row was a list, not a choice. |
+| `?b=` — the same grammar, in the query string | A fragment is never sent to a server, which is why nothing leaks and *also* why no crawler can preview one. The query string is the only place a link can carry a goal where a preview bot will see it. Same grammar as the fragment, so there is one format and one parser. |
+| A `?b=` link rewrites itself to `#` on arrival | The preview form is for sending, not for keeping. The moment the board is loaded the address bar, any bookmark, and anything copied out of it all carry the private version. |
+| Read off the raw query, never `URLSearchParams` | Form-decoding turns `+` into a space **and** the `%20` inside `Board%20exam` into one too. Once both are spaces nothing can tell the separator from the name, and every goal with a space in it splits in two. This was a real bug, caught by a test. |
+| A static card, plus per-link *text* from the worker | Chat apps will not render an SVG as `og:image`, so a per-link image needs a wasm rasteriser and a build step. The per-link *title* needs none of that and is most of the win: "Wedding — 212 days" in a thread is the difference between a link people click and a link they scroll past. |
+| The card only states what survives being stale | A preview is fetched once per URL and cached on the platform's CDN, often for weeks. So it says whole days, or "Today"/"Tomorrow", never a running time — and always prints the target date beside the number, so a stale card quietly corrects itself. |
+| JPEG, not PNG, for the card | One long smooth gradient is PNG's worst case and JPEG's best. 285 KB became 42. WhatsApp starts skipping images around 300 KB. |
+| The card is generated, not stored | `og-card.mjs` loads the real page, asks what 365 days out looks like, and paints with the answer — so a nudged ramp is one `npm run build:card` away, and no hex is ever pasted. |
+| 365 on the card | Funky numbers get attention, meaningful ones get understood. "365" is the only number that reads as a duration without thinking. |
+| `Q` still copies the `#` form | A QR is scanned across a room, with no crawler anywhere in the story, and the shorter string keeps the code inside the version budget the decoder can actually read. |
+| The preview setting hides until a renderer exists | A switch for something that is not running teaches people the wrong thing about what the tool does. `OG_HOST` empty means Share keeps handing out the private form and the setting is not drawn. |
+
+## Keeping a link somebody sent you
+
+| Feature | Why it exists |
+|---|---|
+| A shared board can be merged into your own | The hole that made every share a dead end. Before this, opening somebody's link replaced your board and the only way to keep both was to hand-edit the address bar. A share that cannot be kept never produces a second sharer, which is the whole growth loop. |
+| Two ways in, because there are two moments | Click their link and *their* board is on screen while yours is not. Get the link as text and *your* board is on screen while theirs is in the clipboard. Neither path can reach the other moment, so both exist. |
+| Paste anywhere on the page | The keystroke is the consent — pasting needs no permission from any browser, which is why it is the reliable path. Text that does not parse to a goal falls through untouched, so an ordinary paste into the name field still works. |
+| An "Add from a link" button as well | Nobody discovers a gesture that has no button. It tries to read the clipboard directly and, when the browser refuses (Firefox usually does, and `file://` has no clipboard API at all), asks for the keystroke instead. |
+| Identity is the name; the date is the value | Two goals on one day are ordinary — an exam and a flight — and worth no question at all. The same name on two different days is the real collision, and the only thing the merge ever asks about. |
+| Matching is literal apart from case and spacing | The two errors cost wildly different amounts. A wrong merge silently eats a goal you cannot get back; a missed merge leaves a visible duplicate you delete in two seconds. When one error is invisible and permanent and the other is obvious and free, always err toward the obvious one — so no fuzzy or similarity matching, ever. |
+| A duplicate carrying *their* done stamp is taken up | Theirs saying "finished" when yours does not is news, not a disagreement. The one thing a duplicate can still tell you. |
+| An offer bar, which is a toast that waits | Two moments cannot be decided for you: a link that landed on top of a board you already had, and a name already on the board with a different date. Both get one line and two buttons, one question at a time. Never a dialog — a dialog would stop the board being a board. |
+| The displaced board is kept under its own key | `baaki.hash` is overwritten by the very next edit, so a board pushed aside by somebody's link would be gone within seconds. `baaki.prev` holds it, and "Restore my board" appears while it differs from what is on screen. |
+| Their board is what shows on arrival, not yours | Clicking a link has to mean seeing what was sent. Silently absorbing somebody's goal into your own board would be startling and hard to undo. Yours is offered back; it is never taken automatically. |
+
 ## Distribution
 
 | Feature | Why it exists |

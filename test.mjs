@@ -1140,6 +1140,268 @@ ok('every row in This Screen has something to say on hover', hints.every(h => h 
 await page.keyboard.press('Escape');
 await page.waitForTimeout(150);
 
+
+/* ---------- keeping a board somebody sent you --------------
+   Every case here has either a date boundary or a piece of stored
+   state in it, which between them is where every bug so far lived. */
+/* ---------- the other half of the link ---------------------
+   A fragment never reaches a server, so a preview bot cannot read one.
+   The query form exists for exactly that, and must arrive at the same
+   board the fragment would have. */
+console.log('\n--- a board can arrive in the query string ---');
+
+async function openQuery(q){
+  await page.evaluate(() => { localStorage.removeItem('baaki.hash'); localStorage.removeItem('baaki.prev'); });
+  await page.goto('about:blank');
+  await page.goto(FILE + q);
+  await page.waitForTimeout(280);
+}
+
+await openQuery('?b=Board%20exam~2027-03-12');
+ok('a query board loads like any other', (await page.locator('#name').textContent()).trim(), 'Board exam');
+ok('and the address is put back in the private form at once',
+   decodeURIComponent(await page.evaluate(() => location.hash)), '#Board exam~2027-03-12');
+ok('with the query gone, so nothing copied from the bar carries it',
+   await page.evaluate(() => location.search), '');
+
+await openQuery('?b=A~2027-01-01+B~2027-02-02');
+ok('several goals survive the trip', await page.locator('.chip').count(), 1);
+ok('both are on the board',
+   decodeURIComponent(await page.evaluate(() => location.hash)), '#A~2027-01-01+B~2027-02-02');
+
+/* The trap under this form: form-decoding turns "+" into a space AND
+   "%20" into a space, after which a two-word goal reads as two goals. */
+await openQuery('?b=Board%20exam~2027-03-12+Goa~2026-12-20');
+ok('a goal whose name has a space in it stays one goal',
+   decodeURIComponent(await page.evaluate(() => location.hash)),
+   '#Board exam~2027-03-12+Goa~2026-12-20');
+ok('and the board holds two of them, not three', await page.locator('.chip').count(), 1);
+
+// a fragment always wins: it is the form the page itself produces
+await openQuery('?b=Query~2027-01-01#Fragment~2027-06-06');
+ok('a fragment outranks a query, because the page only ever writes fragments',
+   (await page.locator('#name').textContent()).trim(), 'Fragment');
+
+await openQuery('?utm_source=x&b=Kept~2027-01-01');
+ok('somebody else\'s query parameters are left alone',
+   await page.evaluate(() => location.search), '?utm_source=x');
+
+// a switch for a thing that is not running teaches the wrong lesson
+r = await open('#Seed~2027-01-01');
+await page.keyboard.press('?');
+await page.waitForTimeout(250);
+ok('no preview setting while no renderer is deployed',
+   (await page.locator('#opts').textContent()).includes('Link previews'), false);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(150);
+
+/* ---------- getting a board back out -----------------------
+   A backup nobody checked is not a backup. Both files are read back
+   here rather than eyeballed. */
+console.log('\n--- a board can leave the browser ---');
+
+import { readFileSync as _read } from 'fs';
+async function grab(selector){
+  const [dl] = await Promise.all([ page.waitForEvent('download'), page.locator(selector).click() ]);
+  return _read(await dl.path(), 'utf8');
+}
+
+await page.evaluate(() => { localStorage.removeItem('baaki.hash'); localStorage.removeItem('baaki.prev'); });
+r = await open('#Board%20exam~2027-03-12+Boarding~2026-12-20T18:30+Rent~2026-10-01#m');
+await page.locator('#bAdd').click();
+await page.waitForTimeout(250);
+
+const saved = await grab('#bSave');
+ok('the saved file points at the hosted board, not at a copy of the app',
+   saved.includes('https://baaki.j33t.pro/#Board%20exam~2027-03-12'), true);
+ok('it stays under a kilobyte and a half', saved.length < 1500, true);
+ok('every goal is readable as text, so an offline open is not a dead end',
+   /Board exam/.test(saved) && /Boarding/.test(saved) && /Rent/.test(saved), true);
+ok('it only redirects when there is a network to redirect into',
+   saved.includes('navigator.onLine'), true);
+
+const ics = await grab('#bIcs');
+ok('the calendar file is a calendar', ics.startsWith('BEGIN:VCALENDAR'), true);
+ok('CRLF, as the spec insists', ics.includes('\r\n'), true);
+ok('one event per goal', (ics.match(/BEGIN:VEVENT/g) || []).length, 3);
+ok('a bare date stays a bare date, so it cannot drift a day abroad',
+   ics.includes('DTSTART;VALUE=DATE:20270312'), true);
+ok('all-day end is the next day, because DTEND is exclusive',
+   ics.includes('DTEND;VALUE=DATE:20270313'), true);
+ok('a timed goal goes out in UTC', /DTSTART:20261220T130000Z/.test(ics), true);
+ok('and gets a block you can actually click, not a hairline',
+   /DTEND:20261220T133000Z/.test(ics), true);
+ok('a recurring goal carries its rule', ics.includes('RRULE:FREQ=MONTHLY'), true);
+ok('each event links back to its own countdown', /URL:https:\/\/baaki\.j33t\.pro\/#Rent/.test(ics), true);
+
+await page.keyboard.press('Escape');
+await page.waitForTimeout(150);
+
+// an empty board has nothing to export and must not offer to
+await page.evaluate(() => { localStorage.removeItem('baaki.hash'); localStorage.removeItem('baaki.prev'); });
+await page.goto('about:blank');
+await page.goto(FILE);
+await page.waitForTimeout(350);
+await page.locator('#bAdd').click();
+await page.waitForTimeout(250);
+ok('nothing to save on an empty board', await page.locator('#bSave').isVisible(), false);
+ok('nothing to put in a calendar either', await page.locator('#bIcs').isVisible(), false);
+ok('but you can still bring a board in', await page.locator('#bImport').isVisible(), true);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(150);
+
+/* ---------- the blank board has to introduce itself --------
+   It is the first thing a stranger sees and the only screen with no
+   goal to explain it. */
+console.log('\n--- the blank board says what it is ---');
+
+await page.evaluate(() => { localStorage.removeItem('baaki.hash'); localStorage.removeItem('baaki.prev'); });
+await page.goto('about:blank');
+await page.goto(FILE);
+await page.waitForTimeout(400);
+ok('the Devanagari still leads',
+   (await page.locator('#name span').first().textContent()).trim(), 'बाकी');
+ok('with a roman spelling beside it, for anyone who cannot read it',
+   (await page.locator('#name .rom').textContent()).trim(), 'Baaki');
+ok('and the screen says what the thing actually is',
+   (await page.locator('#snark .pitch').textContent()).trim(),
+   'A deadline in a link. No account. Works offline.');
+ok('the nudge is still there, under it',
+   (await page.locator('#snark .cue').textContent()).includes('press G'), true);
+ok('the tab says it too, for a pinned tab nobody is looking at',
+   (await page.title()).startsWith('Baaki'), true);
+
+// a real goal must not inherit any of that
+r = await open('#Launch~2027-03-31');
+ok('a board with a goal shows the goal, not the wordmark', r.name, 'Launch');
+ok('and the pitch is gone with it',
+   await page.locator('#snark .pitch').count(), 0);
+
+console.log('\n--- a link you were sent can be kept ---');
+
+const wipe = () => page.evaluate(() => {
+  localStorage.removeItem('baaki.hash');
+  localStorage.removeItem('baaki.prev');
+});
+async function fresh(hash){ await wipe(); return open(hash); }
+const board = async () => decodeURIComponent(await page.evaluate(() => location.hash)).replace(/^#/, '');
+const goals = async () => (await board()).split('+').filter(t => t.indexOf('~') > -1).join(',');
+const count = async () => (await board()).split('+').filter(t => t.indexOf('~') > -1).length;
+async function paste(txt){
+  await page.evaluate(t => {
+    const dt = new DataTransfer();
+    dt.setData('text', t);
+    document.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+  }, txt);
+  await page.waitForTimeout(180);
+}
+const offerShown = () => page.locator('#offer').isVisible();
+const offerText  = () => page.locator('#offerMsg').textContent();
+
+// nothing saved, so nothing was displaced - a first visit must not be accused of anything
+await fresh('#Theirs~2027-06-01');
+ok('a link on a machine with no board of its own asks nothing', await offerShown(), false);
+
+// a board of your own, then somebody else's link on top of it
+await page.evaluate(() => localStorage.setItem('baaki.hash', '#Mine~2027-01-01'));
+await page.evaluate(() => localStorage.removeItem('baaki.prev'));
+r = await open('#Theirs~2027-06-01');
+ok('their board is what shows - clicking a link means seeing what was sent', r.name, 'Theirs');
+ok('and yours is offered back rather than silently dropped', await offerShown(), true);
+ok('the offer counts what you had', (await offerText()).includes('1 goal'), true);
+await page.locator('#offerYes').click();
+await page.waitForTimeout(220);
+ok('keeping both restores yours and folds theirs in', await goals(),
+   'Mine~2027-01-01,Theirs~2027-06-01');
+ok('the offer gets out of the way once answered', await offerShown(), false);
+
+// [hidden] has to actually hide it - #offer sets display:flex
+await page.evaluate(() => localStorage.setItem('baaki.hash', '#Mine~2027-01-01'));
+await page.evaluate(() => localStorage.removeItem('baaki.prev'));
+r = await open('#Theirs~2027-06-01');
+ok('declining shows the offer first', await offerShown(), true);
+await page.locator('#offerNo').click();
+await page.waitForTimeout(160);
+ok('...and [hidden] really hides it, display:flex notwithstanding', await offerShown(), false);
+ok('their board is left alone', await count(), 1);
+ok('but yours is still recoverable afterwards',
+   await page.evaluate(() => !!localStorage.getItem('baaki.prev')), true);
+
+// pasting: a new goal just arrives
+await fresh('#Exam~2027-03-12');
+await paste('https://baaki.j33t.pro/#Flight~2027-04-02');
+ok('a pasted link adds what is new, in order', await goals(), 'Exam~2027-03-12,Flight~2027-04-02');
+ok('and it lands in the address bar, so the next share carries it',
+   (await board()).includes('Flight~2027-04-02'), true);
+
+// the same goal twice is not two goals
+await fresh('#Exam~2027-03-12');
+await paste('#Exam~2027-03-12');
+ok('an exact duplicate is skipped, not doubled', await count(), 1);
+
+// name matching forgives case and spacing, and nothing else
+await fresh('#Exam~2027-03-12');
+await paste('#%20%20eXaM%20%20~2027-03-12');
+ok('case and stray spaces are the same goal', await count(), 1);
+
+// two things on one day are ordinary, not a collision
+await fresh('#Exam~2027-03-12');
+await paste('#Flight~2027-03-12');
+ok('same day, different names: both kept, no question asked', await count(), 2);
+ok('nothing to answer', await offerShown(), false);
+
+// the real collision: one name, two dates
+await fresh('#Exam~2027-03-12');
+await paste('#Exam~2027-03-15');
+ok('same name, different date is the one thing worth asking about', await offerShown(), true);
+ok('the question names the goal and both dates',
+   /Exam/.test(await offerText()) && (await offerText()).split('2027').length === 3, true);
+await page.locator('#offerNo').click();     // Keep both
+await page.waitForTimeout(220);
+ok('keep both leaves two', await goals(), 'Exam~2027-03-12,Exam~2027-03-15');
+
+await fresh('#Exam~2027-03-12');
+await paste('#Exam~2027-03-15');
+await page.locator('#offerYes').click();    // Replace
+await page.waitForTimeout(220);
+ok('replace leaves one, carrying their date', await goals(), 'Exam~2027-03-15');
+
+// a done stamp is news, not a disagreement
+await fresh('#Ship~2027-02-01');
+await paste('#Ship~2027-02-01!2027-01-28T10:30');
+ok('their completion stamp is taken up without a question',
+   (await board()).includes('!2027-01-28T10:30'), true);
+ok('and it is still one goal', await count(), 1);
+
+// ordinary text must survive an ordinary paste
+await fresh('#Exam~2027-03-12');
+await paste('just some words #notalink');
+ok('a paste that is not a board changes nothing', await goals(), 'Exam~2027-03-12');
+
+// the button exists because the gesture is invisible
+await fresh('');
+await page.locator('#bAdd').click();
+await page.waitForTimeout(200);
+ok('"Add from a link" is there on an empty board, where it is needed most',
+   await page.locator('#bImport').isVisible(), true);
+ok('the clearing pair stays away until there is something to clear',
+   await page.locator('#bClearAll').isVisible(), false);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(160);
+
+// file:// has no clipboard read, so the button must say what to do instead
+await fresh('#Exam~2027-03-12');
+await page.locator('#bAdd').click();
+await page.waitForTimeout(200);
+await page.locator('#bImport').click();
+await page.waitForTimeout(250);
+ok('with no clipboard permission the button asks for the keystroke instead',
+   (await page.locator('#toast').textContent()).includes('paste it anywhere'), true);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(160);
+await wipe();
+
+
 console.log(`\n${pass} passed, ${fail} failed`);
 await browser.close();
 process.exit(fail ? 1 : 0);
