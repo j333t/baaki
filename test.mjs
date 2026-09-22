@@ -1495,6 +1495,142 @@ await page.waitForTimeout(160);
 await wipe();
 
 
+/* ---------- any screen, any shape --------------------------
+   Every case here is a measurement, never a pixel value: does it
+   overflow, does it wrap, do two boxes intersect. A nudged scale must
+   be able to change every number on screen without breaking a test -
+   only a thing that is actually broken should.
+
+   The shapes are chosen to be awkward rather than typical: a narrow
+   phone, that phone on its side, a square, and an ultrawide. If it
+   holds at the corners the middle takes care of itself. */
+console.log('\n--- it holds its shape on any screen ---');
+
+const shapes = [
+  ['phone upright', 360, 640],
+  ['phone on its side', 844, 390],
+  ['a square', 700, 700],
+  ['tablet', 1024, 768],
+  ['ultrawide', 2560, 1080],
+  ['a very short window', 1200, 300],
+];
+
+async function shaped(w, h, hash, touch) {
+  const c = await browser.newContext({ timezoneId: TZ, locale: 'en-IN', colorScheme: 'dark',
+    viewport: { width: w, height: h }, isMobile: !!touch, hasTouch: !!touch });
+  const pg = await c.newPage();
+  await pg.clock.setFixedTime(new Date(NOW));
+  await pg.goto(FILE + (hash || '#Board%20exam~2027-03-12+Goa%20trip~2026-12-20+Rent~2026-10-01'));
+  await pg.waitForTimeout(400);
+  return { c, pg };
+}
+const boxOf = (pg, sel) => pg.locator(sel).boundingBox();
+
+for (const [label, w, h] of shapes) {
+  const { c, pg } = await shaped(w, h);
+  const num = await boxOf(pg, '#num');
+  ok(`${label}: the number stays on screen`, num.x >= 0 && num.x + num.width <= w + 1, true);
+  ok(`${label}: and keeps a margin either side`, num.x >= 4, true);
+  ok(`${label}: it is one line, never wrapped`,
+     await pg.locator('#num').evaluate(e => e.getClientRects().length), 1);
+  /* The whole point of fitting to the box: it must actually use it. */
+  ok(`${label}: and it is big enough to be the thing you look at`,
+     num.height > Math.min(w, h) * 0.18, true);
+
+  /* One row. It used to wrap, and the toast and offer are positioned
+     off a height that assumes it did not. */
+  const bar = await boxOf(pg, '#bar');
+  /* Hidden buttons report a rect at 0,0, and the segmented Share sits
+     a border's width lower than its neighbours - so the question is
+     whether the visible buttons share a centre line, not whether they
+     share a pixel. */
+  const mids = await pg.locator('#bar button').evaluateAll(els => els
+    .filter(e => e.getClientRects().length)
+    .map(e => { const r = e.getBoundingClientRect(); return r.top + r.height / 2; }));
+  ok(`${label}: the bar is a single row`, Math.max(...mids) - Math.min(...mids) < 4, true);
+  /* The toast and the offer are positioned off --bar-h. If the bar
+     ever stops being exactly that tall, both land in the wrong place. */
+  const declared = await pg.evaluate(() => {
+    const el = document.createElement('div');
+    /* fixed, not a flow child - body is a flex column and would
+       stretch or shrink the probe before it could be read */
+    el.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:var(--bar-h)';
+    document.body.appendChild(el);
+    const h = el.getBoundingClientRect().height;
+    el.remove();
+    return h;
+  });
+  ok(`${label}: and is exactly as tall as --bar-h says`, Math.abs(bar.height - declared) < 1.5, true);
+  ok(`${label}: nothing on the board runs under the bar`,
+     (await boxOf(pg, '#sub')).y + (await boxOf(pg, '#sub')).height <= bar.y + 1, true);
+  const tip = await pg.locator('#snark').boundingBox().catch(() => null);
+  if (tip && tip.height) {
+    ok(`${label}: the tip line clears the bar too`, tip.y + tip.height <= bar.y + 1, true);
+  }
+  await c.close();
+}
+
+/* Board mode is keyed on height, and the line has to be somewhere -
+   so check it is where it is documented to be, from both sides. */
+let s1 = await shaped(900, 519);
+ok('under 520 high, the board takes over', await s1.pg.locator('#clock').isVisible(), false);
+ok('and the pager appears, because the chips went', await s1.pg.locator('#dots').isVisible(), true);
+ok('the chips are what went', await s1.pg.locator('#others').isVisible(), false);
+await s1.c.close();
+
+s1 = await shaped(900, 560);
+ok('over it, the ordinary board is back', await s1.pg.locator('#clock').isVisible(), true);
+ok('and the pager is not needed', await s1.pg.locator('#dots').isVisible(), false);
+await s1.c.close();
+
+/* A single goal has nothing to page between. */
+s1 = await shaped(900, 480, '#Only~2027-03-12');
+ok('one goal, no pager', await s1.pg.locator('#dots').isVisible(), false);
+await s1.c.close();
+
+console.log('\n--- the bar suits what you are holding ---');
+
+let t = await shaped(390, 844, null, true);
+const touchBar = await t.pg.locator('#tools button').evaluateAll(els => els.map(e => e.id).join(','));
+ok('a thumb does not get sound in the bar', touchBar.includes('bSound'), false);
+ok('it keeps fullscreen, which is how a phone becomes a board', touchBar.includes('bFull'), true);
+ok('and the surface switch', touchBar.includes('bTheme'), true);
+ok('the tips stop reciting keys at a device with none',
+   (await t.pg.locator('#snark').textContent()).toLowerCase().includes('press '), false);
+await t.c.close();
+
+t = await shaped(1200, 800, null, false);
+ok('with a keyboard, sound is back in the bar',
+   (await t.pg.locator('#tools button').evaluateAll(e => e.map(x => x.id).join(','))).includes('bSound'), true);
+await t.c.close();
+
+/* Fewer digits, bigger number - the fit knows how wide the hero is. */
+const sizeAt = async hash => {
+  const { c, pg } = await shaped(500, 900, hash);
+  const px = parseFloat(await pg.locator('#num').evaluate(e => getComputedStyle(e).fontSize));
+  await c.close();
+  return px;
+};
+const three = await sizeAt('#A~2027-03-12');       // 171d
+const one = await sizeAt('#A~2026-09-03');         // 1d
+ok('a one-digit number is drawn larger than a three-digit one', one > three, true);
+
+/* The dialog was running off the bottom in landscape, because vh on a
+   phone is measured against a viewport the chrome is not using. */
+const d = await shaped(844, 390);
+await d.pg.locator('#bAdd').click();
+await d.pg.waitForTimeout(400);
+/* The <dialog> is the box; .dlg inside it is the scrolling content and
+   is meant to be taller. Measuring the content was measuring the wrong
+   thing - what matters is that the box stays on screen and the rest is
+   reachable by scrolling rather than lost off the bottom. */
+const dlg = await boxOf(d.pg, '#dlg');
+ok('the dialog fits the short screen it was opened on', dlg.y + dlg.height <= 391, true);
+ok('and starts on screen, not above it', dlg.y >= -1, true);
+ok('with the overflow reachable, not cut off',
+   await d.pg.locator('#dlg').evaluate(e => e.scrollHeight > e.clientHeight && getComputedStyle(e).overflowY !== 'hidden'), true);
+await d.c.close();
+
 console.log(`\n${pass} passed, ${fail} failed`);
 await browser.close();
 process.exit(fail ? 1 : 0);

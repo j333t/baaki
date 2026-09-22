@@ -98,10 +98,11 @@ Legend: **★** = load-bearing, removing it changes what Baaki is.
 | Colour is keyed on the name, not on name+target | Every other goal's identity for hue purposes is name+target, and that's right when target only ever changes by editing. A recurring goal's target moves every cycle on its own - keying colour on the name alone keeps it recognisable across cycles, where celebration and the online-sync key deliberately keep target in the mix, because those *do* want a fresh identity each cycle. |
 | A two-character marker (`#w`, not `w`) | A bare trailing letter risks colliding with a real timezone name that happens to end the same way - Europe/Moscow ends in `w`, Pacific/Guam in `m`, Europe/Jersey in `y`. `#` never appears in an encoded IANA zone name, so the pair is unambiguous no matter what the zone itself ends in. |
 
-## Window
+## Scheduled
 
 | Feature | Why it exists |
 |---|---|
+| Called **Scheduled**, not "Window" | "Window" was a word this tool taught you; "scheduled" is one you already had. Pure label change - the link format never names this kind (a second `~` is the whole tell), so every link ever sent keeps working, and the code still calls it `window`. |
 | ★ Two dates, one link - counts to the start like something good, then to the end like a deadline | "Exam 10am-noon," "boarding opens-gate closes" are one thing with two moments, not two separate goals. The win over just making two ordinary goals is a single preset, shareable link: whoever opens it on the day gets the right view automatically, with no coordinating two links or manually switching. |
 | The switch is instant, at the exact moment `start` arrives | One number at a time, never two competing for the same screen. Nothing new to build for the rendering itself - both render paths (something good, deadline) already existed; the only new logic is the phase check that picks which target and style apply this second. |
 | No Done until the switch has happened | Something good never has a Done button, and up to `start` a window is rendering as exactly that - there is nothing to complete yet. The moment it flips to counting down to `end`, Done follows the ordinary deadline rule. |
@@ -197,6 +198,26 @@ Themes are data, and this is the whole extension surface. All of it per device.
 | One height for every button in the bar | It read as scattered because nothing shared a measurement. |
 | Anything switched on is lit in the bar | A setting you cannot see is a setting you forget you left on — and that is also the place to turn it off. |
 | Keep-awake appears in the bar only while on | It is the only time you would go looking for it. |
+
+## Any screen, any shape
+
+| Feature | Why it exists |
+|---|---|
+| ★ The number is fitted to its box on both axes | It used to be `clamp(4.5rem, 21vw, 15rem)` — width only. On a phone in portrait 21vw of a narrow screen left the number at a tenth of the height; on an ultrawide the 15rem ceiling capped it at a fifth; in landscape the stack simply did not fit and the tip line printed through the buttons. Three symptoms, one cause: nothing ever asked how much height there was. |
+| CSS is told how wide the hero is, because it cannot count | Tabular digits are one width, a colon is much narrower, a unit is a superscript at `.26em` — so "3", "171" and "8h:30m" are three very different widths at one font-size. JS writes `--hero-em` only when the hero changes, so it costs nothing on the one-second beat. |
+| The size steps multiply the height term only | So `+` grows the number right up to the width limit and never past it. A deliberate size choice should not be able to push the number off its own screen. |
+| `--room`, and `dvh` instead of `vh` | `vmin`/`vmax` know nothing about the bar, the notch, or mobile browser chrome that collapses on scroll. On a phone `vh` is measured against a viewport the browser is not currently using, which is why full-height things ran off the bottom. |
+| The board is centred in the room, not the window | The bar is fixed, so without a matching bottom padding the stack centres over the full height and its bottom sits underneath the buttons. `--room` and that padding are the same fact stated twice and have to stay that way. |
+| ★ Board mode is keyed on **height** | Every responsive convention keys on width, because most pages are columns of text that reflow. This is one enormous number — what kills it is running out of vertical room. A rotated phone and a short desktop window fail identically and no width query catches either. Under 520px the number takes 62% of the room and everything that is not the number goes. |
+| A pager row when the chips go | A board that quietly has three goals on it while looking like it has one is worse than no board. Smallest honest answer: how many, and which. |
+| The pager counts rotation, because position is not stored | Rotation is the real model — the focused goal is always the first, and that order goes into the link — so "which of N" has to be counted separately. Session-local on purpose: after a reload the order in the link genuinely did move. |
+| The roomy tier adds air, not type | The number is already as large as it fits; widening the spacing ladder one rung is what a big screen actually wants. |
+| The bar never wraps | It used to, which silently doubled its height on a narrow screen — and the toast and the offer were both positioned off a constant tuned for one row, so they landed on top of the buttons. |
+| Fewer buttons on a thumb, not smaller ones | A touch bar keeps fullscreen, rotation lock and surface — the ones you reach for while holding the thing. Sound and keep-awake are set once and left, and both already live under `?`. |
+| Done never moves under your thumb | It is the one control that changes something you cannot casually undo, and Share opening used to slide it sideways. On a coarse pointer the share family takes the row over instead of growing inside it; with a mouse you can see it move, so it keeps the nicer grow-in-place. |
+| Rotation lock only where it is honoured | The browser allows it in fullscreen or installed — exactly when a propped-up phone is being used as a board and a rotation would ruin it. |
+| Tips and the About panel ask what you are holding | A line telling you to press F on a device with no F is not a tip, it is a bug with good manners. `ok()` was already the filter; it just never asked this question. The keys table becomes a gestures table. |
+| The layout tests are measurements, never pixel values | Does it overflow, does it wrap, do two boxes intersect. A nudged scale must be able to change every number on screen without breaking a test — only something actually broken should. Six deliberately awkward shapes; if it holds at the corners the middle looks after itself. |
 
 ## The blank board introduces itself
 

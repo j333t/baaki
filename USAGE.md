@@ -23,7 +23,7 @@ name      := percent-encoded text, no "+" or "~" left raw
 target    := YYYY-MM-DD
            | YYYY-MM-DDTHH:MM
            | YYYY-MM-DDTHH:MM:SS
-start     := same shapes as target - present only on a window goal
+start     := same shapes as target - present only on a scheduled goal
 done      := same shapes as target
 zone      := percent-encoded IANA zone, e.g. Asia%2FKolkata - only ever present
              alongside a real time, never on a bare date

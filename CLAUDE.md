@@ -46,6 +46,28 @@ docs/turn-on-previews.md  plain-language runbook for deploying og-worker.mjs
 - **Vanilla, ES5-flavoured JS.** No framework, no transpiler, no dependency. It has to run off a USB stick in 2031.
 - **The wrapper never edits the page.** Desktop-only chrome is injected from `main.rs`. If you find yourself adding `if (isTauri)` to `baaki.html`, stop.
 - **Every colour is generated, not stored.** Ramps interpolate between anchors. Do not paste 36 hex values anywhere.
+- **The scale comes off `--room`, not the raw viewport.** `vmin`/`vmax` know nothing about
+  the bar, the notch, or mobile browser chrome that collapses on scroll. `--room` is the
+  viewport minus the furniture, in `dvh` — never `vh`, which on a phone measures a
+  viewport the browser is not currently using.
+- **`--bar-h` and `body`'s bottom padding are the same fact stated twice.** The bar is
+  fixed; without the padding the board centres over the full height and its bottom sits
+  under the buttons. Change one and you must change the other.
+- **Layout breakpoints are on *height*.** Every responsive convention keys on width,
+  because most pages are columns of text. This is one enormous number, and what kills it
+  is running out of vertical room — a rotated phone and a short desktop window fail
+  identically, and no width query catches either. Board mode is `max-height:520px`.
+- **The bar is one row. Always.** It wrapped once, which silently doubled its height and
+  put the toast on top of the buttons. On a small screen the answer is *fewer buttons*,
+  not smaller ones — anything that is set once and left belongs under `?`.
+- **Done never moves under a thumb.** It is the only control that changes something you
+  cannot casually undo. Anything that reflows the bar must reflow around it.
+- **Ask what the input is, never what the device is.** `coarse()` is the one question;
+  a touchscreen laptop and a phone want the same bar. A tip telling you to press F on a
+  device with no F is a bug.
+- **CSS cannot count digits, so it is told.** `--hero-em` is written from JS when the hero
+  changes - "3", "171" and "8h:30m" are three very different widths at one font-size.
+  Written on change only, never on the beat.
 - **No fixed pixel measurements.** Everything comes off `--u` and `--ft`, which come off the viewport, and every step is a power of phi (spacing) or 1.25 (type). A raw `px` in a new rule is a bug unless it is a hairline.
 - **Dialog content gets its own scale - buttons do not.** `.dlg` re-declares `--u`/`--f0`/`--f1`/`--f2` with much gentler clamps than root, for text and spacing only. `--h` (button height) is a single root-level variable, deliberately not re-declared in `.dlg`, so a calmer content scale can never drag a button down to an untappable size. Calendar cells and nav arrows get their own smaller floor instead, via `max(Npx, calc(var(--u)*k))` using the dialog's local `--u` - denser grid, smaller floor, still scaled to content rather than jumping to room-scale.
 - **Both dialogs are single-column, on purpose.** Two columns were tried twice (1.4.0, 1.5.0 tuning) and looked considered on paper but left dead space under whichever side was shorter, every time. Do not reintroduce a grid split without a real fix for that.
@@ -71,7 +93,10 @@ docs/turn-on-previews.md  plain-language runbook for deploying og-worker.mjs
 - **A script that fails partway saves nothing.** `_edit.py`'s `Doc.rep()` calls `sys.exit()` on a mismatch, which skips `Doc.done()` - every edit already applied in that run, in memory, is lost, even the ones that printed "ok". Always check for the `--- N edits ---` trailer, not just the "ok" lines, before trusting a run landed.
 - **The fast path repaints everything when the rung changes**, or the colour and the tag land a second after the number does.
 - **Watch out for `display` beating `[hidden]`.** `button.b` and `.hist` both did this before being caught - a class rule that sets `display` on an element also toggled via `.hidden` silently wins over the browser's own `[hidden]{display:none}`. Any new class like that needs `[hidden]{display:none}` written in beside it, and a test that actually checks `isVisible()` after hiding it, not just after showing it.
-- **A media query does not outrank a later plain rule.** Equal specificity, later wins. Scope responsive overrides with an ID.
+- **A media query does not outrank a later plain rule.** Equal specificity, later wins. Scope
+  responsive overrides with an ID. This has now caught two people twice: `#dots` was
+  declared `display:none` *after* the board-mode query that sets it to `flex`, so the
+  pager never appeared. Written `body #dots{display:flex}`, order stops mattering.
 - **No magic colour assertions in tests.** Compare behaviour (deadline vs event) rather than an interpolated hex, or the test breaks every time a ramp is nudged.
 
 ## The link format
@@ -83,6 +108,11 @@ docs/turn-on-previews.md  plain-language runbook for deploying og-worker.mjs
 
 `~` name/date · `+` between goals · `*` something good rather than a deadline ·
 `!DONE` completion stamp · `!edit` shows the Done button.
+
+The two-date kind is called **Scheduled** on screen and `window` in the code - deliberately,
+and the two are not going to be reconciled. The link format never names the kind at all (a
+second `~` is the whole tell), so renaming the label cost nothing and renaming `winStart`
+through the parser, `effGoal` and every render path would cost a lot for no reader.
 
 First goal is the big one. Focus **rotates** the list — never promote-to-front, or "previous" stops being the inverse of "next".
 

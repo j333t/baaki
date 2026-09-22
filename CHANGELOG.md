@@ -22,6 +22,65 @@ Anything that changes the **link format** is a breaking change and needs a major
 
 ## Unreleased
 
+### It works on a screen of any shape now
+
+One line explained nearly all of it. The number was sized
+`clamp(4.5rem, 21vw, 15rem)` — off the **width**, and nothing in the
+layout ever asked how much height there was. On a phone in portrait
+that left the number at a tenth of the screen; on an ultrawide the
+ceiling capped it at a fifth; in landscape the stack did not fit at
+all and the tip line printed straight through the buttons.
+
+The number is fitted to its box on both axes now, and the smaller
+wins. CSS cannot count digits, so it is told: JS writes `--hero-em`
+when the hero changes, because "3", "171" and "8h:30m" are three very
+different widths at one font-size. The size steps multiply the height
+term only, so `+` can grow the number up to the width limit and never
+past it.
+
+Under it, two things that should always have been true: a `--room`
+that is the viewport minus the furniture, in `dvh` rather than `vh`
+(on a phone `vh` measures a viewport the browser is not using, which
+is why full-height things ran off the bottom) — and a bottom padding
+on `body` matching the bar, so the board is centred in what is left
+rather than in the window. That last one was the actual cause of the
+overlap.
+
+**Board mode**, on a phone turned sideways or any window under 520px
+tall. Keyed on height, deliberately: every responsive convention keys
+on width, but this is one enormous number and what kills it is running
+out of vertical room. The number takes 62% of the room, everything
+that is not the number goes, and a row of dots says how many goals
+there are and which one you are on.
+
+**The bar never wraps.** It used to, silently doubling its height on a
+narrow screen — and the toast and the offer were positioned off a
+constant tuned for one row, which is how they ended up on top of the
+buttons. On a thumb it carries fullscreen, rotation lock and surface;
+sound and keep-awake are set once and left, and both already live
+under `?`. Fewer buttons, not smaller ones.
+
+**Done no longer moves under your thumb.** It is the one control that
+changes something you cannot casually undo, and opening Share used to
+slide it sideways. On a coarse pointer the share family takes the row
+over rather than growing inside it.
+
+Tips and the About panel now ask what you are holding. A line telling
+you to press F on a device with no F is not a tip, it is a bug with
+good manners — the keys table becomes a gestures table.
+
+Sixty-one new tests, all measurements rather than pixel values: does
+it overflow, does it wrap, do two boxes intersect, across six
+deliberately awkward shapes.
+
+### Window is called Scheduled
+
+"Window" was a word this tool taught you. "Scheduled" is one you
+already had. The link format never names the kind at all — a second
+`~` is the whole tell — so every link ever sent keeps working, and the
+code still calls it `window`, which CLAUDE.md now records rather than
+pretends otherwise.
+
 ### The number reads from across a room now
 
 300 was elegant on a laptop and thin on a wall, which is the case that

@@ -85,6 +85,8 @@ Two things to be honest about before this is built:
 
 ## Queued, scored 2026-09-22
 
+~~**Rename Window to Scheduled.**~~ Built — see `features.md` → Scheduled.
+
 **The number rolls in.** On a board whose starting point is known, count the number down
 to its real value over a second or two rather than printing it — each digit rolling, with
 some weight to the motion. The default board knows its start (365); a scheduled goal
@@ -105,11 +107,6 @@ of that line only if it ends and never repeats.
 
 Glance: pass (it settles into a still number). Cold open: pass. Weight: needs work.
 One primitive: pass. **Deferred** until the screen work lands.
-
-**Rename Window to Scheduled.** "Window" is a word this tool taught the user; "scheduled"
-is one they already have. Pure label change — the link format carries a window as
-`start~end` with no marker letter, so nothing about an existing link changes. Cheap and
-independent of everything else. **Deferred** with the above.
 
 ## Still open, from the work above
 

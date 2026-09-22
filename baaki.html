@@ -56,6 +56,21 @@
      tamer content scale - a button is not a paragraph, and it should
      not shrink just because the text next to it did. */
   --h:max(38px, calc(var(--u) * 2.35));
+  /* The bar is one row, always - it is not allowed to wrap - so its
+     height is derivable rather than measurable, which keeps it inside
+     the scale instead of being a number somebody guessed. The toast
+     and the offer both sit off this, and both used to sit off a
+     constant that was right for one row and landed on top of the
+     buttons the moment there were two. */
+  --bar-h:calc(var(--h) + var(--s3) * 2);
+  /* What is actually left to draw in. dvh, not vh: on a phone vh is
+     measured against a viewport the browser chrome is not currently
+     occupying, which is why full-height things ran off the bottom. */
+  --room:calc(100dvh - var(--bar-h));
+  /* How wide the hero is in multiples of its own size, and how much of
+     the room it may take. JS keeps the first true as the digits
+     change; the second is the one thing board mode moves. */
+  --hero-em:2.8; --hero-hk:.42;
   --face:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Inter,system-ui,sans-serif;
   --sheet:var(--g1);
 }
@@ -106,7 +121,13 @@ body{
   transition:color .4s ease;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   overflow:hidden;text-align:center;
-  padding:var(--s5) var(--s4);
+  /* Centred in what is left, not in the window. The bar is fixed, so
+     without this the board centres itself over the full height and
+     the bottom of the stack sits underneath the buttons - which is
+     what put the tip line straight through them on a short screen.
+     --room and this padding are the same fact stated twice, and they
+     have to stay that way. */
+  padding:var(--s5) var(--s4) calc(var(--s5) + var(--bar-h));
   -webkit-font-smoothing:antialiased;
   -webkit-tap-highlight-color:transparent;
 }
@@ -122,7 +143,20 @@ main{display:flex;flex-direction:column;align-items:center;gap:var(--s2);min-wid
 #name .rom{font-weight:400;opacity:.5;flex:none}
 #hero{display:flex;align-items:baseline;gap:var(--s3);justify-content:center;flex-wrap:wrap;
   margin:calc(var(--s2) * -1) 0 var(--s1)}
-#num{font-size:calc(clamp(4.5rem,21vw,15rem) * var(--hero-k));font-weight:var(--hero-w);
+/* As big as it goes without wrapping, with a margin either side, on
+   any shape of screen. The old clamp asked only how wide the screen
+   was: on a phone in portrait 21vw of a narrow screen left the number
+   at a tenth of the height, and on an ultrawide the 15rem ceiling
+   capped it at a fifth. Both are the same bug - nothing ever asked
+   how much height there was.
+
+   Width and height are worked out separately and the smaller wins.
+   The size steps multiply the height term only, so + can grow the
+   number right up to the width limit and never past it. */
+#num{font-size:min(
+    calc((100dvw - var(--s5) * 2) / var(--hero-em)),
+    calc(var(--room) * var(--hero-hk) * var(--hero-k)));
+  font-weight:var(--hero-w);
   letter-spacing:var(--hero-track);line-height:.94;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
 /* The unit rides on the digits now, not beside them - a real size, not
    the browser's cramped default <sup>, so it survives being read from
@@ -180,8 +214,23 @@ body.empty #snark{max-width:54ch}
 /* One height for everything, squares for the icons, three groups with
    real space between them. It read as scattered because nothing shared
    a measurement. */
+/* One row, never two. It used to wrap, which silently doubled its
+   height on a narrow screen - and the toast and the offer were both
+   positioned off a constant tuned for one row, so they landed on top
+   of the buttons. The fix is fewer buttons on a small screen, not
+   smaller ones; see drawTools. */
 #bar{position:fixed;left:0;right:0;bottom:0;display:flex;gap:var(--s4);justify-content:center;
-  align-items:center;padding:var(--s3);opacity:.3;transition:opacity .4s ease;flex-wrap:wrap}
+  align-items:center;padding:var(--s3);opacity:.3;transition:opacity .4s ease;flex-wrap:nowrap;
+  height:var(--bar-h)}
+/* Share opening must not move Done. Done is the one control here that
+   changes something you cannot casually undo, and on a touch screen a
+   button that slides sideways as the row grows is a button you press
+   by accident. On a coarse pointer the share family takes the row
+   over instead of growing inside it; with a mouse you can see it move,
+   so it keeps the nicer grow-in-place. */
+@media (pointer:coarse){
+  body.sharing #bAdd,body.sharing #bDone{display:none}
+}
 @media (hover:hover){body:hover #bar,#bar:focus-within{opacity:1}}
 @media (hover:none){#bar{opacity:.8}}
 .grp{display:flex;gap:var(--s1);align-items:center}
@@ -215,7 +264,7 @@ button.b svg{display:block}
 #bAbout.dot::after{content:"";position:absolute;top:14%;right:16%;width:5px;height:5px;
   border-radius:50%;background:var(--ink);opacity:.85}
 
-#toast{position:fixed;bottom:calc(var(--s6) + var(--s3));left:50%;transform:translateX(-50%) translateY(8px);
+#toast{position:fixed;bottom:calc(var(--bar-h) + var(--s3));left:50%;transform:translateX(-50%) translateY(8px);
   background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:99px;
   padding:9px var(--s4);font-size:var(--f1);opacity:0;pointer-events:none;
   transition:opacity .25s,transform .25s;backdrop-filter:blur(12px);white-space:nowrap;z-index:50}
@@ -226,7 +275,7 @@ button.b svg{display:block}
    name already on your board carrying a different date. It sits a
    rung above the button bar so the bar keeps its own row, and it goes
    nowhere near the number. */
-#offer{position:fixed;bottom:calc(var(--s6) + var(--s5));left:50%;transform:translateX(-50%);
+#offer{position:fixed;bottom:calc(var(--bar-h) + var(--s5));left:50%;transform:translateX(-50%);
   display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
   gap:var(--s2) var(--s3);max-width:min(92vw, 62rem);
   background:var(--panel2);border:1px solid var(--line);color:var(--ink);
@@ -249,7 +298,7 @@ body.asking #snark{opacity:0}
 /* the panel grows with the type, which grows with the screen, so a
    4K monitor gets a bigger panel rather than the same one further away */
 dialog{border:1px solid var(--line);border-radius:max(10px, calc(var(--u) * .9));padding:0;
-  width:min(93vw,calc(var(--ft) * 34));margin:auto;max-height:90vh;overflow:auto;
+  width:min(93vw,calc(var(--ft) * 34));margin:auto;max-height:92dvh;overflow:auto;
   background:var(--sheet);color:var(--ink);box-shadow:0 calc(var(--u)*1.6) calc(var(--u)*5) rgba(0,0,0,.45);
   overscroll-behavior:contain}
 /* One column, always. Two side by side looked considered on paper -
@@ -282,7 +331,7 @@ dialog::-webkit-scrollbar-thumb:hover,.rows::-webkit-scrollbar-thumb:hover{backg
   cursor:pointer;text-decoration:underline;text-underline-offset:2px;padding:2px 0}
 .listActs button:hover,.listActs button:focus-visible{color:var(--dim);outline:none}
 .listActs button:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
-.rows{display:flex;flex-direction:column;gap:var(--s1);max-height:34vh;overflow:auto}
+.rows{display:flex;flex-direction:column;gap:var(--s1);max-height:34dvh;overflow:auto}
 .row{display:flex;gap:var(--s2);align-items:center;background:var(--panel);border-radius:10px;padding:var(--s2)}
 .row.editing{outline:1px solid var(--line)}
 .row .rn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--f1)}
@@ -387,6 +436,48 @@ kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;
 .keys{display:inline-grid;grid-template-columns:auto 1fr auto 1fr;gap:var(--s1) var(--s3);
   font-size:var(--f0);color:var(--dim);align-items:center;max-width:36em}
 @media (max-width:480px){.keys{grid-template-columns:auto 1fr;max-width:20em}}
+
+/* One dot per goal, the one you are looking at filled. Board mode
+   drops the chips, and a board that silently has three goals on it
+   when it looks like it has one is worse than no board. */
+#dots{display:none;gap:var(--s2);align-items:center;margin-top:var(--s3)}
+#dots i{width:max(5px,calc(var(--u) * .34));height:max(5px,calc(var(--u) * .34));
+  border-radius:99px;background:var(--ink);opacity:.22;transition:opacity .3s ease}
+#dots i.on{opacity:.75}
+
+/* ---------- board mode -------------------------------------
+   Keyed on height, not width, and not on "is this a phone". What
+   breaks a board is running out of vertical room, and a rotated phone
+   and a short desktop window run out of it identically - a width
+   query catches neither. Under this line the number takes most of
+   what is left and everything that is not the number goes.
+------------------------------------------------------------ */
+@media (max-height:520px){
+  :root{--hero-hk:.62}
+  #clock,#snark,#tag,#others,#helpHint{display:none}
+  body #dots{display:flex}   /* scoped: equal specificity would let a later plain rule win */
+  #hero{margin:0}
+  #name{font-size:var(--f2)}
+}
+/* The dialog on a short screen. It scrolls rather than being cut off
+   now that it measures in dvh, so the job here is only to stop the
+   two blocks that waste the most height from pushing the thing you
+   came for off the bottom. The hint keeps its first two lines and its
+   full text in the tooltip; the goal list keeps about a fifth of the
+   screen instead of a third. */
+@media (max-height:520px){
+  #kindHint{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .rows{max-height:20dvh}
+  .dlg{--u:clamp(9px, 0.8vmin + 0.6vmax, 18px)}
+}
+
+/* ---------- roomy ------------------------------------------
+   Air, not type. The number is already as big as it fits; widening
+   the spacing ladder one rung is what a big screen actually wants. */
+@media (min-height:900px){
+  :root{--u:clamp(13px, 1.25vmin + 0.9vmax, 30px)}
+}
+
 .screen{border-top:1px solid var(--line);padding-top:var(--s3);display:flex;flex-direction:column;gap:var(--s2)}
 .opts{display:flex;flex-direction:column;gap:var(--s1)}
 .opt{display:flex;align-items:center;gap:var(--s1);font-size:var(--f1);color:var(--dim)}
@@ -444,6 +535,7 @@ body.locked #bAdd{opacity:.45}
   <div id="tag"></div>
   <div id="clock"></div>
   <div id="others"></div>
+  <div id="dots" aria-hidden="true"></div>
   <div id="snark"></div>
 </main>
 
@@ -477,7 +569,7 @@ body.locked #bAdd{opacity:.45}
       <button type="button" id="kDeadline" aria-pressed="true">Deadline</button>
       <button type="button" id="kEvent" aria-pressed="false">Something good &#9733;</button>
       <button type="button" id="kRepeat" aria-pressed="false">Recurring</button>
-      <button type="button" id="kWindow" aria-pressed="false">Window</button>
+      <button type="button" id="kWindow" aria-pressed="false">Scheduled</button>
     </div>
     <div class="kind" id="fCadence" hidden>
       <button type="button" id="rWeekly" aria-pressed="true">Weekly</button>
@@ -616,6 +708,12 @@ var UPDATE_URLS = [
 ];
 
 var DAY = 864e5, HOUR = 36e5, MIN = 6e4;
+/* Fingers or a pointer. Asked about the input, never about the device
+   - a touchscreen laptop and a phone want the same bar, and a tablet
+   with a trackpad wants the other one. */
+function coarse(){
+  return !!(window.matchMedia && matchMedia('(hover:none) and (pointer:coarse)').matches);
+}
 function $(s){ return document.querySelector(s); }
 var el = {
   name:$('#name'), num:$('#num'), unit:$('#unit'), sub:$('#sub'), tag:$('#tag'),
@@ -1057,7 +1155,15 @@ function pruneHueMap(){
   for(var k in hueMap) if(!keys[k]){ delete hueMap[k]; changed = true; }
   if(changed) saveHueMap();
 }
+var lastCount = -1;
 function commit(pushState){
+  /* Adding or losing a goal makes a position in the old list
+     meaningless; rotating does not, and keeps its place. The -1 guard
+     matters: without it the very first commit counts as a change and
+     throws away the rotation that triggered it, leaving the dots one
+     step behind for the rest of the session. */
+  if(lastCount >= 0 && S.goals.length !== lastCount) spun = 0;
+  lastCount = S.goals.length;
   pruneHueMap();
   var h = buildHash(S.goals, S.edit);
   quiet = true;
@@ -1177,6 +1283,40 @@ function ms2(ms){ return Math.floor(ms/MIN) + ':' + pad(Math.floor(ms%MIN/1000))
    that stays glanceable, not a caption next to it. Single letters
    only (d/h/m/s) - a superscript is the wrong place for a plural. */
 function sup1(numStr, u){ return numStr + '<sup>' + u + '</sup>'; }
+
+/* ---------- how wide the hero is, in its own em ------------
+   CSS cannot count the digits, so it is told. Tabular figures are all
+   one width, a colon is much narrower, and a unit letter is a
+   superscript at .26em - so "3" and "171" and "8h:30m" are three very
+   different widths at the same font-size, and fitting the number to
+   the box means knowing which one is on screen.
+
+   These are measured off the faces, not guessed, and they only have
+   to be close: the result feeds a min() against the height, and being
+   a percent out moves the number by a hair. Written only when it
+   changes, so it costs nothing on the one-second beat.
+------------------------------------------------------------ */
+var EM = { digit:.62, colon:.30, sign:.52, sup:.17, mark:.95 };
+function heroEm(html){
+  var e = 0;
+  var plain = String(html).replace(/<sup>(.*?)<\/sup>/g, function(_, u){ e += EM.sup * u.length; return ''; });
+  plain = plain.replace(/<[^>]*>/g, '');
+  for(var i = 0; i < plain.length; i++){
+    var c = plain.charAt(i);
+    e += (c >= '0' && c <= '9') ? EM.digit
+       : c === ':' ? EM.colon
+       : (c === '+' || c === '-') ? EM.sign
+       : EM.mark;
+  }
+  return Math.round(Math.max(1, e) * 100) / 100;
+}
+var lastEm = 0;
+function setHeroEm(html){
+  var e = heroEm(html);
+  if(e === lastEm) return;
+  lastEm = e;
+  document.documentElement.style.setProperty('--hero-em', String(e));
+}
 function sup2(pair, u1, u2){
   var p = pair.split(':');
   /* The last sixty seconds do not need a "0" minutes group sitting
@@ -1372,6 +1512,29 @@ function gradFor(days, light, event){
   return [last[1], last[2]];
 }
 
+/* ---------- which of them you are looking at ---------------
+   Board mode drops the chips, and a board that quietly has three
+   goals on it while looking like it has one is worse than no board.
+   A pager row is the smallest honest answer: how many, and which.
+   Hidden by CSS everywhere else, so it costs one element and nothing
+   on screen until the screen is short.
+------------------------------------------------------------ */
+var lastDots = '';
+function drawDots(){
+  var sig = S.goals.length + ':' + spun;
+  if(sig === lastDots) return;
+  lastDots = sig;
+  var box = $('#dots');
+  if(!box) return;
+  box.innerHTML = '';
+  if(S.goals.length < 2) return;
+  for(var i = 0; i < S.goals.length; i++){
+    var d = document.createElement('i');
+    if(i === spun) d.className = 'on';
+    box.appendChild(d);
+  }
+}
+
 /* ---------- favicon: the number, in the tab ---------- */
 var lastIcon = '';
 function setIcon(text, c2){
@@ -1422,21 +1585,35 @@ var snarkPick = SNARK[(Math.random() * SNARK.length) | 0];
    just a metaphor. "ok" narrows the pool to what is actually true
    right now: no fullscreen tip on a browser without the API, no
    "jump to a goal" tip with only one goal to jump to. */
+/* A line telling you to press F on a device with no F is not a tip,
+   it is a bug with good manners. Every entry says which kind of
+   input it is for; `ok` was already the filter, it just never asked
+   this question. */
+var hasKeys = function(){ return !coarse(); };
+var isTouch = function(){ return coarse(); };
 var TIPS = [
   { t:'Type "friday 6pm" in the box instead of clicking through the calendar.' },
-  { t:'Press Q to draw a QR code \u2014 point a phone at the screen from across the room.' },
-  { t:'Press F for fullscreen. Any old laptop becomes a wall board this way.',
-    ok:function(){ return canFull(); } },
-  { t:'Pin this tab \u2014 the browser tab title counts down too, even unpinned elsewhere.' },
-  { t:'Press H to shift the colour. It only changes on this screen, never in a shared link.' },
   { t:'The whole countdown lives in the address bar \u2014 copy it from there and you have shared everything.' },
-  { t:'A Done button appears once you are on time or early \u2014 press D, or click it.',
+  { t:'Paste a Baaki link anywhere on this page and its goals join your board.' },
+  { t:'A Done button appears once you are on time or early.',
     ok:function(){ return S.goals[0] && canDone(S.goals[0], new Date()); } },
+
+  { t:'Press Q to draw a QR code \u2014 point a phone at the screen from across the room.', ok:hasKeys },
+  { t:'Press F for fullscreen. Any old laptop becomes a wall board this way.',
+    ok:function(){ return hasKeys() && canFull(); } },
+  { t:'Pin this tab \u2014 the browser tab title counts down too, even unpinned elsewhere.', ok:hasKeys },
+  { t:'Press H to shift the colour. It only changes on this screen, never in a shared link.', ok:hasKeys },
   { t:'Press 1 through 9 to jump straight to a goal.',
-    ok:function(){ return S.goals.length > 1; } },
-  { t:'Press + or \u2212 to change how big the number is \u2014 not what it says.' },
-  { t:'Swipe left or right to switch goals on a phone; arrow keys do the same elsewhere.',
-    ok:function(){ return S.goals.length > 1; } }
+    ok:function(){ return hasKeys() && S.goals.length > 1; } },
+  { t:'Press + or \u2212 to change how big the number is \u2014 not what it says.', ok:hasKeys },
+  { t:'Arrow keys, or Tab, move between goals.',
+    ok:function(){ return hasKeys() && S.goals.length > 1; } },
+
+  { t:'Turn the phone sideways \u2014 the number takes the whole screen.', ok:isTouch },
+  { t:'Swipe left or right to move between goals.',
+    ok:function(){ return isTouch() && S.goals.length > 1; } },
+  { t:'Add this to your home screen and it opens straight onto the board.', ok:isTouch },
+  { t:'Tap the QR icon under Share to hand this board to somebody beside you.', ok:isTouch }
 ];
 function tipPool(){
   var out = [];
@@ -1503,7 +1680,10 @@ function render(force){
     el.name.innerHTML = '<span></span><span class="rom"></span>';
     el.name.firstChild.textContent = 'बाकी';
     el.name.lastChild.textContent = 'Baaki';
-    if(prev.n !== String(left)){ el.num.innerHTML = sup1(String(left), 'd'); prev.n = String(left); }
+    if(prev.n !== String(left)){
+      var leftHtml = sup1(String(left), 'd');
+      el.num.innerHTML = leftHtml; setHeroEm(leftHtml); prev.n = String(left);
+    }
     el.unit.hidden = true;
     el.sub.innerHTML = '<span></span>';
     el.sub.firstChild.textContent = dateLabel(eoy);
@@ -1513,6 +1693,7 @@ function render(force){
     el.snark.firstChild.textContent = 'A deadline in a link. No account. Works offline.';
     el.snark.lastChild.textContent = 'Click here, or press G, to count something of your own.';
     document.body.classList.add('empty');
+    drawDots();
     el.done.hidden = true;
     drawShareGroup();
     document.title = 'Baaki · ' + left + ' days left in ' + yr;
@@ -1524,6 +1705,7 @@ function render(force){
   }
 
   document.body.classList.remove('empty');
+  drawDots();
   var g = S.goals[0], eg = effGoal(g, now), v = view(eg, now), h = heroOf(v, eg);
 
   var nameHtml = (eg.event ? '<span class="star">★</span>' : '') + '<span></span>';
@@ -1534,6 +1716,7 @@ function render(force){
   }
   if(prev.n !== h.n){
     el.num.innerHTML = h.html;
+    setHeroEm(h.html);
     el.unit.textContent = h.u;
     el.unit.hidden = !h.u;
     prev.n = h.n;
@@ -1647,11 +1830,19 @@ function paint(pair, v){
    front would scramble the order, and then "previous" could not
    undo "next". Rotating keeps the ring intact, so the arrows are
    exact inverses and the list never reshuffles under you. */
+/* How far round the list you have turned, this session. Rotation is
+   the real model - the focused goal is always the first one, and that
+   order goes into the link - so "which of N" is not stored anywhere
+   and has to be counted. Purely for the dots; it changes nothing that
+   is shared, and starting over at the first goal after a reload is
+   right, because the order in the link did move. */
+var spun = 0;
 function rotate(n){
   var L = S.goals.length;
   if(L < 2) return;
   n = ((n % L) + L) % L;
   if(!n) return;
+  spun = (spun + n) % L;
   S.goals = S.goals.slice(n).concat(S.goals.slice(0, n));
   prev = {};
   commit(true);
@@ -1840,9 +2031,14 @@ var KIND_HINT = 'A <b>deadline</b> heats up as it nears and keeps counting after
 var REPEAT_HINT = 'A <b>recurring</b> goal comes back on its own - weekly on this weekday, monthly on ' +
   'this date, or yearly on this day. Marking it done does not end it: once the moment you picked ' +
   'actually arrives, it quietly resets to the next one. Delete the goal to stop it for good.';
-var WINDOW_HINT_START = 'A <b>window</b> has a start and an end - "exam 10am-noon," "boarding ' +
-  'opens-gate closes." One link, and whoever opens it on the day gets the right view on its own. ' +
-  'Pick when it <b>starts</b> first.';
+/* "Window" was a word this tool taught you. "Scheduled" is one you
+   already had. Only the label changed: the link format never names
+   this kind at all - a second "~" is the whole tell - so every link
+   ever sent keeps working, and the code still calls it `window`
+   throughout, which is noted in CLAUDE.md so the two stay reconciled. */
+var WINDOW_HINT_START = 'Something <b>scheduled</b> has a start and an end - "exam 10am-noon," ' +
+  '"boarding opens-gate closes." One link, and whoever opens it on the day gets the right view ' +
+  'on its own. Pick when it <b>starts</b> first.';
 var WINDOW_HINT_END = 'Now pick when it <b>ends</b>. Up to the start it counts down like something ' +
   'good; the moment the start arrives it switches straight to counting down to the end, like a deadline.';
 /* setFormKind only ever decides which KIND is selected. Everything
@@ -2773,12 +2969,14 @@ function shareBare(){
 }
 function expandShare(){
   shareOpen = true;
+  document.body.classList.add('sharing');
   drawShareGroup();
   clearTimeout(shareTimer);
   shareTimer = setTimeout(collapseShare, 8000);
 }
 function collapseShare(){
   shareOpen = false;
+  document.body.classList.remove('sharing');
   clearTimeout(shareTimer);
   drawShareGroup();
 }
@@ -2845,18 +3043,31 @@ function toolBtn(id, name, title, on, fn, glyph){
   b.onclick = fn;
   return b;
 }
+/* Which tools earn a place in the bar. With a keyboard everything can
+   sit there, because the row has width to spare and each one has a
+   key beside it in the tooltip. With a thumb the row has no width to
+   spare at all - it was wrapping to two lines, which is what put the
+   toast on top of the buttons - so only the ones you reach for while
+   holding the thing stay: fullscreen, rotation lock, surface. Sound
+   and keep-awake are set once and left, and both live under ?. */
 function drawTools(){
   var t = $('#tools');
   if(!t) return;
+  var touch = coarse();
   t.innerHTML = '';
   if(canFull()) t.appendChild(toolBtn('bFull', isFull() ? 'exit' : 'full',
     (isFull() ? 'Leave fullscreen' : 'Fullscreen') + ' (F)', isFull(), toggleFull));
-  if(window.AudioContext || window.webkitAudioContext)
+  /* Only offered where the browser will actually honour it, which is
+     fullscreen or installed - exactly when a propped-up phone is
+     being used as a board and a rotation would ruin it. */
+  if(touch && canRotate()) t.appendChild(toolBtn('bRot', rotLock ? 'lock' : 'turn',
+    rotLock ? 'Rotation is locked' : 'Lock rotation', rotLock, function(){ setRot(!rotLock); }));
+  if(!touch && (window.AudioContext || window.webkitAudioContext))
     t.appendChild(toolBtn('bSound', soundOn ? 'on' : 'off',
       soundOn ? 'Sound is on (M)' : 'Sound is off (M)', soundOn, function(){ setSound(!soundOn); }));
   /* only here while it is holding the screen open, because that is the
      only time you would want to find it */
-  if(wakeWant) t.appendChild(toolBtn('bWake', 'awake', 'Screen is being held awake (W)', true,
+  if(!touch && wakeWant) t.appendChild(toolBtn('bWake', 'awake', 'Screen is being held awake (W)', true,
     function(){ setWake(false); }));
   t.appendChild(toolBtn('bTheme', 'surf', 'Surface: ' + (document.documentElement.dataset.theme || 'dark') + ' (T)',
     false, cycleMode,
@@ -3414,10 +3625,23 @@ var KEYS = [
   ['?', 'this panel'],
   ['Esc', 'close']
 ];
+/* What you can actually do with the thing in your hand. A table of
+   keyboard shortcuts on a phone is not reference, it is noise - and
+   it was the longest block in the panel. */
+var GESTURES = [
+  ['Swipe', 'move between goals'],
+  ['Tap the number', 'add a goal, on an empty board'],
+  ['Turn sideways', 'the number takes the whole screen'],
+  ['Paste', 'a Baaki link anywhere adds its goals to yours'],
+  ['Add to home screen', 'opens straight onto the board, offline']
+];
 function drawKeys(){
   var k = $('#keys');
   k.innerHTML = '';
-  KEYS.forEach(function(row){
+  var rows = coarse() ? GESTURES : KEYS;
+  var head = k.previousElementSibling;
+  if(head && head.tagName === 'H3') head.textContent = coarse() ? 'By hand' : 'Keys';
+  rows.forEach(function(row){
     var a = document.createElement('kbd'); a.textContent = row[0];
     var b = document.createElement('div'); b.textContent = row[1];
     k.appendChild(a); k.appendChild(b);
