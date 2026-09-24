@@ -31,6 +31,8 @@ Legend: **★** = load-bearing, removing it changes what Baaki is.
 | ★ Gradient encodes distance | You know where you stand before you read the number. Colour is the pre-attentive channel; the digits are the confirmation. |
 | Log interpolation between anchors | Linear made the last month feel identical to the first year. Time pressure isn't linear, so the colour shouldn't be. |
 | Continuous day value, not integer days | Makes the drift genuinely imperceptible instead of a daily jump. |
+| A ramp colour is a background until it clears a contrast floor | The ramps were drawn to sit *behind* white text, so their dark end is allowed to be nearly black. Black and white paint the number with them instead, where that is fatal rather than fine — so both ends are pushed into a legible band first, measured on perceived brightness rather than a channel average, because green reads far brighter than blue at the same number. |
+| Every render path calls `setAccent`, including the ones that return early | The empty board did not, so on black and white its accents stayed unset, fell back to `currentColor`, and `currentColor` on those two surfaces is `transparent`. The digits were not dim, they were absent — and the front door's own near-black anchor made it certain. |
 | Ramps generated from anchors, never stored | Storing 36 hex values makes themes miserable to author and too fat for a URL. Three anchors is fun to pick and fits in a link. |
 | Very slow gradient angle drift | The screen is alive without ever catching your eye. ±10° over 90 seconds is below the noticing threshold. |
 | Overdue goes desaturated grey | Urgency is over; what's left is a fact, not an alarm. Red forever is just noise you learn to ignore. |
@@ -198,6 +200,20 @@ Themes are data, and this is the whole extension surface. All of it per device.
 | One height for every button in the bar | It read as scattered because nothing shared a measurement. |
 | Anything switched on is lit in the bar | A setting you cannot see is a setting you forget you left on — and that is also the place to turn it off. |
 | Keep-awake appears in the bar only while on | It is the only time you would go looking for it. |
+
+## The number arriving
+
+| Feature | Why it exists |
+|---|---|
+| The front door counts in from 365 | A year is what the front door is an example of, and a board that spins up once reads as alive rather than as a picture. One run, on first paint, then never again. |
+| It is allowed near the number *because it ends* | A scale animation (1.4.0) and a background pulse (1.5.0) were both removed for breaking "the number itself never moves". Both were permanent and pinned to how close a deadline was. This is arrival motion: it finishes and does not come back. That distinction is the whole licence, and anything that loses it should be removed too. |
+| Only the empty board rolls | It is the only screen with an honest starting point. A plain deadline's link carries the target and nothing else, so rolling one would mean inventing a beginning and showing it as though it were true. A scheduled goal past its start does know its span — one call away when it earns it. |
+| Duration is logarithmic on the distance | Three days must not take ten seconds and 290 must not blur past in one. Same shape the colour ramp already uses. |
+| The digit width is held for the run, then settles | The fit is told how many digits there are, so an unheld roll from 365 to 98 shrinks the number as they drop. Held, there is one size change at the finish — animated for half a second, it reads as settling; instant, it was a pop on something that had just gone still. |
+| A goal added mid-roll ends it at once | Otherwise the front door's count sits over somebody's real deadline for another second and a half. |
+| Reduced motion gets the number, not the journey | Arrival motion is still motion. |
+| The frame's own timestamp, never `Date.now()` | Monotonic, and it is what `requestAnimationFrame` hands you anyway. A wall clock held still — a machine waking from sleep, or the test harness — leaves a `Date.now()` loop stuck on its first frame forever. |
+| No library | countUp.js is about 4 KB for grouping separators, decimals and a menu of easings none of this needs, and the width hold and the hand-back to the one-second beat would still be hand-written. Twenty lines is cheaper, and one less thing to keep current in a file that has to run off a stick in 2031. |
 
 ## Any screen, any shape
 

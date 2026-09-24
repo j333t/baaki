@@ -22,6 +22,57 @@ Anything that changes the **link format** is a breaking change and needs a major
 
 ## Unreleased
 
+### The number counts itself in on the front door
+
+From 365, once, on first paint, then never again. A year is what the
+empty board is an example of.
+
+It is allowed this close to the number only because it ends. A scale
+animation (1.4.0) and a background pulse (1.5.0) were both removed for
+breaking "the number itself never moves" - both were permanent and
+pinned to how close a deadline was. This finishes and does not come
+back, and anything that loses that distinction should go the same way.
+
+Only the empty board rolls, because it is the only screen with an
+honest starting point. A plain deadline's link carries the target and
+nothing else, so rolling one would mean inventing a beginning and
+showing it as if it were true.
+
+Duration is logarithmic on the distance, so three days does not take
+ten seconds and 290 does not blur past in one. No library: countUp.js
+is about 4 KB for separators, decimals and easings none of this needs,
+and the width hold and the hand-back to the one-second beat would
+still have been hand-written.
+
+**Fixed: the digits were invisible in black and white mode.** Not dim
+- absent. Those two surfaces paint the number rather than the
+background, and the empty board returns before the render path ever
+reaches `setAccent`, so the accents stayed unset and fell back to
+`currentColor`, which there is `transparent`. Both ends of the ramp
+are now pushed past a contrast floor before use as well, measured on
+perceived brightness: the ramps were built to sit *behind* white text,
+and their dark end is allowed to be nearly black.
+
+**Fixed: the rotation lock button was a blank gap in the bar.** It was
+asking `ICON` for a glyph that had never been drawn, so it rendered
+`svg(undefined)` - a control that worked perfectly and looked broken.
+
+**Fixed: the reference table used two thirds of the panel.** An inline
+grid sizes to its content. It also sat at the tightest step on the
+spacing ladder, which is not enough air for a table read at a glance.
+
+**Fixed: the typeface label was crushed.** Five buttons left it about
+35px on a phone, which is not enough for the word "Typeface"; the
+controls wrap to the next line now instead.
+
+**Fixed: a phone was told to press G.** The empty board's prompt was
+hardcoded keyboard text.
+
+Plainer words throughout: "Empty board link copied" is now "Link to
+Baaki copied", the share segment says Baaki rather than Tool, and the
+link on Sreedharan's name reads "Read about him" instead of "Worth ten
+minutes".
+
 ### It works on a screen of any shape now
 
 One line explained nearly all of it. The number was sized

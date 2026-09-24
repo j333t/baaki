@@ -46,6 +46,24 @@ docs/turn-on-previews.md  plain-language runbook for deploying og-worker.mjs
 - **Vanilla, ES5-flavoured JS.** No framework, no transpiler, no dependency. It has to run off a USB stick in 2031.
 - **The wrapper never edits the page.** Desktop-only chrome is injected from `main.rs`. If you find yourself adding `if (isTauri)` to `baaki.html`, stop.
 - **Every colour is generated, not stored.** Ramps interpolate between anchors. Do not paste 36 hex values anywhere.
+- **A ramp colour is a background until it clears a contrast floor.** The ramps were drawn
+  to sit *behind* white text, so their dark end is allowed to be nearly black. Black and
+  white surfaces paint the number with them instead, and both ends have to be pushed into
+  a legible band first - on perceived brightness, not a channel average, because green
+  reads far brighter than blue at the same number. And any render path that returns early
+  must still call `setAccent`: unset accents fall back to `currentColor`, which on those
+  two surfaces is `transparent`, and the digits vanish rather than dim.
+- **Arrival motion is the one exception to "the number never moves", and only while it
+  ends.** The front door counts in from 365 once, on first paint. A scale animation
+  (1.4.0) and a background pulse (1.5.0) were removed for breaking that rule; both were
+  permanent and tied to urgency. Anything that loses the "ends and does not return"
+  property belongs with them.
+- **Animate off the frame's timestamp, never `Date.now()`.** A wall clock held still - a
+  machine waking from sleep, or `page.clock.setFixedTime` in the suite - leaves a
+  `Date.now()` loop stuck on its first frame forever.
+- **Plain words, always.** Say what happened: "Link to Baaki copied", not "Empty board
+  link copied"; "Read about him", not "Worth ten minutes". If a string sounds like it was
+  enjoyed while being written, rewrite it.
 - **The scale comes off `--room`, not the raw viewport.** `vmin`/`vmax` know nothing about
   the bar, the notch, or mobile browser chrome that collapses on scroll. `--room` is the
   viewport minus the furniture, in `dvh` — never `vh`, which on a phone measures a

@@ -166,6 +166,13 @@ main{display:flex;flex-direction:column;align-items:center;gap:var(--s2);min-wid
    its baseline by .53 of the number puts the two cap-tops level. In
    the unit's own em - which is what vertical-align counts in - that is
    .53 / .26, near enough 2. At .95em it sat halfway down the digits. */
+/* Only ever on for the half second at the end of the arrival roll.
+   The width is held at its widest while the number counts in, so the
+   digits do not shrink under you as they drop - which leaves one size
+   change at the finish. Animated, it reads as the number settling;
+   instant, it is a pop on something that had just gone still. Never
+   on at any other time: the number itself does not move. */
+#num.settling{transition:font-size .45s cubic-bezier(.2,.7,.3,1)}
 #num sup{font-size:.26em;font-weight:600;vertical-align:2.04em;color:var(--dim);
   letter-spacing:0;margin-left:.03em}
 #unit{font-size:var(--f2);font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
@@ -433,9 +440,15 @@ kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;
   min-width:calc(var(--u) * 1.7);padding:calc(var(--u) * .3) calc(var(--u) * .5)}
 /* sized to its content, not stretched across the panel - two short
    columns side by side, not the full dialog width */
-.keys{display:inline-grid;grid-template-columns:auto 1fr auto 1fr;gap:var(--s1) var(--s3);
-  font-size:var(--f0);color:var(--dim);align-items:center;max-width:36em}
-@media (max-width:480px){.keys{grid-template-columns:auto 1fr;max-width:20em}}
+/* grid, not inline-grid: an inline grid sizes itself to its content,
+   so this sat at about two thirds of the panel with the rest empty
+   beside it. Room between the rows as well - a reference table read at
+   a glance needs the lines to separate, and it was set at the tightest
+   step on the ladder. */
+.keys{display:grid;grid-template-columns:auto 1fr auto 1fr;gap:var(--s2) var(--s3);
+  font-size:var(--f0);color:var(--dim);align-items:center;width:100%;
+  margin:var(--s3) 0 var(--s2)}
+@media (max-width:480px){.keys{grid-template-columns:auto 1fr}}
 
 /* One dot per goal, the one you are looking at filled. Board mode
    drops the chips, and a board that silently has three goals on it
@@ -480,9 +493,16 @@ kbd{font:500 var(--f0) ui-monospace,Menlo,Consolas,monospace;
 
 .screen{border-top:1px solid var(--line);padding-top:var(--s3);display:flex;flex-direction:column;gap:var(--s2)}
 .opts{display:flex;flex-direction:column;gap:var(--s1)}
-.opt{display:flex;align-items:center;gap:var(--s1);font-size:var(--f1);color:var(--dim)}
-.opt .lbl{flex:1;min-width:0;cursor:help;text-decoration:underline dotted var(--faint);
+/* A row of five typeface buttons left the label about 35px on a phone,
+   which is not enough for the word "Typeface" - it crushed up against
+   the first button and read as an overlap. The label now refuses to be
+   squeezed under its own text and the controls drop to the next line
+   instead, which is what a narrow screen wants anyway. */
+.opt{display:flex;align-items:center;gap:var(--s1) var(--s2);font-size:var(--f1);
+  color:var(--dim);flex-wrap:wrap}
+.opt .lbl{flex:1 0 8em;min-width:0;cursor:help;text-decoration:underline dotted var(--faint);
   text-underline-offset:3px}
+.opt button,.opt .val{flex:0 0 auto}
 .opt button{font:500 var(--f0)/1 var(--face);color:var(--dim);background:var(--panel);
   border:1px solid transparent;border-radius:7px;padding:7px 10px;cursor:pointer;min-width:32px}
 .opt button:hover,.opt button:focus-visible{background:var(--panel2);color:var(--ink);outline:none;border-color:var(--line)}
@@ -602,7 +622,7 @@ body.locked #bAdd{opacity:.45}
     <div class="acts">
       <button type="button" class="b" id="bCancelEdit" hidden>Cancel</button>
       <button type="button" class="b" id="bClose">Close</button>
-      <button type="button" class="b" id="bShareDraft" title="Copy a link for this goal without adding it to your board">Share</button>
+      <button type="button" class="b" id="bShareDraft" title="Copy a link for this goal without adding it to your board">Copy link</button>
       <button type="submit" class="b primary" id="bSubmit">Add goal</button>
     </div>
   </form>
@@ -622,9 +642,9 @@ body.locked #bAdd{opacity:.45}
 
 <dialog id="qr"><div class="dlg" tabindex="-1">
   <h2>Point a phone at it</h2>
-  <p class="story">Whoever scans this gets the whole board on their own screen —
-    the goals, the dates, all of it. Useful on a projector or a shared monitor, stuck
-    to a wall or a site hoarding, or printed on the front of a plan.</p>
+  <p class="story">Whoever scans this gets the same board on their own screen — every goal
+    and every date. Useful on a projector or a shared monitor, stuck to a wall, or printed
+    on the front of a plan.</p>
   <div class="qrbox"><canvas id="qrCv" width="1" height="1"></canvas></div>
   <div class="hint" id="qrNote"></div>
   <div class="acts">
@@ -651,7 +671,7 @@ body.locked #bAdd{opacity:.45}
   <p class="story">
     <b>Inspired by E. Sreedharan.</b> He ran the Delhi Metro on a board in
     every room, showing days left and nothing else. It finished early.
-    <a href="https://en.wikipedia.org/wiki/E._Sreedharan" target="_blank" rel="noopener">Worth ten minutes.</a>
+    <a href="https://en.wikipedia.org/wiki/E._Sreedharan" target="_blank" rel="noopener">Read about him.</a>
   </p>
   <p class="story"><b>बाकी</b> is Hindi for <i>what's remaining</i>. No server, no account — just target minus now.</p>
 
@@ -1310,12 +1330,76 @@ function heroEm(html){
   }
   return Math.round(Math.max(1, e) * 100) / 100;
 }
-var lastEm = 0;
-function setHeroEm(html){
+var lastEm = 0, emHeld = false;
+function setHeroEm(html, force){
+  if(emHeld && !force) return;
   var e = heroEm(html);
   if(e === lastEm) return;
   lastEm = e;
   document.documentElement.style.setProperty('--hero-em', String(e));
+}
+
+/* ---------- the number arriving ----------------------------
+   One run, on the first paint of the front door, and then never
+   again. That is the whole reason it is allowed anywhere near the
+   number: the two effects removed in 1.4.0 and 1.5.0 were permanent
+   and pinned to how close a deadline was, and this ends and does not
+   come back. Arrival motion, not urgency.
+
+   A library was considered and rejected. countUp.js is about 4 KB for
+   grouping separators, decimals and a menu of easings none of this
+   needs - and the digit-width hold and the hand-back to the
+   one-second beat would still have to be written by hand. Twenty
+   lines is cheaper than four kilobytes, and one less thing to keep
+   current in a file that has to run off a stick in 2031.
+
+   Only the empty board rolls, because it is the only screen with an
+   honest starting point: 365 is a year, and the front door is an
+   example of a year. A plain deadline's link carries the target and
+   nothing else, so rolling one would mean inventing a beginning and
+   showing it as if it were true. A scheduled goal past its start does
+   know its span - that is one call away here when it earns it.
+------------------------------------------------------------ */
+var rollVal = null;
+function rollDur(dist){
+  /* Log, like the ramp itself: three days must not take ten seconds,
+     and 290 must not blur past in one. */
+  return Math.max(450, Math.min(1800, 260 * Math.log(Math.abs(dist) + 1)));
+}
+function rollTo(from, to){
+  if(from === to || !el.num) return;
+  if(window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  var t0 = null, ms = rollDur(from - to);
+  /* Hold the width at the widest it will be for the whole run. The
+     fit is told how many digits there are, so without this a roll
+     from 365 to 8 shrinks the number under you as they drop. */
+  setHeroEm(sup1(String(Math.max(from, to)), 'd'), true);
+  emHeld = true;
+  /* The frame's own timestamp, not Date.now(). It is monotonic, it is
+     what requestAnimationFrame hands you anyway, and a wall clock that
+     is held still - which is exactly what the test harness does, and
+     what a machine waking from sleep does - would otherwise leave this
+     stuck on its first frame forever. */
+  requestAnimationFrame(function step(ts){
+    /* A goal added mid-roll ends it at once. The roll owns the number
+       only while there is nothing real to put there; carrying on
+       would leave the front door's count sitting over somebody's
+       actual deadline for up to another second and a half. */
+    if(S.goals.length){ rollVal = null; emHeld = false; prev.n = ''; return; }
+    if(t0 === null) t0 = ts;
+    var p = Math.min(1, (ts - t0) / ms);
+    /* ease-out cubic: quick away, settling rather than stopping dead */
+    var e = 1 - Math.pow(1 - p, 3);
+    rollVal = Math.round(from + (to - from) * e);
+    el.num.innerHTML = sup1(String(rollVal), 'd');
+    if(p < 1){ requestAnimationFrame(step); return; }
+    /* Hand it back: the beat owns the number again, and prev is
+       cleared so the next tick redraws rather than seeing no change. */
+    rollVal = null; emHeld = false; prev.n = '';
+    el.num.classList.add('settling');
+    setHeroEm(sup1(String(to), 'd'), true);
+    setTimeout(function(){ el.num.classList.remove('settling'); }, 600);
+  });
 }
 function sup2(pair, u1, u2){
   var p = pair.split(':');
@@ -1680,7 +1764,9 @@ function render(force){
     el.name.innerHTML = '<span></span><span class="rom"></span>';
     el.name.firstChild.textContent = 'बाकी';
     el.name.lastChild.textContent = 'Baaki';
-    if(prev.n !== String(left)){
+    /* While a roll is running it owns the number; the beat keeps
+       everything else on this screen up to date around it. */
+    if(rollVal === null && prev.n !== String(left)){
       var leftHtml = sup1(String(left), 'd');
       el.num.innerHTML = leftHtml; setHeroEm(leftHtml); prev.n = String(left);
     }
@@ -1691,7 +1777,9 @@ function render(force){
     el.others.innerHTML = '';
     el.snark.innerHTML = '<span class="pitch"></span><span class="cue"></span>';
     el.snark.firstChild.textContent = 'A deadline in a link. No account. Works offline.';
-    el.snark.lastChild.textContent = 'Click here, or press G, to count something of your own.';
+    el.snark.lastChild.textContent = coarse()
+      ? 'Tap anywhere to count something of your own.'
+      : 'Click here, or press G, to count something of your own.';
     document.body.classList.add('empty');
     drawDots();
     el.done.hidden = true;
@@ -1700,6 +1788,12 @@ function render(force){
     var g0 = paint(FRONT[light ? 'light' : 'dark'], null);
     root.style.setProperty('--g1', g0[0]);
     root.style.setProperty('--g2', g0[1]);
+    /* Black and white paint the number rather than the background, and
+       this branch returns before the ordinary path ever gets here - so
+       without this call the accents stay unset, fall back to
+       currentColor, and currentColor on those two surfaces is
+       transparent. The digits were invisible, not merely dim. */
+    setAccent(g0, root);
     setIcon(String(left), g0[1]);
     return;
   }
@@ -1796,15 +1890,44 @@ function render(force){
   maybeCelebrate(g, v);
 }
 /* In black and white mode the background stops carrying the colour, so
-   the number has to. Same ramp, different surface. */
+   the number has to. Same ramp, different surface.
+
+   The ramp's colours were designed to be a *background*, which means
+   its dark end is allowed to be nearly black - fine behind white text,
+   fatal as the text itself on a pure black screen. So both ends are
+   pushed into a band that is guaranteed to read against the surface
+   before they are used. Without the floor the front door's own dark
+   anchor (#04150d) painted the number black on black, and the digits
+   simply were not there.
+
+   Perceived brightness, not the average of the channels: green reads
+   far brighter than blue at the same number, and a floor that ignores
+   that lets a deep blue through as "bright enough". */
+function lum(h){
+  function part(i){ return parseInt(h.slice(1 + i * 2, 3 + i * 2), 16) / 255; }
+  return 0.2126 * part(0) + 0.7152 * part(1) + 0.0722 * part(2);
+}
+/* Lift towards white, or press towards black, only as far as it takes
+   to clear the line - so a colour that was already legible is left
+   exactly as it was. */
+function toward(hex, target, floor){
+  var l = lum(hex), t = 0;
+  while(t < 1 && (target === '#ffffff' ? l < floor : l > floor)){
+    t += 0.05;
+    l = lum(mix(hex, target, t));
+  }
+  return t ? mix(hex, target, Math.min(1, t)) : hex;
+}
 function setAccent(c, root){
   var t = document.documentElement.dataset.theme;
   if(t === 'black'){
-    root.style.setProperty('--acc1', c[1]);
-    root.style.setProperty('--acc2', mix(c[1], '#ffffff', 0.55));
+    var b = toward(c[1], '#ffffff', 0.34);
+    root.style.setProperty('--acc1', b);
+    root.style.setProperty('--acc2', mix(b, '#ffffff', 0.55));
   } else if(t === 'white'){
-    root.style.setProperty('--acc1', mix(c[1], '#000000', 0.32));
-    root.style.setProperty('--acc2', mix(c[1], '#000000', 0.06));
+    var w = toward(c[1], '#000000', 0.42);
+    root.style.setProperty('--acc1', mix(w, '#000000', 0.32));
+    root.style.setProperty('--acc2', w);
   }
 }
 
@@ -1862,7 +1985,7 @@ function markDone(){
   commit(false);
   syncPush(g);
   copy(shareUrl('#' + goalToken(g))).then(function(ok){
-    toast(ok ? 'Done. Share link copied.' : 'Done. Copy the address bar to share.');
+    toast(ok ? 'Marked done. Link copied.' : 'Marked done. Copy the address bar to share it.');
   });
 }
 /* A recurring goal only advances one cycle at a time, and only once
@@ -2965,7 +3088,9 @@ function doShare(all){
   });
 }
 function shareBare(){
-  copy(shareUrl('')).then(function(ok){ toast(ok ? 'Empty board link copied.' : 'Copy the address bar.'); });
+  copy(shareUrl('')).then(function(ok){
+    toast(ok ? 'Link to Baaki copied.' : 'Copy the address bar to share Baaki.');
+  });
 }
 function expandShare(){
   shareOpen = true;
@@ -2983,7 +3108,7 @@ function collapseShare(){
 function drawShareGroup(){
   var grp = $('#shareGrp');
   if(!grp) return;
-  $('#bShare').title = S.goals.length ? 'Share this one (s)' : 'Share the tool (s)';
+  $('#bShare').title = S.goals.length ? 'Copy a link to this goal (s)' : 'Copy a link to Baaki (s)';
   var open = shareOpen;
   if(!open){
     if(grp.children.length < 2) return;
@@ -3007,10 +3132,10 @@ function drawShareGroup(){
     requestAnimationFrame(function(){ b.style.opacity = '1'; });
   };
   if(S.goals.length > 1) seg('All ' + S.goals.length, 'Copy every goal as one link', function(){ doShare(true); });
-  seg('', 'Draw a QR code of this link (Q)', openQr, svg(ICON.qr));
+  seg('', 'Show a QR code of this link (Q)', openQr, svg(ICON.qr));
   /* On an empty board, Share itself already copied the tool - a second
      segment saying the same thing would be noise. */
-  if(S.goals.length) seg('Tool', 'Copy the bare tool, nothing on it', shareBare);
+  if(S.goals.length) seg('Baaki', 'Copy a link to Baaki with no goals on it', shareBare);
 }
 
 /* ---------- the tool strip -----------------------------------
@@ -3030,7 +3155,13 @@ var ICON = {
   on:    'M1.5 6h2.5L7.5 3v10L4 10H1.5zM10 6.2a3 3 0 0 1 0 3.6M12.3 4.2a6 6 0 0 1 0 7.6',
   off:   'M1.5 6h2.5L7.5 3v10L4 10H1.5zM10.5 6.5l4 3M14.5 6.5l-4 3',
   awake: 'M8 2.6v1.4M8 12v1.4M3.2 8H4.6M11.4 8h1.4M4.6 4.6l1 1M10.4 10.4l1 1M11.4 4.6l-1 1M5.6 10.4l-1 1',
-  surf:  'M8 1.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13'
+  surf:  'M8 1.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13',
+  /* A screen free to turn, and the same screen held. Both were being
+     asked for by name before either existed, so the button rendered
+     svg(undefined) - a control that worked perfectly and looked like
+     a gap in the bar. */
+  turn:  'M3.2 6.6A5.2 5.2 0 0 1 13 7.4M12.8 9.4A5.2 5.2 0 0 1 3 8.6M3.2 3.6v3h3M12.8 12.4v-3h-3',
+  lock:  'M5.4 7.2V5.4a2.6 2.6 0 0 1 5.2 0v1.8M4.3 7.2h7.4v6.3H4.3z'
 };
 function toolBtn(id, name, title, on, fn, glyph){
   var b = document.createElement('button');
@@ -3916,7 +4047,7 @@ function shareDraft(){
     event: isEvent, since: !isEvent && !isRepeat && target < new Date(),
     repeat: isRepeat ? formRepeat : null, done:null };
   copy(shareUrl('#' + goalToken(g))).then(function(ok){
-    toast(ok ? 'Link copied — not added to your board.' : 'Copy the address bar to share.');
+    toast(ok ? 'Link copied. This goal was not added to your board.' : 'Could not copy — use the address bar.');
   });
   resetForm();
   el.dlg.close();
@@ -3966,6 +4097,12 @@ if(fromQuery) history.replaceState(null, '', pathNoBoard() + buildHash(S.goals, 
 tipIx = pickTip(-1);
 if(tipIx >= 0) tipPick = TIPS[tipIx].t;
 render(true);
+
+/* The front door counts in from a year. Once, on arrival. */
+if(!S.goals.length){
+  var eoyNow = new Date(new Date().getFullYear(), 11, 31, 23, 59, 59, 999);
+  rollTo(365, Math.max(0, dayDiff(new Date(), eoyNow)));
+}
 
 /* Their board is showing and yours is not. Say so once, offer yours
    back, then get out of the way - the number stays the number. Only

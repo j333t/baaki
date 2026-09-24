@@ -87,26 +87,16 @@ Two things to be honest about before this is built:
 
 ~~**Rename Window to Scheduled.**~~ Built — see `features.md` → Scheduled.
 
-**The number rolls in.** On a board whose starting point is known, count the number down
-to its real value over a second or two rather than printing it — each digit rolling, with
-some weight to the motion. The default board knows its start (365); a scheduled goal
-knows its own start; anything else does not, and gets no animation rather than a
-made-up one.
+~~**The number rolls in.**~~ Built, in its plainest form — see `features.md` → The number
+arriving. Still open from that entry:
 
-The colour could ride the same curve, so the ramp travels the same distance in the same
-time and the two read as one movement.
-
-Needs easing tuned against the *distance*, not a fixed duration: a three-day difference
-must not take ten seconds, and 290 days must not blur past in one. Something
-logarithmic, like the ramp itself already uses.
-
-Watch it against a house rule: **the number itself never moves.** This is arrival
-motion, once, not an ongoing effect tied to urgency — which is what got a scale
-animation and a background pulse removed in 1.4.0 and 1.5.0. It stays on the right side
-of that line only if it ends and never repeats.
-
-Glance: pass (it settles into a still number). Cold open: pass. Weight: needs work.
-One primitive: pass. **Deferred** until the screen work lands.
+- **Per-digit rolling.** What shipped counts the whole number down; each digit sliding in
+  its own column is the motion-graphic version, and it fights `tabular-nums` layout and
+  the `--hero-em` fit. Look at what shipped before deciding whether it is still wanted.
+- **A scheduled goal rolling in.** Past its start it genuinely knows its span, so it is
+  one call away. Not done because it doubles the surface for one kind of goal.
+- **The colour riding the same curve.** Moot on the front door, which took a fixed bottle
+  green. It would apply to any goal that rolls, if one ever does.
 
 ## Still open, from the work above
 

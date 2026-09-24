@@ -375,9 +375,10 @@ copied = decodeURIComponent(await page.evaluate(() => window.__copied));
 ok('all link carries every goal', copied.includes('One~2027-01-01+Two~2027-02-01+Three~2027-03-01'), true);
 ok('neither leaks !edit', copied.includes('!edit'), false);
 
-await seg('Tool').click();
+await seg('Baaki').click();
 await page.waitForTimeout(150);
-ok('the bare tool link has no hash', decodeURIComponent(await page.evaluate(() => window.__copied)).endsWith('/baaki.html'), true);
+ok('the link to Baaki itself carries no goal',
+   decodeURIComponent(await page.evaluate(() => window.__copied)).endsWith('/baaki.html'), true);
 
 await segByTitle('QR code').click();
 await page.waitForTimeout(250);
@@ -403,7 +404,7 @@ await page.waitForTimeout(200);
 ok('one goal: copied, no fuss', decodeURIComponent(await page.evaluate(() => window.__copied)).endsWith('#Only~2027-01-01'), true);
 ok('one goal: "All" makes no sense and is not offered', await seg('All').count(), 0);
 ok('one goal: QR is still offered', await segByTitle('QR code').count(), 1);
-ok('one goal: so is the bare tool', await seg('Tool').count(), 1);
+ok('one goal: so is a link to Baaki itself', await seg('Baaki').count(), 1);
 
 // an empty board has no goal, but the tool itself is still worth sharing
 await page.evaluate(() => localStorage.removeItem('baaki.hash'));
@@ -1630,6 +1631,144 @@ ok('and starts on screen, not above it', dlg.y >= -1, true);
 ok('with the overflow reachable, not cut off',
    await d.pg.locator('#dlg').evaluate(e => e.scrollHeight > e.clientHeight && getComputedStyle(e).overflowY !== 'hidden'), true);
 await d.c.close();
+
+/* ---------- the number is visible on every surface ---------
+   Black and white paint the number rather than the background, which
+   means the ramp's colours become foreground - and the ramp's dark
+   end was designed to sit behind white text, not to be it. On the
+   front door the accents were never set at all, so they fell back to
+   currentColor, which on those two surfaces is transparent: the
+   digits were not dim, they were absent. */
+console.log('\n--- the digits are there on every surface ---');
+
+const contrast = (a, b) => {
+  const L = c => {
+    const v = c.match(/\d+/g).slice(0, 3).map(x => {
+      const s = x / 255;
+      return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
+  };
+  const [x, y] = [L(a), L(b)].sort((p, q) => q - p);
+  return (x + 0.05) / (y + 0.05);
+};
+
+for (const surface of ['black', 'white']) {
+  for (const [what, hash] of [['the front door', ''], ['a far goal', '#A~2027-11-03'],
+                              ['a near one', '#A~2026-09-04']]) {
+    await page.evaluate(t => { localStorage.clear(); localStorage.setItem('baaki.theme', t); }, surface);
+    await page.goto('about:blank');
+    await page.goto(FILE + hash);
+    await page.waitForTimeout(hash ? 350 : 2200);   // the front door counts itself in
+    const seen = await page.evaluate(() => {
+      const cs = getComputedStyle(document.documentElement);
+      return { a1: cs.getPropertyValue('--acc1').trim(), a2: cs.getPropertyValue('--acc2').trim() };
+    });
+    ok(`${surface}, ${what}: the number has a colour at all`,
+       /^#[0-9a-f]{6}$/i.test(seen.a1) && /^#[0-9a-f]{6}$/i.test(seen.a2), true);
+    const hex = h => `rgb(${parseInt(h.slice(1,3),16)},${parseInt(h.slice(3,5),16)},${parseInt(h.slice(5,7),16)})`;
+    const bg = surface === 'black' ? 'rgb(0,0,0)' : 'rgb(255,255,255)';
+    /* Both ends of the gradient, because half a legible number is a
+       number you cannot read. */
+    ok(`${surface}, ${what}: and both ends of it read against the surface`,
+       Math.min(contrast(hex(seen.a1), bg), contrast(hex(seen.a2), bg)) > 2.6, true);
+  }
+}
+await page.evaluate(() => localStorage.removeItem('baaki.theme'));
+
+console.log('\n--- the front door counts itself in ---');
+
+await page.evaluate(() => localStorage.clear());
+await page.goto('about:blank');
+await page.goto(FILE);
+await page.waitForTimeout(120);
+const early = (await page.locator('#num').textContent()).replace(/\D/g, '');
+await page.waitForTimeout(2400);
+const settled = (await page.locator('#num').textContent()).replace(/\D/g, '');
+ok('it starts somewhere above where it lands', +early > +settled, true);
+ok('and never above a year, which is the whole point of 365', +early <= 365, true);
+ok('it settles on the real number', settled, '120');
+ok('and hands the number back to the one-second beat',
+   await page.evaluate(() => document.querySelector('#num').classList.contains('settling')), false);
+/* The digit width is told to CSS; if it were not held, the number
+   would shrink under you as 365 drops to 100. */
+ok('the width follows the number it settled on',
+   +(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--hero-em'))), 2.03);
+
+/* Arrival motion is allowed because it ends. Anyone who has asked not
+   to be moved is not moved at all. */
+const still = await browser.newContext({ timezoneId: TZ, locale: 'en-IN', colorScheme: 'dark',
+  viewport: { width: 900, height: 600 }, reducedMotion: 'reduce' });
+const sp = await still.newPage();
+await sp.clock.setFixedTime(new Date(NOW));
+await sp.goto(FILE);
+await sp.evaluate(() => localStorage.clear());
+await sp.goto('about:blank');
+await sp.goto(FILE);
+await sp.waitForTimeout(150);
+ok('reduced motion gets the number, not the journey',
+   (await sp.locator('#num').textContent()).replace(/\D/g, ''), '120');
+await still.close();
+
+/* A goal added mid-roll would otherwise leave the front door's count
+   sitting over a real deadline for another second and a half. */
+await page.evaluate(() => localStorage.clear());
+await page.goto('about:blank');
+await page.goto(FILE);
+await page.waitForTimeout(100);
+await page.locator('#bAdd').click();
+await page.waitForTimeout(150);
+await page.fill('#fWhen', '31 mar 2027');
+await page.waitForTimeout(100);
+await page.click('#addForm button[type=submit]');
+await page.waitForTimeout(400);
+ok('a goal added mid-roll takes the number over immediately',
+   (await page.locator('#num').textContent()).replace(/\D/g, ''), '210');
+await page.evaluate(() => localStorage.clear());
+
+console.log('\n--- the panel uses the width it has ---');
+
+r = await open('#A~2027-11-03');
+await page.keyboard.press('?');
+await page.waitForTimeout(300);
+const fill = await page.evaluate(() => {
+  const k = document.querySelector('#keys').getBoundingClientRect();
+  const panel = document.querySelector('#about .dlg');
+  const cs = getComputedStyle(panel);
+  const inner = panel.getBoundingClientRect().width
+    - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  return k.width / inner;
+});
+ok('the reference table fills the panel rather than two thirds of it', fill > 0.95, true);
+
+/* Five typeface buttons used to leave the label about 35px, which is
+   not enough for the word "Typeface" - it read as an overlap. */
+await page.setViewportSize({ width: 390, height: 844 });
+await page.waitForTimeout(300);
+const squeeze = await page.evaluate(() => {
+  const row = [...document.querySelectorAll('#opts .opt')].find(x => x.textContent.startsWith('Typeface'));
+  const lbl = row.querySelector('.lbl');
+  return { fits: lbl.scrollWidth <= lbl.clientWidth + 1,
+           clear: lbl.getBoundingClientRect().right <= row.querySelector('button').getBoundingClientRect().left + 1 };
+});
+ok('the typeface label is not squeezed under its own word', squeeze.fits, true);
+ok('and keeps clear of the first button', squeeze.clear, true);
+await page.setViewportSize({ width: 1100, height: 700 });
+await page.keyboard.press('Escape');
+await page.waitForTimeout(200);
+
+/* A control that works perfectly and looks like a gap in the bar. */
+const rot = await browser.newContext({ timezoneId: TZ, locale: 'en-IN', colorScheme: 'dark',
+  viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+const rp = await rot.newPage();
+await rp.clock.setFixedTime(new Date(NOW));
+await rp.goto(FILE + '#A~2027-11-03');
+await rp.waitForTimeout(350);
+ok('every button in the bar draws something',
+   await rp.locator('#bar button').evaluateAll(els =>
+     els.filter(e => e.getClientRects().length)
+        .every(e => e.textContent.trim() || e.querySelector('svg path[d]:not([d=""])'))), true);
+await rot.close();
 
 console.log(`\n${pass} passed, ${fail} failed`);
 await browser.close();
